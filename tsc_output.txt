@@ -1,0 +1,12 @@
+src/components/layouts/MainLayout.tsx(5,1): error TS6192: All imports in import declaration are unused.
+src/components/layouts/MainLayout.tsx(10,8): error TS2307: Cannot find module '@/components/ui/dropdown-menu' or its corresponding type declarations.
+src/components/layouts/MainLayout.tsx(15,7): error TS6133: 'DropdownMenuComp' is declared but its value is never read.
+src/components/layouts/MainLayout.tsx(16,10): error TS6133: 'open' is declared but its value is never read.
+src/components/layouts/MainLayout.tsx(16,16): error TS6133: 'setOpen' is declared but its value is never read.
+src/components/ui/toaster.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/pages/admin/AdminMenus.tsx(8,52): error TS6133: 'Copy' is declared but its value is never read.
+src/pages/admin/AdminOrders.tsx(3,21): error TS6133: 'dailyMenusApi' is declared but its value is never read.
+src/pages/admin/AdminPackages.tsx(27,42): error TS6133: 'packagesLoading' is declared but its value is never read.
+src/pages/admin/AdminPackages.tsx(32,42): error TS6133: 'requestsLoading' is declared but its value is never read.
+src/pages/HomePage.tsx(23,28): error TS6133: 'user' is declared but its value is never read.
+src/pages/MyPackagesPage.tsx(9,3): error TS6133: 'CardDescription' is declared but its value is never read.
