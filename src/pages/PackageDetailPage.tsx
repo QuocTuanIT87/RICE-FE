@@ -2,6 +2,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { mealPackagesApi, packagePurchasesApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
+import { useAppSelector } from "@/store/hooks";
 import {
   Card,
   CardContent,
@@ -23,6 +24,7 @@ import {
 export default function PackageDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAppSelector((state) => state.auth);
 
   const { data, isLoading } = useQuery({
     queryKey: ["mealPackage", id],
@@ -177,7 +179,8 @@ export default function PackageDetailPage() {
             })()}
             <div className="mt-4 text-sm text-gray-600 space-y-1">
               <p>
-                <strong>Nội dung CK:</strong> MUA GOI DAT COM {pkg.name}
+                <strong>Nội dung CK: {user?.name}</strong> MUA GOI DAT COM{" "}
+                {pkg.name}
               </p>
               <p>
                 <strong className="font-bold">Số tiền:</strong>{" "}
