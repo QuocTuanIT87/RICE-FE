@@ -13,6 +13,7 @@ export interface User {
   isVerified: boolean;
   isBlocked?: boolean;
   activePackage?: UserPackage;
+  activePackageId?: any; // Để hỗ trợ populate từ backend
   createdAt?: string;
   updatedAt?: string;
 }
@@ -72,6 +73,7 @@ export interface PackagePurchaseRequest {
   status: PurchaseStatus;
   requestedAt: string;
   processedAt?: string;
+  createdAt?: string;
 }
 
 // Menu types
@@ -135,7 +137,8 @@ export interface RevenueStats {
   startDate: string;
   endDate: string;
   totalRevenue: number;
-  totalTransactions: number;
+  totalPackagesSold: number;
+  totalOrders: number;
   breakdown: Array<{
     name: string;
     count: number;

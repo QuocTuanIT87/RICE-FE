@@ -34,7 +34,12 @@ export default function LoginPage() {
         description: `Chào mừng ${user.name} đến với Web Đặt Cơm!`,
         variant: "success",
       });
-      navigate("/");
+      // Admin redirect tới /admin, user redirect tới /
+      if (user.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     },
     onError: (error: any) => {
       toast({

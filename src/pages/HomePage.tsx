@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppSelector } from "@/store/hooks";
 import { mealPackagesApi, dailyMenusApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
@@ -18,9 +18,13 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useSocket } from "@/contexts/SocketContext";
 
 export default function HomePage() {
   const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const { socket } = useSocket();
+  const queryClient = useQueryClient();
 
   const { data: packages } = useQuery({
     queryKey: ["mealPackages"],
@@ -31,6 +35,27 @@ export default function HomePage() {
     queryKey: ["todayMenu"],
     queryFn: () => dailyMenusApi.getTodayMenu(),
   });
+
+  // Lắng nghe sự kiện real-time
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleMenuUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ["todayMenu"] });
+    };
+
+    socket.on("menu_created", handleMenuUpdate);
+    socket.on("menu_locked", handleMenuUpdate);
+    socket.on("menu_unlocked", handleMenuUpdate);
+    socket.on("menu_updated", handleMenuUpdate);
+
+    return () => {
+      socket.off("menu_created");
+      socket.off("menu_locked");
+      socket.off("menu_unlocked");
+      socket.off("menu_updated");
+    };
+  }, [socket, queryClient]);
 
   const activePackages = packages?.data.data || [];
   const menus = todayMenu?.data.data || [];
@@ -96,7 +121,7 @@ export default function HomePage() {
           <Card className="card-hover">
             <CardContent className="p-6">
               <div className="flex flex-wrap gap-2">
-                {menu.menuItems?.slice(0, 12).map((item) => (
+                {menu.menuItems?.slice(0, 12).map((item: any) => (
                   <span
                     key={item._id}
                     className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm"
@@ -136,7 +161,7 @@ export default function HomePage() {
         </div>
 
         <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {activePackages.slice(0, 5).map((pkg) => (
+          {activePackages.slice(0, 5).map((pkg: any) => (
             <Card key={pkg._id} className="card-hover">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg">{pkg.name}</CardTitle>
