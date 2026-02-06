@@ -154,10 +154,11 @@ export default function PackageDetailPage() {
 
               if (bankCode && bankAccount) {
                 // Tạo QR động với số tiền và nội dung
-                const transferContent = `DATCOM ${pkg.name}`.replace(
-                  /\s+/g,
-                  " ",
-                );
+                const transferContent =
+                  `${user?.name} MUA GOI DAT COM ${pkg.name}`.replace(
+                    /\s+/g,
+                    " ",
+                  );
                 const qrUrl = `https://img.vietqr.io/image/${bankCode}-${bankAccount}-compact2.png?amount=${pkg.price}&addInfo=${encodeURIComponent(transferContent)}`;
 
                 return (
