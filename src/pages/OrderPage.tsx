@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { dailyMenusApi, ordersApi, userPackagesApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { MenuItem, DailyMenu, PackageType } from "@/types";
+import { useSocket } from "@/contexts/SocketContext";
 
 export default function OrderPage() {
   const queryClient = useQueryClient();
@@ -31,11 +32,53 @@ export default function OrderPage() {
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
   // Tab đặt cơm: có cơm hoặc không cơm
   const [orderType, setOrderType] = useState<PackageType>("normal");
+  const { socket } = useSocket();
 
   const { data: todayMenus, isLoading: menuLoading } = useQuery({
     queryKey: ["todayMenu"],
     queryFn: () => dailyMenusApi.getTodayMenu(),
   });
+
+  // Lắng nghe sự kiện real-time
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleMenuCreated = () => {
+      queryClient.invalidateQueries({ queryKey: ["todayMenu"] });
+      toast({
+        title: "📢 Menu mới!",
+        description: "Admin vừa cập nhật thực đơn mới. Hãy xem ngay!",
+      });
+    };
+
+    const handleMenuLocked = (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["todayMenu"] });
+      toast({
+        title: "🔒 Menu đã đóng",
+        description: data.message || "Thời gian đặt cơm đã kết thúc.",
+        variant: "destructive",
+      });
+    };
+
+    const handleMenuUnlocked = (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["todayMenu"] });
+      toast({
+        title: "🔓 Menu đã mở",
+        description: data.message || "Bạn đã có thể đặt cơm lại.",
+        variant: "success",
+      });
+    };
+
+    socket.on("menu_created", handleMenuCreated);
+    socket.on("menu_locked", handleMenuLocked);
+    socket.on("menu_unlocked", handleMenuUnlocked);
+
+    return () => {
+      socket.off("menu_created", handleMenuCreated);
+      socket.off("menu_locked", handleMenuLocked);
+      socket.off("menu_unlocked", handleMenuUnlocked);
+    };
+  }, [socket, queryClient]);
 
   const { data: myOrder } = useQuery({
     queryKey: ["myTodayOrder"],
@@ -51,10 +94,12 @@ export default function OrderPage() {
     mutationFn: ({
       items,
       type,
+      menuId,
     }: {
       items: Array<{ menuItemId: string; note?: string }>;
       type: PackageType;
-    }) => ordersApi.createOrder(items, type),
+      menuId: string;
+    }) => ordersApi.createOrder(items, type, menuId),
     onSuccess: (response) => {
       toast({
         title: "✅ Đặt cơm thành công!",
@@ -145,7 +190,12 @@ export default function OrderPage() {
       menuItemId: itemId,
       note: itemNotes[itemId] || "",
     }));
-    createOrderMutation.mutate({ items, type: orderType });
+    // Gửi kèm menuId để backend biết đặt cho menu nào
+    createOrderMutation.mutate({
+      items,
+      type: orderType,
+      menuId: currentMenu._id,
+    });
   };
 
   if (menuLoading) {
@@ -162,7 +212,7 @@ export default function OrderPage() {
   if (!hasActivePackage) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Card className="max-w-md text-center">
+        <Card className="max-md text-center">
           <CardContent className="pt-6">
             <Package className="w-12 h-12 mx-auto mb-4 text-gray-400" />
             <h2 className="text-xl font-bold mb-2">Chưa có gói đặt cơm</h2>
@@ -220,19 +270,15 @@ export default function OrderPage() {
             Món đã chọn ({order.orderItems?.length || 0} món):
           </p>
           <div className="mt-4 text-left space-y-2">
-            {order.orderItems?.map((item) => (
+            {order.orderItems?.map((item: any) => (
               <div key={item._id} className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-green-500 mt-0.5" />
-                <div>
-                  <span className="font-medium">
-                    {(item.menuItemId as MenuItem).name}
-                  </span>
+                <Check className="w-4 h-4 text-green-500" />
+                <span className="px-2 py-1 bg-gray-100 rounded text-sm">
+                  {(item.menuItemId as MenuItem)?.name || "Món đã bị xóa"}
                   {item.note && (
-                    <p className="text-sm text-gray-500 italic">
-                      📝 {item.note}
-                    </p>
+                    <span className="text-gray-500 ml-1">({item.note})</span>
                   )}
-                </div>
+                </span>
               </div>
             ))}
           </div>

@@ -1,17 +1,43 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ordersApi } from "@/services/api";
+import { useSocket } from "@/contexts/SocketContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
-import { History, UtensilsCrossed, Check, Clock } from "lucide-react";
+import {
+  History,
+  UtensilsCrossed,
+  Check,
+  Clock,
+  RefreshCw,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import type { MenuItem } from "@/types";
 
 export default function OrderHistoryPage() {
-  const { data, isLoading } = useQuery({
+  const queryClient = useQueryClient();
+  const { socket } = useSocket();
+
+  const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["myOrders"],
     queryFn: () => ordersApi.getMyOrders(),
   });
+
+  // Real-time: listen khi admin xác nhận đơn
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleOrderConfirmed = () => {
+      queryClient.invalidateQueries({ queryKey: ["myOrders"] });
+    };
+
+    socket.on("order_confirmed", handleOrderConfirmed);
+
+    return () => {
+      socket.off("order_confirmed", handleOrderConfirmed);
+    };
+  }, [socket, queryClient]);
 
   const orders = data?.data.data || [];
 
@@ -28,10 +54,21 @@ export default function OrderHistoryPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <History className="text-orange-500" />
-        Lịch sử đặt cơm
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <History className="text-orange-500" />
+          Lịch sử đặt cơm
+        </h1>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="h-9 w-9 rounded-lg bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-200"
+        >
+          <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
+        </Button>
+      </div>
 
       {orders.length === 0 ? (
         <Card>

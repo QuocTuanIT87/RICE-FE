@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useAppSelector } from "@/store/hooks";
@@ -6,17 +7,68 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatVND, formatDate } from "@/lib/utils";
 import { toast } from "@/hooks/useToast";
-import { Package, Clock, Check, AlertCircle, Star } from "lucide-react";
+import {
+  Package,
+  Clock,
+  Check,
+  AlertCircle,
+  Star,
+  History,
+  RefreshCw,
+} from "lucide-react";
 import type { MealPackage } from "@/types";
+import { useSocket } from "@/contexts/SocketContext";
 
 export default function MyPackagesPage() {
   const queryClient = useQueryClient();
   const { user } = useAppSelector((state) => state.auth);
+  const { socket } = useSocket();
 
-  const { data: packagesData, isLoading: packagesLoading } = useQuery({
+  const {
+    data: packagesData,
+    isLoading: packagesLoading,
+    refetch: refetchPkgs,
+    isFetching: isFetchingPkgs,
+  } = useQuery({
     queryKey: ["myPackages"],
     queryFn: () => userPackagesApi.getMyPackages(),
   });
+
+  // Lắng nghe sự kiện real-time
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleApproved = (data: any) => {
+      console.log("Purchase approved:", data);
+      toast({
+        title: "🎉 Chúc mừng!",
+        description: data.message || "Gói cơm của bạn đã được kích hoạt.",
+        variant: "success",
+      });
+      // Làm mới toàn bộ dữ liệu liên quan
+      queryClient.invalidateQueries({ queryKey: ["myPurchaseRequests"] });
+      queryClient.invalidateQueries({ queryKey: ["myPackages"] });
+      queryClient.invalidateQueries({ queryKey: ["auth"] }); // Để cập nhật activePackageId
+    };
+
+    const handleRejected = (data: any) => {
+      console.log("Purchase rejected:", data);
+      toast({
+        title: "❌ Rất tiếc",
+        description: data.message || "Yêu cầu mua gói của bạn bị từ chối.",
+        variant: "destructive",
+      });
+      queryClient.invalidateQueries({ queryKey: ["myPurchaseRequests"] });
+    };
+
+    socket.on("purchase_request_approved", handleApproved);
+    socket.on("purchase_request_rejected", handleRejected);
+
+    return () => {
+      socket.off("purchase_request_approved", handleApproved);
+      socket.off("purchase_request_rejected", handleRejected);
+    };
+  }, [socket, queryClient]);
 
   const { data: requestsData, isLoading: requestsLoading } = useQuery({
     queryKey: ["myPurchaseRequests"],
@@ -72,10 +124,26 @@ export default function MyPackagesPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <Package className="text-orange-500" />
-        Gói đặt cơm của tôi
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Package className="text-orange-500" />
+          Gói đặt cơm của tôi
+        </h1>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            refetchPkgs();
+          }}
+          disabled={isFetchingPkgs}
+          className="h-9 w-9 rounded-lg bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-200"
+        >
+          <RefreshCw
+            size={16}
+            className={isFetchingPkgs ? "animate-spin" : ""}
+          />
+        </Button>
+      </div>
 
       {/* Pending Requests */}
       {pendingRequests.length > 0 && (
@@ -192,7 +260,7 @@ export default function MyPackagesPage() {
 
       {/* Inactive Packages */}
       {inactivePackages.length > 0 && (
-        <Card>
+        <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-gray-500">
               <AlertCircle />
@@ -206,7 +274,7 @@ export default function MyPackagesPage() {
                 return (
                   <div key={pkg._id} className="p-3 bg-gray-50 rounded-lg">
                     <p className="font-medium">{mealPkg.name}</p>
-                    <p className="text-sc text-gray-500">
+                    <p className="text-sm text-gray-500">
                       {pkg.remainingTurns} lượt còn - Hết hạn:{" "}
                       {formatDate(pkg.expiresAt)}
                     </p>
@@ -217,6 +285,103 @@ export default function MyPackagesPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Lịch sử mua gói */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="text-blue-500" />
+            Lịch sử mua gói ({requests.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {requests.length === 0 ? (
+            <div className="text-center py-6 text-gray-500">
+              <p>Bạn chưa có yêu cầu mua gói nào</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left p-3 font-semibold">
+                      Ngày yêu cầu
+                    </th>
+                    <th className="text-left p-3 font-semibold">Tên gói</th>
+                    <th className="text-left p-3 font-semibold">Loại</th>
+                    <th className="text-right p-3 font-semibold">Giá</th>
+                    <th className="text-center p-3 font-semibold">Số lượt</th>
+                    <th className="text-center p-3 font-semibold">
+                      Trạng thái
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...requests]
+                    .sort(
+                      (a, b) =>
+                        new Date(b.requestedAt).getTime() -
+                        new Date(a.requestedAt).getTime(),
+                    )
+                    .map((req) => {
+                      const mealPkg = req.mealPackageId as MealPackage;
+
+                      let status = "";
+                      let statusClass = "";
+                      if (req.status === "pending") {
+                        status = "Đang chờ";
+                        statusClass = "bg-yellow-100 text-yellow-700";
+                      } else if (req.status === "approved") {
+                        status = "Đã duyệt";
+                        statusClass = "bg-green-100 text-green-700";
+                      } else if (req.status === "rejected") {
+                        status = "Từ chối";
+                        statusClass = "bg-red-100 text-red-600";
+                      }
+
+                      return (
+                        <tr key={req._id} className="border-b hover:bg-gray-50">
+                          <td className="p-3 text-gray-600">
+                            {formatDate(req.requestedAt)}
+                          </td>
+                          <td className="p-3 font-medium">
+                            {mealPkg?.name || "N/A"}
+                          </td>
+                          <td className="p-3">
+                            <span
+                              className={`px-2 py-1 rounded text-xs ${
+                                mealPkg?.packageType === "normal"
+                                  ? "bg-orange-100 text-orange-700"
+                                  : "bg-blue-100 text-blue-700"
+                              }`}
+                            >
+                              {mealPkg?.packageType === "normal"
+                                ? "Có cơm"
+                                : "Không cơm"}
+                            </span>
+                          </td>
+                          <td className="p-3 text-right font-medium text-orange-600">
+                            {mealPkg ? formatVND(mealPkg.price) : "N/A"}
+                          </td>
+                          <td className="p-3 text-center">
+                            {mealPkg?.turns || "N/A"}
+                          </td>
+                          <td className="p-3 text-center">
+                            <span
+                              className={`px-2 py-1 rounded text-xs ${statusClass}`}
+                            >
+                              {status}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

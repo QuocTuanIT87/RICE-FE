@@ -1,198 +1,377 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ordersApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/useToast";
 import { formatDate } from "@/lib/utils";
-import { ClipboardList, Check, Copy, Calendar } from "lucide-react";
+import {
+  ClipboardList,
+  Check,
+  Copy,
+  Calendar,
+  Users,
+  Utensils,
+  Clock,
+  CheckCircle2,
+  Mail,
+  User as UserIcon,
+  Hash,
+  ChevronRight,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
 import type { User, MenuItem } from "@/types";
+import { useSocket } from "@/contexts/SocketContext";
+import { Badge } from "@/components/ui/badge";
 
 export default function AdminOrders() {
   const queryClient = useQueryClient();
   const today = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState(today);
+  const { socket } = useSocket();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["adminOrders", selectedDate],
     queryFn: () => ordersApi.getOrdersByDate(selectedDate),
-  });
-
-  const confirmMutation = useMutation({
-    mutationFn: (menuId: string) => ordersApi.confirmAllOrders(menuId),
-    onSuccess: (response) => {
-      toast({
-        title: "✅ Đã xác nhận tất cả đơn!",
-        description: `${response.data.data?.confirmedCount} đơn đã được xác nhận`,
-        variant: "success",
-      });
-      queryClient.invalidateQueries({ queryKey: ["adminOrders"] });
-    },
-    onError: () => toast({ title: "❌ Có lỗi xảy ra", variant: "destructive" }),
-  });
-
-  const copyMutation = useMutation({
-    mutationFn: (menuId: string) => ordersApi.getCopyText(menuId),
-    onSuccess: (response) => {
-      const text = response.data.data?.copyText || "";
-      navigator.clipboard.writeText(text);
-      toast({ title: "📋 Đã copy danh sách món!", variant: "success" });
-    },
-    onError: () => toast({ title: "❌ Có lỗi xảy ra", variant: "destructive" }),
   });
 
   const menu = data?.data.data?.menu;
   const orders = data?.data.data?.orders || [];
   const summary = data?.data.data?.summary || [];
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <ClipboardList className="text-orange-500" />
-          Quản lý đơn đặt cơm
-        </h1>
+  // Real-time listener
+  useEffect(() => {
+    if (!socket) return;
+    const handleOrderUpdate = (data: { menuId: string }) => {
+      if (menu && data.menuId === menu._id) {
+        queryClient.invalidateQueries({
+          queryKey: ["adminOrders", selectedDate],
+        });
+        toast({
+          title: "Đơn hàng mới!",
+          description: "Vừa có khách đặt/sửa đơn cơm.",
+          variant: "default",
+        });
+      }
+    };
+    socket.on("order_created", handleOrderUpdate);
+    socket.on("order_updated", handleOrderUpdate);
+    return () => {
+      socket.off("order_created", handleOrderUpdate);
+      socket.off("order_updated", handleOrderUpdate);
+    };
+  }, [socket, menu, selectedDate, queryClient]);
 
-        <div className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-gray-500" />
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="border rounded-lg px-3 py-2"
-          />
+  const confirmMutation = useMutation({
+    mutationFn: (menuId: string) => ordersApi.confirmAllOrders(menuId),
+    onSuccess: (res) => {
+      toast({
+        title: "Thành công",
+        description: `Đã xác nhận ${res.data.data?.confirmedCount} đơn hàng`,
+        variant: "success",
+      });
+      queryClient.invalidateQueries({ queryKey: ["adminOrders"] });
+    },
+  });
+
+  const copyMutation = useMutation({
+    mutationFn: (menuId: string) => ordersApi.getCopyText(menuId),
+    onSuccess: (res) => {
+      navigator.clipboard.writeText(res.data.data?.copyText || "");
+      toast({ title: "Đã copy danh sách đặt cơm!", variant: "success" });
+    },
+  });
+
+  const stats = useMemo(
+    () => ({
+      total: orders.length,
+      confirmed: orders.filter((o: any) => o.isConfirmed).length,
+      pending: orders.filter((o: any) => !o.isConfirmed).length,
+      menuItems: summary.length,
+    }),
+    [orders, summary],
+  );
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 animate-in fade-in duration-500">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100 pb-8">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+              Đơn hàng
+            </h1>
+            {menu && (
+              <Badge className="bg-orange-50 text-orange-600 border-orange-100 font-black text-[10px] px-2 h-5 rounded uppercase">
+                {formatDate(selectedDate)}
+              </Badge>
+            )}
+          </div>
+          <p className="text-gray-500 font-medium text-sm">
+            Theo dõi và xác nhận các suất ăn thượng đế đã đặt.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="h-10 w-10 rounded-lg bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-200"
+          >
+            <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
+          </Button>
+          <div className="relative group">
+            <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-orange-500 transition-colors" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="h-10 pl-11 pr-4 border border-gray-100 rounded-lg text-sm font-bold focus:ring-1 focus:ring-orange-500 bg-white"
+            />
+          </div>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8">
-          <div className="text-4xl animate-bounce mb-4">📋</div>
-          <p className="text-gray-500">Đang tải...</p>
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
         </div>
       ) : !menu ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <div className="text-6xl mb-4">📅</div>
-            <h2 className="text-xl font-semibold mb-2">
-              Không có menu cho ngày {formatDate(selectedDate)}
-            </h2>
-          </CardContent>
-        </Card>
+        <div className="py-32 text-center bg-gray-50/30 border border-dashed rounded-2xl border-gray-200">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Calendar className="text-gray-300" size={32} />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 uppercase">
+            Trống lịch đặt cơm
+          </h2>
+          <p className="text-gray-400 font-medium mt-1">
+            Không có thực đơn nào được thiết lập cho ngày{" "}
+            {formatDate(selectedDate)}
+          </p>
+        </div>
       ) : (
         <>
-          {/* Actions */}
-          <Card>
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="font-medium">
-                  Menu ngày {formatDate(menu.menuDate)}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {orders.length} đơn • {menu.beginAt} - {menu.endAt}
-                  {menu.isLocked && " • Đã khóa"}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => copyMutation.mutate(menu._id)}
-                  disabled={copyMutation.isPending}
-                  className="gap-2"
+          {/* Stats & Actions */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+            <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                {
+                  label: "Tổng số đơn",
+                  val: stats.total,
+                  icon: ClipboardList,
+                  color: "gray",
+                },
+                {
+                  label: "Chờ xác nhận",
+                  val: stats.pending,
+                  icon: Clock,
+                  color: stats.pending > 0 ? "orange" : "gray",
+                },
+                {
+                  label: "Đã xác nhận",
+                  val: stats.confirmed,
+                  icon: CheckCircle2,
+                  color: "emerald",
+                },
+                {
+                  label: "Số loại món",
+                  val: stats.menuItems,
+                  icon: Utensils,
+                  color: "blue",
+                },
+              ].map((s, i) => (
+                <div
+                  key={i}
+                  className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm"
                 >
-                  <Copy className="w-4 h-4" />
-                  Copy danh sách
-                </Button>
-                <Button
-                  onClick={() => confirmMutation.mutate(menu._id)}
-                  disabled={confirmMutation.isPending || orders.length === 0}
-                  className="gap-2"
-                >
-                  <Check className="w-4 h-4" />
-                  Xác nhận tất cả
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Tổng hợp món ăn</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {summary.length === 0 ? (
-                <p className="text-gray-500">Chưa có đơn đặt nào</p>
-              ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {summary.map(
-                    (item: { name: string; count: number }, idx: number) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                      >
-                        <span>{item.name}</span>
-                        <span className="font-bold text-orange-600 bg-orange-100 px-2 py-1 rounded">
-                          x{item.count}
-                        </span>
-                      </div>
-                    ),
-                  )}
+                  <div
+                    className={`w-9 h-9 flex items-center justify-center rounded-lg bg-${s.color}-50 text-${s.color}-600 mb-3`}
+                  >
+                    <s.icon size={18} />
+                  </div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                    {s.label}
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 leading-none mt-1">
+                    {s.val}
+                  </p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              ))}
+            </div>
 
-          {/* Orders Detail */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Chi tiết đơn hàng ({orders.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {orders.length === 0 ? (
-                <p className="text-gray-500">Chưa có đơn đặt nào</p>
-              ) : (
-                <div className="space-y-3">
-                  {orders.map((order) => {
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={() => confirmMutation.mutate(menu._id)}
+                disabled={confirmMutation.isPending || orders.length === 0}
+                className="h-12 bg-orange-600 hover:bg-orange-700 text-white rounded-xl gap-2 font-black transition-all shadow-lg shadow-orange-100 uppercase text-xs"
+              >
+                <Check className="w-4 h-4" />
+                Xác nhận tất cả
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => copyMutation.mutate(menu._id)}
+                disabled={copyMutation.isPending}
+                className="h-12 border-gray-200 rounded-xl gap-2 font-black text-gray-500 hover:text-orange-600 hover:bg-orange-50 transition-all uppercase text-xs"
+              >
+                <Copy className="w-4 h-4" />
+                Copy danh sách
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
+            {/* Orders Details */}
+            <div className="xl:col-span-2 space-y-4">
+              <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                <Users size={14} /> Danh sách thực tế
+              </h2>
+
+              <div className="space-y-3">
+                {orders.length === 0 ? (
+                  <div className="p-12 text-center bg-gray-50/30 border border-dashed rounded-xl border-gray-200">
+                    <p className="text-xs font-bold text-gray-300 uppercase tracking-widest">
+                      Chưa có người đặt cơm
+                    </p>
+                  </div>
+                ) : (
+                  orders.map((order: any) => {
                     const user = order.userId as User;
                     return (
-                      <div key={order._id} className="p-4 border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <div>
-                            <p className="font-medium">{user.name}</p>
-                            <p className="text-sm text-gray-500">
-                              {user.email}
-                            </p>
-                          </div>
-                          <span
-                            className={`px-2 py-1 rounded text-sm ${
-                              order.isConfirmed
-                                ? "bg-green-100 text-green-700"
-                                : "bg-yellow-100 text-yellow-700"
-                            }`}
-                          >
-                            {order.isConfirmed ? "Đã xác nhận" : "Chờ xác nhận"}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {order.orderItems?.map((item) => {
-                            const menuItem = item.menuItemId as MenuItem;
-                            return (
-                              <span
-                                key={item._id}
-                                className="px-2 py-1 bg-gray-100 rounded text-sm"
+                      <Card
+                        key={order._id}
+                        className="border-gray-100 shadow-sm rounded-2xl overflow-hidden hover:border-orange-200 transition-all group bg-white"
+                      >
+                        <CardContent className="p-0">
+                          <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100 group-hover:bg-orange-50 transition-colors">
+                                <UserIcon
+                                  className="text-gray-300 group-hover:text-orange-500"
+                                  size={20}
+                                />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-bold text-gray-900 uppercase tracking-tight truncate">
+                                  {user.name}
+                                </p>
+                                <div className="flex items-center gap-3 text-[11px] text-gray-400 font-medium">
+                                  <span className="flex items-center gap-1">
+                                    <Mail size={10} /> {user.email}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock size={10} />{" "}
+                                    {formatDate(order.createdAt)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex-1 flex flex-wrap gap-1.5 md:justify-center">
+                              {order.orderItems?.map((item: any) => (
+                                <Badge
+                                  key={item._id}
+                                  variant="secondary"
+                                  className="bg-orange-50 text-orange-700 hover:bg-orange-100 border-none font-bold text-[10px] px-2.5 py-0.5 rounded-lg uppercase"
+                                >
+                                  {(item.menuItemId as MenuItem)?.name ||
+                                    "Món đã xóa"}
+                                </Badge>
+                              ))}
+                            </div>
+
+                            <div className="flex items-center md:items-end flex-col gap-1 shrink-0">
+                              <Badge
+                                className={`font-black text-[9px] px-2 py-0.5 rounded-md border-none uppercase ${order.isConfirmed ? "bg-emerald-50 text-emerald-600" : "bg-orange-100 text-orange-700"}`}
                               >
-                                {menuItem.name}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </div>
+                                {order.isConfirmed
+                                  ? "ĐÃ XÁC NHẬN"
+                                  : "CHỜ DUYỆT"}
+                              </Badge>
+                              <p className="text-[10px] font-black text-gray-300">
+                                ID: #
+                                {order._id
+                                  .substring(order._id.length - 4)
+                                  .toUpperCase()}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     );
-                  })}
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Summary Sidebar */}
+            <div className="space-y-4">
+              <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                <Hash size={14} /> Bảng tổng hợp món ăn
+              </h2>
+
+              <Card className="border-gray-100 shadow-sm rounded-2xl overflow-hidden bg-white">
+                <CardContent className="p-6 space-y-4">
+                  {summary.length === 0 ? (
+                    <p className="text-xs font-bold text-gray-300 uppercase py-6 text-center">
+                      Trống
+                    </p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {summary.map((item: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-3.5 bg-gray-50/50 rounded-xl border border-gray-100/50 group hover:bg-orange-50/50 hover:border-orange-100 transition-all"
+                        >
+                          <span className="text-xs font-bold text-gray-700 uppercase tracking-tight">
+                            {item.name}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-orange-600 text-white font-black text-xs px-2.5 h-6 rounded-lg shadow-sm shadow-orange-100">
+                              x{item.count}
+                            </Badge>
+                            <ChevronRight
+                              size={14}
+                              className="text-gray-300 group-hover:text-orange-400"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="h-px bg-gray-100" />
+
+                  <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-3">
+                    <CheckCircle2
+                      className="text-emerald-500 shrink-0"
+                      size={20}
+                    />
+                    <p className="text-[11px] text-emerald-700 font-bold leading-relaxed italic">
+                      Tất cả dữ liệu đã được tổng hợp chính xác theo thời gian
+                      thực.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="p-6 bg-orange-50 rounded-2xl border border-orange-100 flex items-start gap-4">
+                <AlertCircle className="text-orange-500 shrink-0" size={20} />
+                <div className="space-y-1">
+                  <h4 className="text-[10px] font-black text-orange-900 uppercase tracking-widest">
+                    Lưu ý nghiệp vụ
+                  </h4>
+                  <p className="text-[11px] text-orange-700/70 leading-relaxed font-bold italic">
+                    Hãy xác nhận tất cả đơn trước khi thực hiện "Copy danh sách"
+                    để chốt số lượng với nhà bếp.
+                  </p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            </div>
+          </div>
         </>
       )}
     </div>

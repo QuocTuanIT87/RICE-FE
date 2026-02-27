@@ -63,7 +63,7 @@ export default function MainLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-orange-50 to-white">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b shadow-sm">
         <div className="container mx-auto px-4">
@@ -228,7 +228,7 @@ export default function MainLayout() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex-1">
         <Outlet />
       </main>
 
@@ -236,7 +236,7 @@ export default function MainLayout() {
       <footer className="bg-gray-900 text-white py-8 mt-auto">
         <div className="container mx-auto px-4 text-center">
           <p className="text-gray-400">
-            © 2024 Web Đặt Cơm. Đặt cơm nhanh chóng và tiện lợi! 🍚
+            © 2026 Web Đặt Cơm. Đặt cơm nhanh chóng và tiện lợi! 🍚
           </p>
         </div>
       </footer>

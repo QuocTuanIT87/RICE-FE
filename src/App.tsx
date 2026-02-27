@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setUser, setLoading } from "@/store/authSlice";
 import { authApi } from "@/services/api";
 import { Toaster } from "@/components/ui/toaster";
+import { SocketProvider } from "@/contexts/SocketContext";
 
 // Layouts
 import MainLayout from "@/components/layouts/MainLayout";
@@ -42,9 +43,11 @@ const queryClient = new QueryClient({
   },
 });
 
-// Protected Route component
+// Protected Route component - chỉ cho user (không phải admin)
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAppSelector((state) => state.auth);
+  const { user, isAuthenticated, isLoading } = useAppSelector(
+    (state) => state.auth,
+  );
 
   if (isLoading) {
     return (
@@ -56,6 +59,33 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Admin không được truy cập trang khách hàng
+  if (user?.role === "admin") {
+    return <Navigate to="/admin" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+// Public Route - redirect admin về /admin
+function PublicRoute({ children }: { children: React.ReactNode }) {
+  const { user, isAuthenticated, isLoading } = useAppSelector(
+    (state) => state.auth,
+  );
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-4xl animate-bounce">🍚</div>
+      </div>
+    );
+  }
+
+  // Admin đã đăng nhập thì redirect về /admin
+  if (isAuthenticated && user?.role === "admin") {
+    return <Navigate to="/admin" replace />;
   }
 
   return <>{children}</>;
@@ -119,8 +149,22 @@ function AppRoutes() {
     <Routes>
       {/* Public routes with MainLayout */}
       <Route element={<MainLayout />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/packages" element={<PackagesPage />} />
+        <Route
+          path="/"
+          element={
+            <PublicRoute>
+              <HomePage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/packages"
+          element={
+            <PublicRoute>
+              <PackagesPage />
+            </PublicRoute>
+          }
+        />
 
         {/* Protected user routes */}
         <Route
@@ -211,8 +255,10 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <AuthInitializer>
-            <AppRoutes />
-            <Toaster />
+            <SocketProvider>
+              <AppRoutes />
+              <Toaster />
+            </SocketProvider>
           </AuthInitializer>
         </BrowserRouter>
       </QueryClientProvider>

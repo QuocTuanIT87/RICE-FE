@@ -15,9 +15,12 @@ import type {
   PackageType,
 } from "@/types";
 
+// API Base URL - lấy từ biến môi trường, chỉ cần thay đổi ở file .env
+const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
+
 // Tạo axios instance
 const api = axios.create({
-  baseURL: "/api",
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -70,6 +73,12 @@ export const authApi = {
     api.post<ApiResponse<{ token: string; user: User }>>("/auth/login", data),
 
   getMe: () => api.get<ApiResponse<User>>("/auth/me"),
+
+  updateProfile: (data: { name?: string; phone?: string }) =>
+    api.patch<ApiResponse<User>>("/auth/profile", data),
+
+  changePassword: (data: { oldPassword: string; newPassword: string }) =>
+    api.patch<ApiResponse>("/auth/change-password", data),
 };
 
 // =============================================
@@ -83,14 +92,17 @@ export const usersApi = {
   }) => api.get<ApiResponse<User[]>>("/users", { params }),
 
   getUserById: (id: string) =>
-    api.get<ApiResponse<{ user: User; packages: UserPackage[] }>>(
-      `/users/${id}`,
-    ),
+    api.get<
+      ApiResponse<{ user: User; packages: UserPackage[]; orders: Order[] }>
+    >(`/users/${id}`),
 
   blockUser: (id: string) => api.patch<ApiResponse<User>>(`/users/${id}/block`),
 
   unblockUser: (id: string) =>
     api.patch<ApiResponse<User>>(`/users/${id}/unblock`),
+
+  resetPassword: (id: string) =>
+    api.patch<ApiResponse>(`/users/${id}/reset-password`),
 };
 
 // =============================================
@@ -203,12 +215,14 @@ export const dailyMenusApi = {
 export const ordersApi = {
   getMyOrders: () => api.get<ApiResponse<Order[]>>("/orders/my"),
 
+  // API trả về single order (1 đơn/ngày)
   getMyTodayOrder: () => api.get<ApiResponse<Order | null>>("/orders/today"),
 
   createOrder: (
     items: Array<{ menuItemId: string; note?: string }>,
     orderType: PackageType = "normal",
-  ) => api.post<ApiResponse<Order>>("/orders", { items, orderType }),
+    menuId: string,
+  ) => api.post<ApiResponse<Order>>("/orders", { items, orderType, menuId }),
 
   // Admin
   getOrdersByDate: (date: string) =>

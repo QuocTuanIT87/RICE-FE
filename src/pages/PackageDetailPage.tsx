@@ -1,5 +1,6 @@
+import { useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mealPackagesApi, packagePurchasesApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/store/hooks";
@@ -20,11 +21,14 @@ import {
   CreditCard,
   ShoppingCart,
 } from "lucide-react";
+import { useSocket } from "@/contexts/SocketContext";
 
 export default function PackageDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAppSelector((state) => state.auth);
+  const { socket } = useSocket();
 
   const { data, isLoading } = useQuery({
     queryKey: ["mealPackage", id],
@@ -34,13 +38,16 @@ export default function PackageDetailPage() {
 
   const purchaseMutation = useMutation({
     mutationFn: () => packagePurchasesApi.createRequest(id!),
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       toast({
         title: "✅ Đã gửi yêu cầu mua gói!",
         description:
           response.data.message || "Vui lòng chờ admin xác nhận thanh toán",
         variant: "success",
       });
+      // Đợi cho việc xóa/làm mới cache hoàn tất trước khi chuyển trang
+      await queryClient.resetQueries({ queryKey: ["myPurchaseRequests"] });
+      await queryClient.invalidateQueries({ queryKey: ["myPackages"] });
       navigate("/my-packages");
     },
     onError: (error: any) => {
@@ -51,6 +58,30 @@ export default function PackageDetailPage() {
       });
     },
   });
+
+  // Lắng nghe sự kiện real-time
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleApproved = (data: any) => {
+      if (data.requestId === id) {
+        toast({
+          title: "🎉 Tuyệt vời!",
+          description: "Gói cơm này của bạn đã được Admin kích hoạt!",
+          variant: "success",
+        });
+        queryClient.invalidateQueries({ queryKey: ["mealPackage", id] });
+        // Có thể navigate về trang của tôi để xem gói mới
+        setTimeout(() => navigate("/my-packages"), 2000);
+      }
+    };
+
+    socket.on("purchase_request_approved", handleApproved);
+
+    return () => {
+      socket.off("purchase_request_approved", handleApproved);
+    };
+  }, [socket, id, queryClient, navigate]);
 
   if (isLoading) {
     return (
