@@ -50,10 +50,10 @@ export default function HomePage() {
     socket.on("menu_updated", handleMenuUpdate);
 
     return () => {
-      socket.off("menu_created");
-      socket.off("menu_locked");
-      socket.off("menu_unlocked");
-      socket.off("menu_updated");
+      socket.off("menu_created", handleMenuUpdate);
+      socket.off("menu_locked", handleMenuUpdate);
+      socket.off("menu_unlocked", handleMenuUpdate);
+      socket.off("menu_updated", handleMenuUpdate);
     };
   }, [socket, queryClient]);
 

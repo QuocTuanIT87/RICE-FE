@@ -63,7 +63,7 @@ export default function PackageDetailPage() {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("purchase_request_approved", (data) => {
+    const handleApproved = (data: any) => {
       if (data.requestId === id) {
         toast({
           title: "🎉 Tuyệt vời!",
@@ -74,10 +74,12 @@ export default function PackageDetailPage() {
         // Có thể navigate về trang của tôi để xem gói mới
         setTimeout(() => navigate("/my-packages"), 2000);
       }
-    });
+    };
+
+    socket.on("purchase_request_approved", handleApproved);
 
     return () => {
-      socket.off("purchase_request_approved");
+      socket.off("purchase_request_approved", handleApproved);
     };
   }, [socket, id, queryClient, navigate]);
 

@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Star,
   History,
+  RefreshCw,
 } from "lucide-react";
 import type { MealPackage } from "@/types";
 import { useSocket } from "@/contexts/SocketContext";
@@ -23,7 +24,12 @@ export default function MyPackagesPage() {
   const { user } = useAppSelector((state) => state.auth);
   const { socket } = useSocket();
 
-  const { data: packagesData, isLoading: packagesLoading } = useQuery({
+  const {
+    data: packagesData,
+    isLoading: packagesLoading,
+    refetch: refetchPkgs,
+    isFetching: isFetchingPkgs,
+  } = useQuery({
     queryKey: ["myPackages"],
     queryFn: () => userPackagesApi.getMyPackages(),
   });
@@ -32,7 +38,7 @@ export default function MyPackagesPage() {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("purchase_request_approved", (data) => {
+    const handleApproved = (data: any) => {
       console.log("Purchase approved:", data);
       toast({
         title: "🎉 Chúc mừng!",
@@ -43,9 +49,9 @@ export default function MyPackagesPage() {
       queryClient.invalidateQueries({ queryKey: ["myPurchaseRequests"] });
       queryClient.invalidateQueries({ queryKey: ["myPackages"] });
       queryClient.invalidateQueries({ queryKey: ["auth"] }); // Để cập nhật activePackageId
-    });
+    };
 
-    socket.on("purchase_request_rejected", (data) => {
+    const handleRejected = (data: any) => {
       console.log("Purchase rejected:", data);
       toast({
         title: "❌ Rất tiếc",
@@ -53,11 +59,14 @@ export default function MyPackagesPage() {
         variant: "destructive",
       });
       queryClient.invalidateQueries({ queryKey: ["myPurchaseRequests"] });
-    });
+    };
+
+    socket.on("purchase_request_approved", handleApproved);
+    socket.on("purchase_request_rejected", handleRejected);
 
     return () => {
-      socket.off("purchase_request_approved");
-      socket.off("purchase_request_rejected");
+      socket.off("purchase_request_approved", handleApproved);
+      socket.off("purchase_request_rejected", handleRejected);
     };
   }, [socket, queryClient]);
 
@@ -115,10 +124,26 @@ export default function MyPackagesPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <Package className="text-orange-500" />
-        Gói đặt cơm của tôi
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Package className="text-orange-500" />
+          Gói đặt cơm của tôi
+        </h1>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            refetchPkgs();
+          }}
+          disabled={isFetchingPkgs}
+          className="h-9 w-9 rounded-lg bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-200"
+        >
+          <RefreshCw
+            size={16}
+            className={isFetchingPkgs ? "animate-spin" : ""}
+          />
+        </Button>
+      </div>
 
       {/* Pending Requests */}
       {pendingRequests.length > 0 && (

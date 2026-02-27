@@ -43,36 +43,40 @@ export default function OrderPage() {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("menu_created", () => {
+    const handleMenuCreated = () => {
       queryClient.invalidateQueries({ queryKey: ["todayMenu"] });
       toast({
         title: "📢 Menu mới!",
         description: "Admin vừa cập nhật thực đơn mới. Hãy xem ngay!",
       });
-    });
+    };
 
-    socket.on("menu_locked", (data) => {
+    const handleMenuLocked = (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["todayMenu"] });
       toast({
         title: "🔒 Menu đã đóng",
         description: data.message || "Thời gian đặt cơm đã kết thúc.",
         variant: "destructive",
       });
-    });
+    };
 
-    socket.on("menu_unlocked", (data) => {
+    const handleMenuUnlocked = (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["todayMenu"] });
       toast({
         title: "🔓 Menu đã mở",
         description: data.message || "Bạn đã có thể đặt cơm lại.",
         variant: "success",
       });
-    });
+    };
+
+    socket.on("menu_created", handleMenuCreated);
+    socket.on("menu_locked", handleMenuLocked);
+    socket.on("menu_unlocked", handleMenuUnlocked);
 
     return () => {
-      socket.off("menu_created");
-      socket.off("menu_locked");
-      socket.off("menu_unlocked");
+      socket.off("menu_created", handleMenuCreated);
+      socket.off("menu_locked", handleMenuLocked);
+      socket.off("menu_unlocked", handleMenuUnlocked);
     };
   }, [socket, queryClient]);
 

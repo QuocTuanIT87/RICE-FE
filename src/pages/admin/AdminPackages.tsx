@@ -21,6 +21,7 @@ import {
   ShoppingBag,
   TrendingUp,
   CreditCard,
+  RefreshCw,
 } from "lucide-react";
 import type { MealPackage, User, PackagePurchaseRequest } from "@/types";
 import { useSocket } from "@/contexts/SocketContext";
@@ -56,12 +57,21 @@ export default function AdminPackages() {
     qrCodeImage: "",
   });
 
-  const { data: packagesData, isLoading: packagesLoading } = useQuery({
+  const {
+    data: packagesData,
+    isLoading: packagesLoading,
+    refetch: refetchPackages,
+    isFetching: isFetchingPackages,
+  } = useQuery({
     queryKey: ["adminMealPackages"],
     queryFn: () => mealPackagesApi.getPackages(),
   });
 
-  const { data: requestsData } = useQuery({
+  const {
+    data: requestsData,
+    refetch: refetchRequests,
+    isFetching: isFetchingRequests,
+  } = useQuery({
     queryKey: ["adminPurchaseRequests", "pending"],
     queryFn: () => packagePurchasesApi.getAllRequests("pending"),
   });
@@ -69,15 +79,16 @@ export default function AdminPackages() {
   // Real-time listener
   useEffect(() => {
     if (!socket) return;
-    socket.on("purchase_request_created", () => {
+    const handleNewRequest = () => {
       toast({
         title: "Yêu cầu mới!",
         description: "Có thượng đế đang chờ duyệt gói cơm.",
       });
       queryClient.invalidateQueries({ queryKey: ["adminPurchaseRequests"] });
-    });
+    };
+    socket.on("purchase_request_created", handleNewRequest);
     return () => {
-      socket.off("purchase_request_created");
+      socket.off("purchase_request_created", handleNewRequest);
     };
   }, [socket, queryClient]);
 
@@ -208,13 +219,32 @@ export default function AdminPackages() {
           </p>
         </div>
 
-        <Button
-          onClick={openCreateDialog}
-          className="h-10 bg-orange-600 hover:bg-orange-700 text-white rounded-lg gap-2 font-bold transition-all px-6"
-        >
-          <Plus className="w-4 h-4" />
-          TẠO GÓI MỚI
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              refetchPackages();
+              refetchRequests();
+            }}
+            disabled={isFetchingPackages || isFetchingRequests}
+            className="h-10 w-10 rounded-lg bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-200"
+          >
+            <RefreshCw
+              size={16}
+              className={
+                isFetchingPackages || isFetchingRequests ? "animate-spin" : ""
+              }
+            />
+          </Button>
+          <Button
+            onClick={openCreateDialog}
+            className="h-10 bg-orange-600 hover:bg-orange-700 text-white rounded-lg gap-2 font-bold transition-all px-6"
+          >
+            <Plus className="w-4 h-4" />
+            TẠO GÓI MỚI
+          </Button>
+        </div>
       </div>
 
       {/* Stats Overview */}

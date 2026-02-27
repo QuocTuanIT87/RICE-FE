@@ -100,6 +100,9 @@ export const usersApi = {
 
   unblockUser: (id: string) =>
     api.patch<ApiResponse<User>>(`/users/${id}/unblock`),
+
+  resetPassword: (id: string) =>
+    api.patch<ApiResponse>(`/users/${id}/reset-password`),
 };
 
 // =============================================

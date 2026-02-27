@@ -19,11 +19,12 @@ import {
   Activity,
   Zap,
   CheckCircle2,
+  RefreshCw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function AdminDashboard() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["adminDashboard"],
     queryFn: () => statisticsApi.getDashboard(),
   });
@@ -58,6 +59,15 @@ export default function AdminDashboard() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="h-9 w-9 rounded-xl bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-200"
+          >
+            <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
+          </Button>
           <Badge
             variant="outline"
             className="h-9 px-4 rounded-xl border-gray-200 font-black text-[10px] text-gray-400 uppercase tracking-widest"

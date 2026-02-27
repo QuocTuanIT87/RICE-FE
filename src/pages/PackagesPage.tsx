@@ -1,6 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { mealPackagesApi } from "@/services/api";
+import { useSocket } from "@/contexts/SocketContext";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,14 +13,36 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatVND } from "@/lib/utils";
-import { Package, Clock, ArrowRight, Star } from "lucide-react";
+import { Package, Clock, ArrowRight, Star, RefreshCw } from "lucide-react";
 import type { MealPackage } from "@/types";
 
 export default function PackagesPage() {
-  const { data, isLoading } = useQuery({
+  const queryClient = useQueryClient();
+  const { socket } = useSocket();
+
+  const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["mealPackages", true],
     queryFn: () => mealPackagesApi.getPackages(true),
   });
+
+  // Real-time: listen khi admin tạo/sửa/xóa gói
+  useEffect(() => {
+    if (!socket) return;
+
+    const handlePackageChange = () => {
+      queryClient.invalidateQueries({ queryKey: ["mealPackages"] });
+    };
+
+    socket.on("package_created", handlePackageChange);
+    socket.on("package_updated", handlePackageChange);
+    socket.on("package_deleted", handlePackageChange);
+
+    return () => {
+      socket.off("package_created", handlePackageChange);
+      socket.off("package_updated", handlePackageChange);
+      socket.off("package_deleted", handlePackageChange);
+    };
+  }, [socket, queryClient]);
 
   const allPackages = data?.data.data || [];
 
@@ -126,7 +150,16 @@ export default function PackagesPage() {
   return (
     <div className="max-w-5xl mx-auto">
       {/* Header */}
-      <div className="text-center mb-8">
+      <div className="text-center mb-8 relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="absolute right-0 top-1 h-9 w-9 rounded-lg bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-200"
+        >
+          <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
+        </Button>
         <h1 className="text-3xl font-bold mb-2 flex items-center justify-center gap-2">
           <Package className="text-orange-500" />
           Các gói đặt cơm

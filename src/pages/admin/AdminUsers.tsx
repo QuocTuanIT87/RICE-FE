@@ -15,6 +15,8 @@ import {
   Phone,
   Package,
   Filter,
+  KeyRound,
+  RefreshCw,
 } from "lucide-react";
 import type { User, UserPackage } from "@/types";
 import { useState, useMemo } from "react";
@@ -41,7 +43,7 @@ export default function AdminUsers() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Lấy danh sách user
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["users"],
     queryFn: () => usersApi.getUsers(),
   });
@@ -89,6 +91,20 @@ export default function AdminUsers() {
     }
   };
 
+  const handleResetPassword = async (userId: string, userName: string) => {
+    if (!confirm(`Xác nhận reset mật khẩu của "${userName}" về 123456?`))
+      return;
+    try {
+      await usersApi.resetPassword(userId);
+      toast({
+        title: `Đã reset mật khẩu của ${userName} về 123456`,
+        variant: "success",
+      });
+    } catch {
+      toast({ title: "Có lỗi xảy ra", variant: "destructive" });
+    }
+  };
+
   const handleViewDetails = (userId: string) => {
     setSelectedUserId(userId);
     setIsModalOpen(true);
@@ -126,6 +142,15 @@ export default function AdminUsers() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="h-10 w-10 rounded-lg bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-200"
+          >
+            <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
+          </Button>
           <div className="relative w-full sm:w-80 group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-orange-500 transition-colors" />
             <Input
@@ -288,6 +313,16 @@ export default function AdminUsers() {
                           ? "Gỡ khóa tài khoản"
                           : "Khóa tài khoản"}
                       </DropdownMenuItem>
+                      {user.role !== "admin" && (
+                        <DropdownMenuItem
+                          onClick={() =>
+                            handleResetPassword(user._id, user.name)
+                          }
+                          className="cursor-pointer font-semibold text-xs py-2 text-orange-600 gap-2"
+                        >
+                          Reset mật khẩu
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

@@ -19,6 +19,7 @@ import {
   Hash,
   ChevronRight,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import type { User, MenuItem } from "@/types";
 import { useSocket } from "@/contexts/SocketContext";
@@ -30,7 +31,7 @@ export default function AdminOrders() {
   const [selectedDate, setSelectedDate] = useState(today);
   const { socket } = useSocket();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["adminOrders", selectedDate],
     queryFn: () => ordersApi.getOrdersByDate(selectedDate),
   });
@@ -57,8 +58,8 @@ export default function AdminOrders() {
     socket.on("order_created", handleOrderUpdate);
     socket.on("order_updated", handleOrderUpdate);
     return () => {
-      socket.off("order_created");
-      socket.off("order_updated");
+      socket.off("order_created", handleOrderUpdate);
+      socket.off("order_updated", handleOrderUpdate);
     };
   }, [socket, menu, selectedDate, queryClient]);
 
@@ -112,7 +113,16 @@ export default function AdminOrders() {
           </p>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="h-10 w-10 rounded-lg bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-200"
+          >
+            <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
+          </Button>
           <div className="relative group">
             <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-orange-500 transition-colors" />
             <input
