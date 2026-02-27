@@ -46,11 +46,24 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       auth: {
         token: token,
       },
-      transports: ["websocket", "polling"],
+      // Polling trước, rồi upgrade lên websocket
+      // Render free tier không hỗ trợ sticky sessions → websocket-first sẽ fail
+      transports: ["polling", "websocket"],
+      upgrade: true,
+      // Timeout và reconnection config cho production
+      timeout: 60000,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
 
     newSocket.on("connect", () => {
-      console.log("🔌 Connected to Socket.io server");
+      console.log(
+        "🔌 Connected to Socket.io server (transport:",
+        newSocket.io.engine.transport.name,
+        ")",
+      );
       setIsConnected(true);
 
       // Tham gia phòng cá nhân
@@ -66,9 +79,13 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    newSocket.on("disconnect", () => {
-      console.log("🔌 Disconnected from Socket.io server");
+    newSocket.on("disconnect", (reason) => {
+      console.log("🔌 Disconnected from Socket.io server, reason:", reason);
       setIsConnected(false);
+    });
+
+    newSocket.on("connect_error", (err) => {
+      console.error("❌ Socket.io connection error:", err.message);
     });
 
     setSocket(newSocket);
