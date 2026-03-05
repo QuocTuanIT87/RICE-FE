@@ -2,23 +2,19 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { dailyMenusApi, ordersApi, userPackagesApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/useToast";
 import {
-  Clock,
   UtensilsCrossed,
   Package,
   AlertCircle,
-  Check,
+  CheckCircle2,
   MessageSquare,
+  ShoppingBag,
+  Loader2,
+  Zap,
+  Lock,
+  Timer,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { MenuItem, DailyMenu, PackageType } from "@/types";
@@ -28,9 +24,7 @@ export default function OrderPage() {
   const queryClient = useQueryClient();
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  // Ghi chú cho từng món: { menuItemId: note }
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
-  // Tab đặt cơm: có cơm hoặc không cơm
   const [orderType, setOrderType] = useState<PackageType>("normal");
   const { socket } = useSocket();
 
@@ -39,10 +33,8 @@ export default function OrderPage() {
     queryFn: () => dailyMenusApi.getTodayMenu(),
   });
 
-  // Lắng nghe sự kiện real-time
   useEffect(() => {
     if (!socket) return;
-
     const handleMenuCreated = () => {
       queryClient.invalidateQueries({ queryKey: ["todayMenu"] });
       toast({
@@ -50,7 +42,6 @@ export default function OrderPage() {
         description: "Admin vừa cập nhật thực đơn mới. Hãy xem ngay!",
       });
     };
-
     const handleMenuLocked = (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["todayMenu"] });
       toast({
@@ -59,7 +50,6 @@ export default function OrderPage() {
         variant: "destructive",
       });
     };
-
     const handleMenuUnlocked = (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["todayMenu"] });
       toast({
@@ -68,11 +58,9 @@ export default function OrderPage() {
         variant: "success",
       });
     };
-
     socket.on("menu_created", handleMenuCreated);
     socket.on("menu_locked", handleMenuLocked);
     socket.on("menu_unlocked", handleMenuUnlocked);
-
     return () => {
       socket.off("menu_created", handleMenuCreated);
       socket.off("menu_locked", handleMenuLocked);
@@ -123,14 +111,12 @@ export default function OrderPage() {
   const packages = activePackages?.data.data || [];
   const hasActivePackage = packages.length > 0;
 
-  // Tính số lượt còn lại theo loại gói
   const normalPackages = packages.filter(
     (pkg) => pkg.packageType === "normal" || !pkg.packageType,
   );
   const noRicePackages = packages.filter(
     (pkg) => pkg.packageType === "no-rice",
   );
-
   const normalTurns = normalPackages.reduce(
     (sum, pkg) => sum + (pkg.remainingTurns || 0),
     0,
@@ -139,11 +125,8 @@ export default function OrderPage() {
     (sum, pkg) => sum + (pkg.remainingTurns || 0),
     0,
   );
-
-  // Số lượt của loại gói đang chọn
   const remainingTurns = orderType === "normal" ? normalTurns : noRiceTurns;
 
-  // Set active menu to first one if not set
   const currentMenu =
     menus.find((m: DailyMenu) => m._id === activeMenuId) ||
     (menus as DailyMenu[])[0];
@@ -151,7 +134,6 @@ export default function OrderPage() {
   const handleToggleItem = (itemId: string) => {
     setSelectedItems((prev) => {
       if (prev.includes(itemId)) {
-        // Xóa món và ghi chú
         const newNotes = { ...itemNotes };
         delete newNotes[itemId];
         setItemNotes(newNotes);
@@ -163,15 +145,11 @@ export default function OrderPage() {
   };
 
   const handleNoteChange = (itemId: string, note: string) => {
-    setItemNotes((prev) => ({
-      ...prev,
-      [itemId]: note,
-    }));
+    setItemNotes((prev) => ({ ...prev, [itemId]: note }));
   };
 
-  const handleTabChange = (value: string) => {
-    setOrderType(value as PackageType);
-    // Reset selection khi đổi tab
+  const handleTabChange = (value: PackageType) => {
+    setOrderType(value);
     setSelectedItems([]);
     setItemNotes({});
   };
@@ -185,12 +163,10 @@ export default function OrderPage() {
       });
       return;
     }
-    // Tạo mảng items với menuItemId và note
     const items = selectedItems.map((itemId) => ({
       menuItemId: itemId,
       note: itemNotes[itemId] || "",
     }));
-    // Gửi kèm menuId để backend biết đặt cho menu nào
     createOrderMutation.mutate({
       items,
       type: orderType,
@@ -198,66 +174,73 @@ export default function OrderPage() {
     });
   };
 
+  // ========== LOADING ==========
   if (menuLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center py-20">
         <div className="text-center">
-          <div className="text-4xl animate-bounce mb-4">🍽️</div>
-          <p className="text-gray-500">Đang tải menu...</p>
+          <Loader2 className="w-10 h-10 text-orange-500 animate-spin mx-auto mb-4" />
+          <p className="text-gray-500 text-sm">Đang tải menu...</p>
         </div>
       </div>
     );
   }
 
+  // ========== NO PACKAGE ==========
   if (!hasActivePackage) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Card className="max-md text-center">
-          <CardContent className="pt-6">
-            <Package className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <h2 className="text-xl font-bold mb-2">Chưa có gói đặt cơm</h2>
-            <p className="text-gray-500 mb-4">
-              Bạn cần mua gói đặt cơm trước khi có thể đặt món
-            </p>
-            <Link to="/packages">
-              <Button>Mua gói ngay</Button>
-            </Link>
-          </CardContent>
-        </Card>
+      <div className="max-w-md mx-auto text-center py-16">
+        <div className="w-20 h-20 mx-auto bg-gray-100 rounded-2xl flex items-center justify-center mb-5">
+          <Package size={36} className="text-gray-400" />
+        </div>
+        <h2 className="text-xl font-black text-gray-900 mb-2">
+          Chưa có gói đặt cơm
+        </h2>
+        <p className="text-gray-500 text-sm mb-6">
+          Bạn cần mua gói đặt cơm trước khi có thể đặt món
+        </p>
+        <Link to="/packages">
+          <Button className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold gap-2">
+            <ShoppingBag size={16} />
+            Mua gói ngay
+          </Button>
+        </Link>
       </div>
     );
   }
 
+  // ========== NO MENU ==========
   if (!menus || menus.length === 0) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Card className="max-w-md text-center">
-          <CardContent className="pt-6">
-            <UtensilsCrossed className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-            <h2 className="text-xl font-bold mb-2">Chưa có menu hôm nay</h2>
-            <p className="text-gray-500">
-              Vui lòng quay lại sau khi menu được cập nhật
-            </p>
-          </CardContent>
-        </Card>
+      <div className="max-w-md mx-auto text-center py-16">
+        <div className="w-20 h-20 mx-auto bg-gray-100 rounded-2xl flex items-center justify-center mb-5">
+          <UtensilsCrossed size={36} className="text-gray-400" />
+        </div>
+        <h2 className="text-xl font-black text-gray-900 mb-2">
+          Chưa có menu hôm nay
+        </h2>
+        <p className="text-gray-500 text-sm">
+          Vui lòng quay lại sau khi menu được cập nhật
+        </p>
       </div>
     );
   }
 
-  // Nếu đã đặt cơm rồi
+  // ========== ALREADY ORDERED ==========
   if (order) {
     const isNoRice = order.orderType === "no-rice";
     return (
-      <Card className="max-w-md mx-auto text-center">
-        <CardContent className="pt-6">
-          <div className="text-5xl mb-4">✅</div>
-          <h2 className="text-xl font-bold mb-2 text-green-600">
-            Bạn đã đặt cơm hôm nay!
-          </h2>
-          {/* Badge loại đặt */}
-          <div className="mb-3">
+      <div className="max-w-lg mx-auto">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 overflow-hidden">
+          <div className="text-center pt-8 pb-4">
+            <div className="w-16 h-16 mx-auto bg-emerald-100 rounded-2xl flex items-center justify-center mb-4">
+              <CheckCircle2 size={32} className="text-emerald-600" />
+            </div>
+            <h2 className="text-xl font-black text-emerald-700 mb-2">
+              Bạn đã đặt cơm hôm nay!
+            </h2>
             <span
-              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
+              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold ${
                 isNoRice
                   ? "bg-blue-100 text-blue-700"
                   : "bg-orange-100 text-orange-700"
@@ -266,32 +249,44 @@ export default function OrderPage() {
               {isNoRice ? "🥢 Không cơm" : "🍚 Có cơm"}
             </span>
           </div>
-          <p className="text-gray-500 mb-2">
-            Món đã chọn ({order.orderItems?.length || 0} món):
-          </p>
-          <div className="mt-4 text-left space-y-2">
-            {order.orderItems?.map((item: any) => (
-              <div key={item._id} className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-green-500" />
-                <span className="px-2 py-1 bg-gray-100 rounded text-sm">
-                  {(item.menuItemId as MenuItem)?.name || "Món đã bị xóa"}
-                  {item.note && (
-                    <span className="text-gray-500 ml-1">({item.note})</span>
-                  )}
-                </span>
-              </div>
-            ))}
+
+          <div className="px-6 pb-6">
+            <p className="text-sm text-gray-500 mb-3 font-medium">
+              Món đã chọn ({order.orderItems?.length || 0} món):
+            </p>
+            <div className="space-y-2">
+              {order.orderItems?.map((item: any) => (
+                <div
+                  key={item._id}
+                  className="flex items-start gap-3 p-3 bg-white rounded-xl border border-emerald-100"
+                >
+                  <CheckCircle2
+                    size={16}
+                    className="text-emerald-500 shrink-0 mt-0.5"
+                  />
+                  <div>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {(item.menuItemId as MenuItem)?.name || "Món đã bị xóa"}
+                    </span>
+                    {item.note && (
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        📝 {item.note}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   if (!currentMenu) return null;
 
-  // Kiểm tra menu bị khóa hoặc ngoài thời gian
+  // ========== ORDER FORM ==========
   const isLocked = currentMenu.isLocked;
-  // Tính toán xem có trong khoảng thời gian không
   const now = new Date();
   const [beginHour, beginMin] = currentMenu.beginAt.split(":").map(Number);
   const [endHour, endMin] = currentMenu.endAt.split(":").map(Number);
@@ -312,7 +307,6 @@ export default function OrderPage() {
   const isOutsideTime = now < beginTime || now > endTime;
   const canOrder = !isLocked && !isOutsideTime;
 
-  // Group items by category
   const groupedItems: Record<string, MenuItem[]> = {};
   currentMenu.menuItems?.forEach((item) => {
     const category = item.category || "other";
@@ -320,156 +314,196 @@ export default function OrderPage() {
     groupedItems[category].push(item);
   });
 
-  const categoryLabels: Record<string, string> = {
-    new: "☆ Món mới",
-    daily: "▪︎ Món mỗi ngày",
-    special: "★ Món đặc biệt",
-    other: "Món khác",
+  const categoryLabels: Record<string, { label: string; icon: string }> = {
+    new: { label: "Món mới", icon: "✨" },
+    daily: { label: "Món mỗi ngày", icon: "🍽️" },
+    special: { label: "Món đặc biệt", icon: "⭐" },
+    other: { label: "Món khác", icon: "🍲" },
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-      {/* Menu Selector - chỉ hiện nếu có nhiều hơn 1 menu */}
+    <div className="max-w-3xl mx-auto space-y-5">
+      {/* Header */}
+      <div>
+        <p className="text-orange-500 font-bold text-xs uppercase tracking-widest mb-1">
+          Đặt cơm
+        </p>
+        <h1 className="text-2xl font-black text-gray-900">Menu hôm nay</h1>
+      </div>
+
+      {/* Menu Selector */}
       {menus.length > 1 && (
-        <Card className="mb-6">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Chọn menu</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {(menus as DailyMenu[]).map((menu, index) => (
-                <Button
-                  key={menu._id}
-                  variant={currentMenu._id === menu._id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => {
-                    setActiveMenuId(menu._id);
-                    setSelectedItems([]);
-                    setItemNotes({});
-                  }}
-                >
-                  Menu {index + 1} ({menu.beginAt} - {menu.endAt})
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-wrap gap-2">
+          {(menus as DailyMenu[]).map((menu, index) => (
+            <button
+              key={menu._id}
+              onClick={() => {
+                setActiveMenuId(menu._id);
+                setSelectedItems([]);
+                setItemNotes({});
+              }}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                currentMenu._id === menu._id
+                  ? "bg-orange-500 text-white shadow-md shadow-orange-200"
+                  : "bg-white border border-gray-200 text-gray-600 hover:border-orange-300"
+              }`}
+            >
+              Menu {index + 1} ({menu.beginAt} - {menu.endAt})
+            </button>
+          ))}
+        </div>
       )}
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UtensilsCrossed className="text-orange-500" />
-            Menu hôm nay{" "}
-            {menus.length > 1 &&
-              `(${(menus as DailyMenu[]).findIndex((m) => m._id === currentMenu._id) + 1}/${menus.length})`}
-          </CardTitle>
-          <CardDescription className="flex items-center gap-2">
-            <Clock className="w-4 h-4" />
+      {/* Time Info */}
+      <div className="flex items-center gap-3 px-5 py-3.5 rounded-xl bg-white border border-gray-100">
+        <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
+          <Timer size={20} className="text-orange-500" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-gray-900">
             Thời gian đặt: {currentMenu.beginAt} - {currentMenu.endAt}
-          </CardDescription>
-        </CardHeader>
-      </Card>
+          </p>
+          <p className="text-xs text-gray-400">
+            {canOrder
+              ? "✅ Đang trong thời gian đặt cơm"
+              : "⛔ Ngoài thời gian đặt"}
+          </p>
+        </div>
+      </div>
 
-      {/* Tabs chọn loại đặt cơm */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <Tabs value={orderType} onValueChange={handleTabChange}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="normal" className="gap-2">
-                🍚 Có cơm
-                <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
-                  {normalTurns} lượt
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value="no-rice" className="gap-2">
-                🥢 Không cơm
-                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                  {noRiceTurns} lượt
-                </span>
-              </TabsTrigger>
-            </TabsList>
+      {/* Order Type Toggle */}
+      <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+        <div className="grid grid-cols-2">
+          <button
+            onClick={() => handleTabChange("normal")}
+            className={`py-4 text-center transition-all relative ${
+              orderType === "normal"
+                ? "bg-orange-50 text-orange-700"
+                : "text-gray-500 hover:bg-gray-50"
+            }`}
+          >
+            <span className="text-lg">🍚</span>
+            <p className="text-sm font-bold mt-1">Có cơm</p>
+            <span
+              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                orderType === "normal"
+                  ? "bg-orange-200 text-orange-700"
+                  : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              {normalTurns} lượt
+            </span>
+            {orderType === "normal" && (
+              <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-orange-500 rounded-full" />
+            )}
+          </button>
+          <button
+            onClick={() => handleTabChange("no-rice")}
+            className={`py-4 text-center transition-all relative ${
+              orderType === "no-rice"
+                ? "bg-blue-50 text-blue-700"
+                : "text-gray-500 hover:bg-gray-50"
+            }`}
+          >
+            <span className="text-lg">🥢</span>
+            <p className="text-sm font-bold mt-1">Không cơm</p>
+            <span
+              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                orderType === "no-rice"
+                  ? "bg-blue-200 text-blue-700"
+                  : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              {noRiceTurns} lượt
+            </span>
+            {orderType === "no-rice" && (
+              <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-blue-500 rounded-full" />
+            )}
+          </button>
+        </div>
+        <div className="px-5 py-3 border-t border-gray-50 bg-gray-50/50">
+          <p className="text-xs text-gray-500">
+            {orderType === "normal"
+              ? "Đặt món kèm cơm trắng (30,000đ/phần). Sử dụng gói bình thường."
+              : "Chỉ đặt món ăn, không lấy cơm (20,000đ/phần). Sử dụng gói không cơm."}
+          </p>
+        </div>
+      </div>
 
-            <TabsContent value="normal" className="mt-4">
-              <p className="text-sm text-gray-600">
-                Đặt món kèm cơm trắng (30,000đ/phần). Sử dụng gói{" "}
-                <strong>bình thường</strong>.
-              </p>
-            </TabsContent>
-            <TabsContent value="no-rice" className="mt-4">
-              <p className="text-sm text-gray-600">
-                Chỉ đặt món ăn, không lấy cơm (20,000đ/phần). Sử dụng gói{" "}
-                <strong>không cơm</strong>.
-              </p>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-
-      {/* Warning nếu không có gói phù hợp */}
+      {/* Warnings */}
       {remainingTurns === 0 && (
-        <Card className="mb-6 border-yellow-300 bg-yellow-50">
-          <CardContent className="p-4 flex items-center gap-3">
-            <AlertCircle className="text-yellow-600 w-5 h-5" />
-            <div>
-              <p className="text-yellow-800">
-                Bạn chưa có gói{" "}
-                <strong>
-                  {orderType === "normal"
-                    ? "bình thường (có cơm)"
-                    : "không cơm"}
-                </strong>{" "}
-                khả dụng.
-              </p>
-              <Link
-                to="/packages"
-                className="text-sm text-orange-600 hover:underline"
-              >
-                → Mua gói ngay
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
+          <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm text-amber-800 font-medium">
+              Bạn chưa có gói{" "}
+              <strong>
+                {orderType === "normal" ? "bình thường (có cơm)" : "không cơm"}
+              </strong>{" "}
+              khả dụng.
+            </p>
+            <Link
+              to="/packages"
+              className="text-xs text-orange-600 hover:underline font-bold"
+            >
+              → Mua gói ngay
+            </Link>
+          </div>
+        </div>
       )}
 
       {!canOrder && (
-        <Card className="mb-6 border-yellow-300 bg-yellow-50">
-          <CardContent className="p-4 flex items-center gap-3">
-            <AlertCircle className="text-yellow-600 w-5 h-5" />
-            <p className="text-yellow-800">
-              {isLocked
-                ? "Menu đã bị khóa, không thể đặt cơm"
-                : `Ngoài thời gian đặt cơm (${currentMenu.beginAt} - ${currentMenu.endAt})`}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
+          <Lock size={18} className="text-red-500 shrink-0" />
+          <p className="text-sm text-red-700 font-medium">
+            {isLocked
+              ? "Menu đã bị khóa, không thể đặt cơm"
+              : `Ngoài thời gian đặt cơm (${currentMenu.beginAt} - ${currentMenu.endAt})`}
+          </p>
+        </div>
       )}
 
-      {/* Menu Items */}
-      <div className="space-y-6">
-        {Object.entries(groupedItems).map(([category, items]) => (
-          <Card key={category}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">
-                {categoryLabels[category] || category}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
+      {/* ========= MENU ITEMS ========= */}
+      <div className="space-y-4">
+        {Object.entries(groupedItems).map(([category, items]) => {
+          const cat = categoryLabels[category] || {
+            label: category,
+            icon: "🍲",
+          };
+          return (
+            <div
+              key={category}
+              className="rounded-2xl border border-gray-200 bg-white overflow-hidden"
+            >
+              {/* Category header */}
+              <div className="px-5 py-3.5 border-b border-gray-100 bg-gray-50/50">
+                <h3 className="font-bold text-gray-900 text-sm">
+                  {cat.icon} {cat.label}
+                  <span className="text-gray-400 font-medium ml-2">
+                    ({items.length})
+                  </span>
+                </h3>
+              </div>
+
+              {/* Items */}
+              <div className="divide-y divide-gray-50">
                 {items.map((item) => {
                   const isSelected = selectedItems.includes(item._id);
                   const isDisabled = !canOrder || remainingTurns === 0;
+                  const accentColor =
+                    orderType === "normal" ? "orange" : "blue";
+
                   return (
                     <div
                       key={item._id}
-                      className={`rounded-lg border transition-colors ${
+                      className={`transition-colors ${
                         isSelected
-                          ? "bg-orange-50 border-orange-300"
-                          : "hover:bg-gray-50"
+                          ? `bg-${accentColor}-50/50`
+                          : "hover:bg-gray-50/50"
                       } ${isDisabled ? "opacity-50" : ""}`}
                     >
                       <label
-                        className={`flex items-center gap-3 p-3 cursor-pointer ${
+                        className={`flex items-center gap-4 px-5 py-3.5 cursor-pointer ${
                           isDisabled ? "pointer-events-none" : ""
                         }`}
                       >
@@ -477,15 +511,34 @@ export default function OrderPage() {
                           checked={isSelected}
                           onCheckedChange={() => handleToggleItem(item._id)}
                           disabled={isDisabled}
+                          className={
+                            isSelected
+                              ? `border-${accentColor}-500 bg-${accentColor}-500`
+                              : ""
+                          }
                         />
-                        <span className="flex-1 font-medium">{item.name}</span>
+                        <span
+                          className={`flex-1 text-sm ${
+                            isSelected
+                              ? `font-bold text-${accentColor}-700`
+                              : "font-medium text-gray-700"
+                          }`}
+                        >
+                          {item.name}
+                        </span>
+                        {isSelected && (
+                          <CheckCircle2
+                            size={16}
+                            className={`text-${accentColor}-500`}
+                          />
+                        )}
                       </label>
 
-                      {/* Input ghi chú khi đã chọn món */}
+                      {/* Note input */}
                       {isSelected && (
-                        <div className="px-3 pb-3">
-                          <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-                            <MessageSquare className="w-3 h-3" />
+                        <div className="px-5 pb-3.5 pl-14">
+                          <div className="flex items-center gap-1.5 text-[11px] text-gray-400 mb-1.5">
+                            <MessageSquare size={10} />
                             Ghi chú (VD: lấy phần đuôi, không cay...)
                           </div>
                           <input
@@ -495,7 +548,7 @@ export default function OrderPage() {
                             onChange={(e) =>
                               handleNoteChange(item._id, e.target.value)
                             }
-                            className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            className={`w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-${accentColor}-300 focus:border-${accentColor}-400 bg-white`}
                             maxLength={200}
                           />
                         </div>
@@ -504,42 +557,54 @@ export default function OrderPage() {
                   );
                 })}
               </div>
-            </CardContent>
-          </Card>
-        ))}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Submit Button */}
-      <div className="mt-6 sticky bottom-4">
-        <Card className="shadow-lg">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="font-medium">Đã chọn: {selectedItems.length} món</p>
-              <p className="text-sm text-gray-500">
-                {orderType === "normal" ? "🍚 Có cơm" : "🥢 Không cơm"} • Còn{" "}
-                {remainingTurns} lượt
+      {/* ========= STICKY SUBMIT ========= */}
+      <div className="sticky bottom-4 z-20">
+        <div className="rounded-2xl bg-white border border-gray-200 shadow-xl shadow-gray-200/50 p-4 flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="font-bold text-gray-900 text-sm">
+              {selectedItems.length > 0
+                ? `Đã chọn ${selectedItems.length} món`
+                : "Chưa chọn món nào"}
+            </p>
+            <p className="text-xs text-gray-400 flex items-center gap-1.5">
+              {orderType === "normal" ? "🍚 Có cơm" : "🥢 Không cơm"} •{" "}
+              <span className="font-bold">Còn {remainingTurns} lượt</span>
+            </p>
+            {selectedItems.length > remainingTurns && (
+              <p className="text-xs text-red-500 font-bold mt-0.5">
+                ⚠️ Vượt quá số lượt còn lại!
               </p>
-              {selectedItems.length > remainingTurns && (
-                <p className="text-sm text-red-500 font-medium">
-                  ⚠️ Vượt quá số lượt còn lại!
-                </p>
-              )}
-            </div>
-            <Button
-              size="lg"
-              onClick={handleSubmitOrder}
-              disabled={
-                !canOrder ||
-                selectedItems.length === 0 ||
-                selectedItems.length > remainingTurns ||
-                remainingTurns === 0 ||
-                createOrderMutation.isPending
-              }
-            >
-              {createOrderMutation.isPending ? "Đang xử lý..." : "Đặt cơm"}
-            </Button>
-          </CardContent>
-        </Card>
+            )}
+          </div>
+          <Button
+            onClick={handleSubmitOrder}
+            disabled={
+              !canOrder ||
+              selectedItems.length === 0 ||
+              selectedItems.length > remainingTurns ||
+              remainingTurns === 0 ||
+              createOrderMutation.isPending
+            }
+            className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-xl font-bold px-6 h-12 shadow-lg shadow-orange-200 shrink-0 gap-2"
+          >
+            {createOrderMutation.isPending ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Đang xử lý...
+              </>
+            ) : (
+              <>
+                <Zap size={16} />
+                Đặt cơm
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );

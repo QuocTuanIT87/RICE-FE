@@ -553,7 +553,7 @@ export default function AdminPackages() {
                       min={1}
                       value={formData.validDays}
                       onChange={(e) =>
-                        setFormData({ ...formData, turns: +e.target.value })
+                        setFormData({ ...formData, validDays: +e.target.value })
                       }
                       className="h-11 pl-11 border-gray-200 focus:ring-1 focus:ring-orange-500 rounded-lg"
                       required

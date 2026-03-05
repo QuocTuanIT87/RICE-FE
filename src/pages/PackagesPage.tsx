@@ -4,16 +4,10 @@ import { Link } from "react-router-dom";
 import { mealPackagesApi } from "@/services/api";
 import { useSocket } from "@/contexts/SocketContext";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatVND } from "@/lib/utils";
-import { Package, Clock, ArrowRight, Star, RefreshCw } from "lucide-react";
+import { ArrowRight, Star, RefreshCw, CheckCircle2, Info } from "lucide-react";
 import type { MealPackage } from "@/types";
 
 export default function PackagesPage() {
@@ -25,18 +19,14 @@ export default function PackagesPage() {
     queryFn: () => mealPackagesApi.getPackages(true),
   });
 
-  // Real-time: listen khi admin tạo/sửa/xóa gói
   useEffect(() => {
     if (!socket) return;
-
     const handlePackageChange = () => {
       queryClient.invalidateQueries({ queryKey: ["mealPackages"] });
     };
-
     socket.on("package_created", handlePackageChange);
     socket.on("package_updated", handlePackageChange);
     socket.on("package_deleted", handlePackageChange);
-
     return () => {
       socket.off("package_created", handlePackageChange);
       socket.off("package_updated", handlePackageChange);
@@ -45,8 +35,6 @@ export default function PackagesPage() {
   }, [socket, queryClient]);
 
   const allPackages = data?.data.data || [];
-
-  // Phân loại gói theo packageType
   const normalPackages = allPackages.filter(
     (pkg) => pkg.packageType === "normal" || !pkg.packageType,
   );
@@ -71,86 +59,111 @@ export default function PackagesPage() {
   }: {
     packages: MealPackage[];
     type: "normal" | "no-rice";
-  }) => (
-    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {packages.map((pkg, index) => (
-        <Card
-          key={pkg._id}
-          className={`card-hover relative overflow-hidden ${
-            index === Math.floor(packages.length / 2)
-              ? type === "normal"
-                ? "border-orange-500 border-2"
-                : "border-blue-500 border-2"
-              : ""
-          }`}
-        >
-          {/* Popular badge */}
-          {index === Math.floor(packages.length / 2) && (
+  }) => {
+    const accentColor = type === "normal" ? "orange" : "blue";
+    const gradientFrom =
+      type === "normal" ? "from-orange-500" : "from-blue-500";
+    const gradientTo = type === "normal" ? "to-red-500" : "to-indigo-500";
+
+    return (
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {packages.map((pkg, i) => {
+          const isPopular = i === 1;
+          return (
             <div
-              className={`absolute top-0 right-0 ${
-                type === "normal" ? "bg-orange-500" : "bg-blue-500"
-              } text-white px-3 py-1 text-sm font-medium rounded-bl-lg flex items-center gap-1`}
-            >
-              <Star className="w-3 h-3" fill="white" />
-              Phổ biến
-            </div>
-          )}
-
-          <CardHeader className="text-center pb-2">
-            <div className="text-5xl mb-2">
-              {type === "normal"
-                ? pkg.turns <= 1
-                  ? "🍱"
-                  : pkg.turns <= 5
-                    ? "🍲"
-                    : "🍳"
-                : pkg.turns <= 1
-                  ? "🥢"
-                  : pkg.turns <= 5
-                    ? "🍜"
-                    : "🥗"}
-            </div>
-            <CardTitle className="text-xl">{pkg.name}</CardTitle>
-            <CardDescription className="text-lg">
-              {pkg.turns} lượt đặt {type === "no-rice" ? "(không cơm)" : "cơm"}
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="text-center">
-            <p
-              className={`text-3xl font-bold mb-2 ${
-                type === "normal" ? "text-orange-600" : "text-blue-600"
+              key={pkg._id}
+              className={`rounded-2xl transition-all duration-300 hover:-translate-y-1 ${
+                isPopular
+                  ? `bg-gradient-to-br ${gradientFrom} ${gradientTo} p-[2px] shadow-xl shadow-${accentColor}-200`
+                  : `border border-gray-200 hover:border-${accentColor}-300 hover:shadow-lg`
               }`}
             >
-              {formatVND(pkg.price)}
-            </p>
-            <p className="text-sm text-gray-500 mb-1">
-              ≈ {formatVND(Math.round(pkg.price / pkg.turns))}/lượt
-            </p>
-            <div className="flex items-center justify-center gap-1 text-sm text-gray-500 mb-4">
-              <Clock className="w-4 h-4" />
-              <span>Hiệu lực: {pkg.validDays} ngày</span>
-            </div>
-
-            <Link to={`/packages/${pkg._id}`}>
-              <Button
-                className={`w-full gap-2 ${
-                  type === "no-rice" ? "bg-blue-600 hover:bg-blue-700" : ""
-                }`}
+              <div
+                className={`h-full rounded-2xl p-7 ${isPopular ? "bg-white" : ""}`}
               >
-                Mua ngay <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
+                {/* Popular badge */}
+                {isPopular && (
+                  <div className="flex justify-center mb-4">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r ${gradientFrom} ${gradientTo} text-white text-xs font-black rounded-full uppercase tracking-wider`}
+                    >
+                      <Star size={12} fill="white" />
+                      Phổ biến nhất
+                    </span>
+                  </div>
+                )}
+
+                {/* Package name */}
+                <h3 className="text-xl font-black text-center text-gray-900 mb-1">
+                  {pkg.name}
+                </h3>
+                <p className="text-center text-gray-400 text-sm mb-5">
+                  {pkg.turns} lượt đặt{" "}
+                  {type === "no-rice" ? "(không cơm)" : "cơm"}
+                </p>
+
+                {/* Price */}
+                <div className="text-center mb-5">
+                  <p className={`text-4xl font-black text-${accentColor}-600`}>
+                    {formatVND(pkg.price)}
+                  </p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    chỉ{" "}
+                    <span className={`font-bold text-${accentColor}-500`}>
+                      ~{formatVND(Math.round(pkg.price / pkg.turns))}
+                    </span>
+                    /lượt
+                  </p>
+                </div>
+
+                {/* Features */}
+                <div className="space-y-2.5 mb-6">
+                  {[
+                    `${pkg.turns} lượt đặt ${type === "no-rice" ? "món" : "cơm"}`,
+                    `Hiệu lực ${pkg.validDays} ngày`,
+                    "Đặt món linh hoạt",
+                    "Theo dõi đơn real-time",
+                  ].map((f) => (
+                    <div key={f} className="flex items-center gap-2.5 text-sm">
+                      <CheckCircle2
+                        size={15}
+                        className={
+                          isPopular
+                            ? `text-${accentColor}-500`
+                            : "text-emerald-500"
+                        }
+                      />
+                      <span className="text-gray-600">{f}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTA */}
+                <Link to={`/packages/${pkg._id}`}>
+                  <Button
+                    className={`w-full h-11 rounded-xl font-bold text-sm ${
+                      isPopular
+                        ? `bg-${accentColor}-500 hover:bg-${accentColor}-600 text-white shadow-md shadow-${accentColor}-200`
+                        : `border-gray-200 hover:border-${accentColor}-400 hover:text-${accentColor}-600`
+                    }`}
+                    variant={isPopular ? "default" : "outline"}
+                  >
+                    {isPopular ? "🔥 Mua ngay" : "Chọn gói này"}
+                    <ArrowRight size={15} className="ml-1" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className="max-w-5xl mx-auto">
       {/* Header */}
-      <div className="text-center mb-8 relative">
+      <div className="text-center mb-10 relative">
         <Button
           variant="ghost"
           size="icon"
@@ -160,75 +173,113 @@ export default function PackagesPage() {
         >
           <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
         </Button>
-        <h1 className="text-3xl font-bold mb-2 flex items-center justify-center gap-2">
-          <Package className="text-orange-500" />
-          Các gói đặt cơm
+        <p className="text-orange-500 font-bold text-xs uppercase tracking-widest mb-2">
+          Bảng giá
+        </p>
+        <h1 className="text-2xl md:text-3xl font-black text-gray-900 mb-2">
+          Chọn gói phù hợp với bạn
         </h1>
-        <p className="text-gray-600">
-          Chọn gói phù hợp với nhu cầu của bạn. Mua gói nhiều lượt sẽ tiết kiệm
-          hơn!
+        <p className="text-gray-500 text-sm max-w-lg mx-auto">
+          Mua gói nhiều lượt sẽ tiết kiệm hơn. Gói nào cũng linh hoạt sử dụng!
         </p>
       </div>
 
-      {/* Tabs phân loại gói */}
+      {/* Tabs */}
       <Tabs defaultValue="normal" className="mb-8">
-        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
-          <TabsTrigger value="normal" className="gap-2">
+        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 h-14 rounded-xl bg-gray-100 p-1">
+          <TabsTrigger
+            value="normal"
+            className="gap-2 rounded-lg font-bold data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:shadow-md"
+          >
             🍚 Có cơm
-            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-3 rounded-full">
+            <span className="text-[10px] bg-orange-100 text-orange-700 px-2 py-1 rounded-full data-[state=active]:bg-white/20 data-[state=active]:text-white">
               30k/phần
             </span>
           </TabsTrigger>
-          <TabsTrigger value="no-rice" className="gap-2">
+          <TabsTrigger
+            value="no-rice"
+            className="gap-2 rounded-lg font-bold data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md"
+          >
             🥢 Không cơm
-            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-3 rounded-full">
+            <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded-full data-[state=active]:bg-white/20 data-[state=active]:text-white">
               20k/phần
             </span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="normal" className="mt-6">
-          <Card className="mb-6 bg-orange-50 border-orange-200">
-            <CardContent className="p-4">
-              <p className="text-orange-800">
-                🍚 <strong>Gói có cơm:</strong> Mỗi lượt đặt = 1 suất cơm trắng
-                kèm món ăn (30,000đ/phần)
-              </p>
-            </CardContent>
-          </Card>
+        <TabsContent value="normal" className="mt-8">
+          <div className="mb-6 p-4 bg-orange-50 rounded-xl border border-orange-100 flex items-start gap-3">
+            <Info size={18} className="text-orange-500 shrink-0 mt-0.5" />
+            <p className="text-sm text-orange-800">
+              <strong>Gói có cơm:</strong> Mỗi lượt đặt = 1 suất cơm trắng kèm
+              món ăn (30,000đ/phần)
+            </p>
+          </div>
           <PackageGrid packages={normalPackages} type="normal" />
         </TabsContent>
 
-        <TabsContent value="no-rice" className="mt-6">
-          <Card className="mb-6 bg-blue-50 border-blue-200">
-            <CardContent className="p-4">
-              <p className="text-blue-800">
-                🥢 <strong>Gói không cơm:</strong> Mỗi lượt đặt = 1 phần món ăn,
-                không lấy cơm (20,000đ/phần)
-              </p>
-            </CardContent>
-          </Card>
+        <TabsContent value="no-rice" className="mt-8">
+          <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100 flex items-start gap-3">
+            <Info size={18} className="text-blue-500 shrink-0 mt-0.5" />
+            <p className="text-sm text-blue-800">
+              <strong>Gói không cơm:</strong> Mỗi lượt đặt = 1 phần món ăn,
+              không lấy cơm (20,000đ/phần)
+            </p>
+          </div>
           <PackageGrid packages={noRicePackages} type="no-rice" />
         </TabsContent>
       </Tabs>
 
       {/* Info */}
-      <Card className="mt-8 bg-gray-50">
+      <Card className="bg-gray-50 border-none shadow-sm rounded-2xl">
         <CardContent className="p-6">
-          <h3 className="font-semibold mb-3">📌 Lưu ý:</h3>
+          <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <Info size={16} className="text-orange-500" />
+            Lưu ý
+          </h3>
           <ul className="space-y-2 text-gray-600 text-sm">
-            <li>
-              • <strong>Gói có cơm:</strong> 30,000đ/lượt - đặt món kèm cơm
-              trắng
+            <li className="flex items-start gap-2">
+              <CheckCircle2
+                size={14}
+                className="text-emerald-500 shrink-0 mt-0.5"
+              />
+              <span>
+                <strong>Gói có cơm:</strong> 30,000đ/lượt — đặt món kèm cơm
+                trắng
+              </span>
             </li>
-            <li>
-              • <strong>Gói không cơm:</strong> 20,000đ/lượt - chỉ đặt món ăn
+            <li className="flex items-start gap-2">
+              <CheckCircle2
+                size={14}
+                className="text-emerald-500 shrink-0 mt-0.5"
+              />
+              <span>
+                <strong>Gói không cơm:</strong> 20,000đ/lượt — chỉ đặt món ăn
+              </span>
             </li>
-            <li>
-              • Gói sẽ hết hạn sau số ngày quy định kể từ khi được xác nhận
+            <li className="flex items-start gap-2">
+              <CheckCircle2
+                size={14}
+                className="text-emerald-500 shrink-0 mt-0.5"
+              />
+              <span>
+                Gói hết hạn sau số ngày quy định kể từ khi được xác nhận
+              </span>
             </li>
-            <li>• Sau khi mua, vui lòng chờ admin xác nhận thanh toán</li>
-            <li>• Bạn có thể sở hữu nhiều gói cùng lúc (cả 2 loại)</li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2
+                size={14}
+                className="text-emerald-500 shrink-0 mt-0.5"
+              />
+              <span>Sau khi mua, vui lòng chờ admin xác nhận thanh toán</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2
+                size={14}
+                className="text-emerald-500 shrink-0 mt-0.5"
+              />
+              <span>Bạn có thể sở hữu nhiều gói cùng lúc (cả 2 loại)</span>
+            </li>
           </ul>
         </CardContent>
       </Card>
