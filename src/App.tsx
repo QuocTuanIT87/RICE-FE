@@ -25,6 +25,7 @@ import PackageDetailPage from "@/pages/PackageDetailPage";
 import MyPackagesPage from "@/pages/MyPackagesPage";
 import ProfilePage from "@/pages/ProfilePage";
 import OrderHistoryPage from "@/pages/OrderHistoryPage";
+import EntertainmentPage from "@/pages/EntertainmentPage";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -162,6 +163,14 @@ function AppRoutes() {
           element={
             <PublicRoute>
               <PackagesPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/giai-tri"
+          element={
+            <PublicRoute>
+              <EntertainmentPage />
             </PublicRoute>
           }
         />

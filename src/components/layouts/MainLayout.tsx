@@ -16,6 +16,7 @@ import {
   ChevronDown,
   Menu,
   X,
+  Gamepad2,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import PriceNoticeBanner from "@/components/PriceNoticeBanner";
@@ -24,6 +25,7 @@ const customerNavItems = [
   { path: "/", label: "Trang chủ", icon: Home },
   { path: "/order", label: "Đặt cơm", icon: UtensilsCrossed },
   { path: "/packages", label: "Mua gói", icon: ShoppingBag },
+  { path: "/giai-tri", label: "Giải trí", icon: Gamepad2 },
 ];
 
 const adminNavItems = [
