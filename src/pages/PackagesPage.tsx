@@ -1,18 +1,33 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { Link } from "react-router-dom";
-import { mealPackagesApi } from "@/services/api";
+import { Link, useSearchParams } from "react-router-dom";
+import { mealPackagesApi, gameCoinsApi } from "@/services/api";
 import { useSocket } from "@/contexts/SocketContext";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { updateGameCoins } from "@/store/authSlice";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatVND } from "@/lib/utils";
-import { ArrowRight, Star, RefreshCw, CheckCircle2, Info } from "lucide-react";
+import { toast } from "@/hooks/useToast";
+import {
+  ArrowRight,
+  Star,
+  RefreshCw,
+  CheckCircle2,
+  Info,
+  Coins,
+  ArrowRightLeft,
+} from "lucide-react";
 import type { MealPackage } from "@/types";
 
 export default function PackagesPage() {
   const queryClient = useQueryClient();
+  const dispatch = useAppDispatch();
   const { socket } = useSocket();
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "normal";
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["mealPackages", true],
@@ -41,6 +56,50 @@ export default function PackagesPage() {
   const noRicePackages = allPackages.filter(
     (pkg) => pkg.packageType === "no-rice",
   );
+  const coinPackages = allPackages.filter(
+    (pkg) => pkg.packageType === "coin-exchange",
+  );
+
+  const handleExchange = async (pkg: MealPackage) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Yêu cầu đăng nhập",
+        description: "Vui lòng đăng nhập để đổi xu.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const coinNeeded = pkg.coinPrice || 0;
+    if ((user?.gameCoins || 0) < coinNeeded) {
+      toast({
+        title: "Không đủ xu",
+        description: `Bạn cần ${coinNeeded.toLocaleString()} xu để đổi gói này.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await gameCoinsApi.exchange(pkg._id);
+      if (response.data.success && response.data.data) {
+        toast({
+          title: "Đổi thành công!",
+          description: `Bạn đã đổi ${coinNeeded.toLocaleString()} xu lấy ${pkg.turns} lượt đặt cơm.`,
+          variant: "success",
+        });
+        // Update user coins in store
+        dispatch(updateGameCoins(response.data.data.gameCoins));
+        queryClient.invalidateQueries({ queryKey: ["myPackages"] });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Đổi thất bại",
+        description: error.response?.data?.message || "Có lỗi xảy ra",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -58,12 +117,24 @@ export default function PackagesPage() {
     type,
   }: {
     packages: MealPackage[];
-    type: "normal" | "no-rice";
+    type: "normal" | "no-rice" | "coin-exchange";
   }) => {
-    const accentColor = type === "normal" ? "orange" : "blue";
-    const gradientFrom =
-      type === "normal" ? "from-orange-500" : "from-blue-500";
-    const gradientTo = type === "normal" ? "to-red-500" : "to-indigo-500";
+    const isCoin = type === "coin-exchange";
+    const accentColor = isCoin
+      ? "amber"
+      : type === "normal"
+        ? "orange"
+        : "blue";
+    const gradientFrom = isCoin
+      ? "from-amber-400"
+      : type === "normal"
+        ? "from-orange-500"
+        : "from-blue-500";
+    const gradientTo = isCoin
+      ? "to-orange-500"
+      : type === "normal"
+        ? "to-red-500"
+        : "to-indigo-500";
 
     return (
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -105,14 +176,28 @@ export default function PackagesPage() {
                 {/* Price */}
                 <div className="text-center mb-5">
                   <p className={`text-4xl font-black text-${accentColor}-600`}>
-                    {formatVND(pkg.price)}
+                    {isCoin
+                      ? `${(pkg.coinPrice || 0).toLocaleString()} Xu`
+                      : formatVND(pkg.price)}
                   </p>
                   <p className="text-sm text-gray-400 mt-1">
-                    chỉ{" "}
-                    <span className={`font-bold text-${accentColor}-500`}>
-                      ~{formatVND(Math.round(pkg.price / pkg.turns))}
-                    </span>
-                    /lượt
+                    {isCoin ? (
+                      <>
+                        tương đương{" "}
+                        <span className="font-bold">
+                          {pkg.turns.toLocaleString()}
+                        </span>{" "}
+                        lượt cơm
+                      </>
+                    ) : (
+                      <>
+                        chỉ{" "}
+                        <span className={`font-bold text-${accentColor}-500`}>
+                          ~{formatVND(Math.round(pkg.price / pkg.turns))}
+                        </span>
+                        /lượt
+                      </>
+                    )}
                   </p>
                 </div>
 
@@ -122,7 +207,7 @@ export default function PackagesPage() {
                     `${pkg.turns} lượt đặt ${type === "no-rice" ? "món" : "cơm"}`,
                     `Hiệu lực ${pkg.validDays} ngày`,
                     "Đặt món linh hoạt",
-                    "Theo dõi đơn real-time",
+                    "Đổi xu an toàn 100%",
                   ].map((f) => (
                     <div key={f} className="flex items-center gap-2.5 text-sm">
                       <CheckCircle2
@@ -139,19 +224,29 @@ export default function PackagesPage() {
                 </div>
 
                 {/* CTA */}
-                <Link to={`/packages/${pkg._id}`}>
+                {isCoin ? (
                   <Button
-                    className={`w-full h-11 rounded-xl font-bold text-sm ${
-                      isPopular
-                        ? `bg-${accentColor}-500 hover:bg-${accentColor}-600 text-white shadow-md shadow-${accentColor}-200`
-                        : `border-gray-200 hover:border-${accentColor}-400 hover:text-${accentColor}-600`
-                    }`}
-                    variant={isPopular ? "default" : "outline"}
+                    onClick={() => handleExchange(pkg)}
+                    className={`w-full h-11 rounded-xl font-bold text-sm bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-200 gap-2 transition-all transform active:scale-95`}
                   >
-                    {isPopular ? "🔥 Mua ngay" : "Chọn gói này"}
-                    <ArrowRight size={15} className="ml-1" />
+                    <ArrowRightLeft size={16} />
+                    Đổi ngay
                   </Button>
-                </Link>
+                ) : (
+                  <Link to={`/packages/${pkg._id}`}>
+                    <Button
+                      className={`w-full h-11 rounded-xl font-bold text-sm ${
+                        isPopular
+                          ? `bg-${accentColor}-500 hover:bg-${accentColor}-600 text-white shadow-md shadow-${accentColor}-200`
+                          : `border-gray-200 hover:border-${accentColor}-400 hover:text-${accentColor}-600`
+                      }`}
+                      variant={isPopular ? "default" : "outline"}
+                    >
+                      {isPopular ? "🔥 Mua ngay" : "Chọn gói này"}
+                      <ArrowRight size={15} className="ml-1" />
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           );
@@ -185,24 +280,38 @@ export default function PackagesPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="normal" className="mb-8">
-        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 h-14 rounded-xl bg-gray-100 p-1">
+      <Tabs
+        defaultValue={activeTab}
+        value={activeTab}
+        onValueChange={(val) => setSearchParams({ tab: val })}
+        className="mb-8"
+      >
+        <TabsList className="flex w-full max-w-2xl mx-auto h-14 rounded-xl bg-gray-100 p-1">
           <TabsTrigger
             value="normal"
-            className="gap-2 rounded-lg font-bold data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:shadow-md"
+            className="flex-1 gap-2 rounded-lg font-bold data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:shadow-md"
           >
             🍚 Có cơm
-            <span className="text-[10px] bg-orange-100 text-orange-700 px-2 py-1 rounded-full data-[state=active]:bg-white/20 data-[state=active]:text-white">
+            <span className="hidden sm:inline-flex text-[10px] bg-orange-100 text-orange-700 px-2 py-1 rounded-full data-[state=active]:bg-white/20 data-[state=active]:text-white">
               30k/phần
             </span>
           </TabsTrigger>
           <TabsTrigger
             value="no-rice"
-            className="gap-2 rounded-lg font-bold data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md"
+            className="flex-1 gap-2 rounded-lg font-bold data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md"
           >
             🥢 Không cơm
-            <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded-full data-[state=active]:bg-white/20 data-[state=active]:text-white">
+            <span className="hidden sm:inline-flex text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded-full data-[state=active]:bg-white/20 data-[state=active]:text-white">
               20k/phần
+            </span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="coin-exchange"
+            className="flex-1 gap-2 rounded-lg font-bold data-[state=active]:bg-amber-500 data-[state=active]:text-white data-[state=active]:shadow-md"
+          >
+            🪙 Đổi xu
+            <span className="hidden sm:inline-flex text-[10px] bg-amber-100 text-amber-900 px-2 py-1 rounded-full data-[state=active]:bg-white/20 data-[state=active]:text-white">
+              HOT
             </span>
           </TabsTrigger>
         </TabsList>
@@ -227,6 +336,36 @@ export default function PackagesPage() {
             </p>
           </div>
           <PackageGrid packages={noRicePackages} type="no-rice" />
+        </TabsContent>
+
+        <TabsContent value="coin-exchange" className="mt-8">
+          <div className="mb-6 flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+            <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-start gap-3 flex-1">
+              <Info size={18} className="text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-sm text-amber-800">
+                <strong>Đổi xu lấy lượt cơm:</strong> Sử dụng xu kiếm được từ
+                trò chơi để đổi lấy lượt cơm miễn phí. (Tỷ lệ: 100,000 xu = 1
+                lượt)
+              </p>
+            </div>
+
+            {isAuthenticated && (
+              <div className="flex items-center gap-3 bg-white border border-amber-200 px-5 py-3 rounded-2xl shadow-sm shadow-amber-100">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                  <Coins className="text-amber-600" size={20} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">
+                    Số dư xu hiện tại
+                  </p>
+                  <p className="text-xl font-black text-amber-600 leading-none">
+                    {(user?.gameCoins || 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+          <PackageGrid packages={coinPackages} type="coin-exchange" />
         </TabsContent>
       </Tabs>
 

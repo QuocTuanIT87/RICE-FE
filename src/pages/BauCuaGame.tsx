@@ -1,13 +1,12 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import {
-  Dices,
-  RotateCcw,
-  Trophy,
-  Coins,
-  Minus,
-  Plus,
-  Trash2,
   ArrowLeft,
+  RotateCcw,
+  Volume2,
+  Trash2,
+  Coins,
+  Dices,
+  Trophy,
 } from "lucide-react";
 
 // ============ TYPES ============
@@ -74,13 +73,14 @@ const SYMBOLS: SymbolInfo[] = [
   },
 ];
 
-const BET_CHIPS = [10, 20, 50, 100];
+const BET_CHIPS = [1000, 2000, 5000, 10000, 20000, 50000, 1000000];
 
 // ============ PROPS ============
 interface BauCuaGameProps {
   balance: number;
   setBalance: (fn: (prev: number) => number) => void;
   onBack: () => void;
+  onGameEnd?: (delta: number) => void;
 }
 
 // ============ MAIN GAME ============
@@ -88,6 +88,7 @@ export default function BauCuaGame({
   balance,
   setBalance,
   onBack,
+  onGameEnd,
 }: BauCuaGameProps) {
   const [bets, setBets] = useState<Record<SymbolId, number>>({
     nai: 0,
@@ -97,87 +98,89 @@ export default function BauCuaGame({
     cua: 0,
     tom: 0,
   });
-  const [selectedChip, setSelectedChip] = useState(10);
+  const [selectedChip, setSelectedChip] = useState(1000);
   const [diceResults, setDiceResults] = useState<SymbolId[]>([
-    "nai",
     "bau",
-    "ga",
+    "bau",
+    "bau",
   ]);
-  const [rolling, setRolling] = useState(false);
-  const [gameResult, setGameResult] = useState<{
-    won: number;
-    lost: number;
-  } | null>(null);
-  const [showResult, setShowResult] = useState(false);
+  // gameResult is kept for future result animations/summaries if needed
+  // Removing if purely unused
+  // const [gameResult, setGameResult] = useState<{ won: number; lost: number } | null>(null);
   const [history, setHistory] = useState<
     Array<{ dice: SymbolId[]; won: number; lost: number }>
   >([]);
+  const [gameState, setGameState] = useState<
+    "idle" | "shaking" | "betting" | "result"
+  >("idle");
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [bowlLifting, setBowlLifting] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const betsRef = useRef(bets);
+  const diceResultsRef = useRef(diceResults);
+  const hasSyncedRef = useRef(false);
 
-  const totalBet = Object.values(bets).reduce((sum, b) => sum + b, 0);
+  // Sync refs with state
+  useEffect(() => {
+    betsRef.current = bets;
+  }, [bets]);
+  useEffect(() => {
+    diceResultsRef.current = diceResults;
+  }, [diceResults]);
+
+  const totalBet = Object.values(bets).reduce(
+    (sum, b) => (sum as number) + (b as number),
+    0,
+  );
 
   const addBet = useCallback(
     (id: SymbolId, amount?: number) => {
       const betAmt = amount || selectedChip;
-      if (rolling || balance < betAmt) return;
+      if (gameState !== "betting" || balance < betAmt) return;
       setBets((prev) => ({ ...prev, [id]: prev[id] + betAmt }));
-      setBalance((prev) => prev - betAmt);
-      setGameResult(null);
-      setShowResult(false);
+      setBalance((prev: number) => prev - betAmt);
+      // setGameResult(null); // Removed as gameResult state is commented out
     },
-    [rolling, balance, selectedChip, setBalance],
+    [gameState, balance, selectedChip, setBalance],
   );
 
+  // removeBet logic is no longer needed in the new UI, but kept as a ref if needed
+  /*
   const removeBet = useCallback(
     (id: SymbolId) => {
-      if (rolling) return;
-      const cur = bets[id];
-      if (cur <= 0) return;
-      const amt = Math.min(selectedChip, cur);
-      setBets((prev) => ({ ...prev, [id]: prev[id] - amt }));
-      setBalance((prev) => prev + amt);
+      if (gameState !== "betting") return;
+      ...
     },
-    [rolling, bets, selectedChip, setBalance],
+    ...
   );
+  */
 
   const clearBets = useCallback(() => {
-    if (rolling) return;
-    setBalance((prev) => prev + totalBet);
+    if (gameState !== "betting") return;
+    setBalance((prev: number) => prev + (totalBet as number));
     setBets({ nai: 0, bau: 0, ga: 0, ca: 0, cua: 0, tom: 0 });
-    setGameResult(null);
-    setShowResult(false);
-  }, [rolling, totalBet, setBalance]);
+    // setGameResult(null); // Removed as gameResult state is commented out
+  }, [gameState, totalBet, setBalance]);
 
-  const rollDice = useCallback(() => {
-    if (rolling || totalBet === 0) return;
-    setRolling(true);
-    setGameResult(null);
-    setShowResult(false);
-
-    const finalResults: SymbolId[] = Array.from(
-      { length: 3 },
-      () => SYMBOLS[Math.floor(Math.random() * 6)].id,
-    );
-
-    const interval = setInterval(() => {
-      setDiceResults(
-        Array.from(
-          { length: 3 },
-          () => SYMBOLS[Math.floor(Math.random() * 6)].id,
-        ),
-      );
-    }, 80);
-
+  const handleReveal = useCallback(() => {
+    if (hasSyncedRef.current) return;
+    setBowlLifting(true);
     setTimeout(() => {
-      clearInterval(interval);
-      setDiceResults(finalResults);
-      setRolling(false);
+      if (hasSyncedRef.current) return;
+      hasSyncedRef.current = true;
+
+      setGameState("result");
+      setBowlLifting(false);
+
+      const currentBets = betsRef.current;
+      const currentDice = diceResultsRef.current;
 
       let totalWon = 0;
       let totalLost = 0;
       for (const sym of SYMBOLS) {
-        const bet = bets[sym.id];
+        const bet = currentBets[sym.id];
         if (bet <= 0) continue;
-        const count = finalResults.filter((r) => r === sym.id).length;
+        const count = currentDice.filter((r) => r === sym.id).length;
         if (count > 0) {
           totalWon += bet + bet * count;
         } else {
@@ -185,333 +188,352 @@ export default function BauCuaGame({
         }
       }
 
-      setBalance((prev) => prev + totalWon);
-      setGameResult({ won: totalWon, lost: totalLost });
-      setShowResult(true);
+      // We don't call setBalance here anymore to avoid conflict with onGameEnd
+      // The parent will update the total balance.
+      // We only update the local history.
       setHistory((prev) => [
-        { dice: finalResults, won: totalWon, lost: totalLost },
+        { dice: currentDice, won: totalWon, lost: totalLost },
         ...prev.slice(0, 14),
       ]);
-      setBets({ nai: 0, bau: 0, ga: 0, ca: 0, cua: 0, tom: 0 });
-    }, 1800);
-  }, [rolling, totalBet, bets, setBalance]);
+
+      const netDelta =
+        totalWon - Object.values(currentBets).reduce((a, b) => a + b, 0);
+      if (onGameEnd && netDelta !== 0) onGameEnd(netDelta);
+    }, 1000);
+  }, [onGameEnd]);
+
+  const startShaking = useCallback(() => {
+    hasSyncedRef.current = false;
+    setGameState("shaking");
+    setBets({ nai: 0, bau: 0, ga: 0, ca: 0, cua: 0, tom: 0 });
+    // setGameResult(null); // Removed as gameResult state is commented out
+
+    const finalResults: SymbolId[] = Array.from(
+      { length: 3 },
+      () => SYMBOLS[Math.floor(Math.random() * 6)].id,
+    );
+
+    setTimeout(() => {
+      setDiceResults(finalResults);
+      setGameState("betting");
+      setTimeLeft(5);
+
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            if (timerRef.current) clearInterval(timerRef.current);
+            handleReveal();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }, 2000);
+  }, [handleReveal]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
 
   return (
-    <div className="max-w-lg mx-auto pb-10">
+    <div className="max-w-6xl mx-auto pb-10 px-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
-        >
-          <ArrowLeft size={16} />
-          Quay lại
-        </button>
-        <h1 className="text-2xl font-black text-gray-900">🎲 Bầu Cua Tôm Cá</h1>
-        <div className="w-20" />
+      {/* Header with Background */}
+      <div className="relative overflow-hidden rounded-t-[3rem] pt-8 pb-12 -mb-8 bg-[#cc0000]">
+        {/* Decorative Background */}
+        <div className="absolute inset-0 opacity-40 mix-blend-overlay">
+          <div className="absolute top-0 left-0 w-32 h-32 bg-[url('https://www.transparenttextures.com/patterns/pinstripe-light.png')]" />
+        </div>
+
+        {/* Blossoms corners */}
+        <div className="absolute top-0 left-0 w-40 h-40 opacity-80 rotate-180 pointer-events-none">
+          <span className="text-4xl absolute top-4 left-4">🌸</span>
+          <span className="text-2xl absolute top-12 left-16">🌸</span>
+        </div>
+        <div className="absolute top-0 right-0 w-40 h-40 opacity-80 pointer-events-none">
+          <span className="text-4xl absolute top-4 right-4 animate-pulse">
+            🌸
+          </span>
+          <span className="text-2xl absolute top-12 right-16">🌸</span>
+        </div>
+
+        <div className="relative px-6 flex items-center justify-between">
+          <button
+            onClick={onBack}
+            className="w-10 h-10 rounded-full bg-yellow-400 shadow-lg border-2 border-yellow-200 flex items-center justify-center text-red-700 hover:scale-110 active:scale-95 transition-all"
+          >
+            <ArrowLeft size={20} strokeWidth={3} />
+          </button>
+
+          <div className="text-center">
+            <h1 className="text-2xl font-black text-yellow-300 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] uppercase tracking-wider">
+              BẦU CUA TÔM CÁ
+            </h1>
+          </div>
+
+          <button className="w-10 h-10 rounded-full bg-yellow-400 shadow-lg border-2 border-yellow-200 flex items-center justify-center text-red-700 hover:scale-110 active:scale-95 transition-all">
+            <Volume2 size={20} strokeWidth={3} />
+          </button>
+        </div>
       </div>
 
       {/* Balance */}
-      <div className="bg-gradient-to-r from-amber-400 via-orange-400 to-red-400 rounded-2xl p-3.5 mb-5 shadow-lg shadow-orange-200/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/25 rounded-xl flex items-center justify-center backdrop-blur-sm">
-              <Coins className="text-white" size={20} />
-            </div>
-            <div>
-              <p className="text-white/70 text-[10px] font-bold uppercase tracking-wider">
-                Số dư
-              </p>
-              <p className="text-white text-xl font-black leading-tight">
-                {balance.toLocaleString()} xu
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {totalBet > 0 && (
-              <div className="bg-white/20 rounded-xl px-3 py-1.5 backdrop-blur-sm">
-                <p className="text-white/70 text-[10px] font-bold">Đang cược</p>
-                <p className="text-white text-sm font-black text-right">
-                  {totalBet} xu
-                </p>
+      {/* Main Content Area: Side-by-Side Flex */}
+      <div className="flex flex-col lg:flex-row gap-6 mt-4">
+        {/* Left Column: Bowl and Plate Area */}
+        <div className="lg:w-[45%] w-full flex flex-col gap-4">
+          {/* Balance Bar (Compact) */}
+          <div className="relative z-10 w-full">
+            <div className="bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-500 rounded-2xl p-3 shadow-[0_8px_16px_rgba(251,191,36,0.2)] border border-yellow-200/50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center shadow-inner">
+                  <Coins className="text-yellow-400" size={16} />
+                </div>
+                <div>
+                  <p className="text-red-900/60 text-[8px] font-black uppercase leading-none mb-0.5">
+                    Vốn liếng
+                  </p>
+                  <p className="text-red-900 text-lg font-black leading-none">
+                    {balance.toLocaleString()}
+                  </p>
+                </div>
               </div>
-            )}
-            {balance === 0 && totalBet === 0 && (
-              <button
-                onClick={() => setBalance(() => 1000)}
-                className="flex items-center gap-1.5 bg-white/25 hover:bg-white/35 text-white px-3 py-2 rounded-xl text-xs font-bold transition-all backdrop-blur-sm"
-              >
-                <RotateCcw size={13} />
-                Nạp 1000 xu
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Dice Zone */}
-      <div className="relative bg-gradient-to-b from-green-700 via-emerald-800 to-green-900 rounded-3xl p-5 mb-5 shadow-2xl border-2 border-green-600/50 overflow-hidden">
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-3 left-3 text-6xl">🎲</div>
-          <div className="absolute bottom-3 right-3 text-6xl">🎲</div>
-        </div>
-
-        {/* Dice */}
-        <div className="relative flex items-center justify-center gap-3 sm:gap-5 py-4">
-          {diceResults.map((result, i) => {
-            const sym = SYMBOLS.find((s) => s.id === result)!;
-            return (
-              <div
-                key={i}
-                className={`w-[5.5rem] h-[5.5rem] sm:w-28 sm:h-28 bg-white rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center shadow-xl border-2 border-white/80 ${
-                  rolling ? "animate-dice-roll" : "animate-bounce-in"
-                }`}
-                style={{
-                  animationDelay: rolling ? `${i * 0.08}s` : `${i * 0.12}s`,
-                }}
-              >
-                <span className="text-4xl sm:text-5xl leading-none">
-                  {sym.emoji}
-                </span>
-                <span className="text-[10px] sm:text-xs font-bold text-gray-500 mt-1">
-                  {sym.label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Result */}
-        {showResult && gameResult && !rolling && (
-          <div
-            className={`relative text-center py-3 px-4 rounded-2xl mt-1 animate-bounce-in ${
-              gameResult.won > 0
-                ? "bg-gradient-to-r from-yellow-400/30 to-amber-400/30 border border-yellow-300/40"
-                : "bg-gradient-to-r from-red-400/20 to-rose-400/20 border border-red-300/30"
-            }`}
-          >
-            {gameResult.won > 0 ? (
-              <div className="flex items-center justify-center gap-2">
-                <Trophy size={20} className="text-yellow-300" />
-                <span className="text-yellow-200 font-black text-xl">
-                  +{gameResult.won} xu!
-                </span>
-                <span className="text-lg">🎉</span>
-              </div>
-            ) : (
-              <span className="text-red-300 font-bold">
-                Thua {gameResult.lost} xu 😢 Cố lên!
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Roll Button */}
-        <div className="relative text-center mt-4">
-          <button
-            onClick={rollDice}
-            disabled={rolling || totalBet === 0}
-            className={`relative inline-flex items-center gap-3 px-10 py-3.5 rounded-2xl text-lg font-black transition-all ${
-              rolling || totalBet === 0
-                ? "bg-gray-500/50 text-gray-300 cursor-not-allowed"
-                : "bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-500 text-white shadow-xl shadow-amber-400/40 hover:shadow-2xl hover:shadow-amber-400/50 hover:-translate-y-1 active:translate-y-0 active:shadow-lg"
-            }`}
-          >
-            <Dices size={24} className={rolling ? "animate-spin" : ""} />
-            {rolling
-              ? "Đang lắc..."
-              : totalBet === 0
-                ? "Đặt cược trước"
-                : "LẮC! 🎲"}
-          </button>
-        </div>
-      </div>
-
-      {/* Chip Selector */}
-      <div className="flex items-center justify-between mb-3 px-1">
-        <span className="text-xs font-bold text-gray-500">
-          💰 Chọn mệnh giá:
-        </span>
-        {totalBet > 0 && (
-          <button
-            onClick={clearBets}
-            disabled={rolling}
-            className="flex items-center gap-1 text-xs text-red-400 hover:text-red-500 font-bold transition-colors"
-          >
-            <Trash2 size={12} />
-            Hủy cược
-          </button>
-        )}
-      </div>
-      <div className="grid grid-cols-5 gap-2 mb-5">
-        {BET_CHIPS.map((chip) => (
-          <button
-            key={chip}
-            onClick={() => setSelectedChip(chip)}
-            className={`relative py-2.5 rounded-xl text-sm font-black transition-all ${
-              selectedChip === chip
-                ? "bg-gradient-to-b from-orange-400 to-orange-500 text-white shadow-lg shadow-orange-200 scale-105 ring-2 ring-orange-300 ring-offset-2"
-                : "bg-white text-gray-600 border-2 border-gray-200 hover:border-orange-300 hover:text-orange-600"
-            }`}
-          >
-            {chip} xu
-          </button>
-        ))}
-        <button
-          onClick={() => setSelectedChip(balance)}
-          disabled={balance <= 0 || rolling}
-          className={`relative py-2.5 rounded-xl text-sm font-black transition-all ${
-            selectedChip === balance && balance > 0
-              ? "bg-gradient-to-b from-red-500 to-rose-600 text-white shadow-lg shadow-red-200 scale-105 ring-2 ring-red-400 ring-offset-2"
-              : balance <= 0 || rolling
-                ? "bg-gray-100 text-gray-300 cursor-not-allowed"
-                : "bg-white text-red-500 border-2 border-red-200 hover:border-red-400 hover:bg-red-50"
-          }`}
-        >
-          ALL IN 🔥
-        </button>
-      </div>
-
-      {/* Betting Board */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        {SYMBOLS.map((sym) => {
-          const bet = bets[sym.id];
-          const matchCount =
-            showResult && gameResult
-              ? diceResults.filter((r) => r === sym.id).length
-              : 0;
-          const isWinner = matchCount > 0;
-
-          return (
-            <div
-              key={sym.id}
-              className={`relative rounded-2xl overflow-hidden transition-all duration-200 ${
-                isWinner ? `ring-3 ${sym.ring} ring-offset-2 scale-[1.03]` : ""
-              } ${bet > 0 ? "shadow-lg" : "shadow-sm hover:shadow-md"}`}
-            >
-              {isWinner && (
-                <div className="absolute -top-1 -right-1 z-10 w-7 h-7 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center text-[11px] font-black text-white shadow-lg animate-bounce-in border-2 border-white">
-                  x{matchCount}
+              {(totalBet as number) > 0 && (
+                <div className="bg-red-600 px-3 py-1 rounded-xl shadow-md border border-red-700">
+                  <p className="text-white font-black text-xs uppercase tracking-tighter">
+                    Cược: {totalBet as number}
+                  </p>
                 </div>
               )}
+            </div>
+          </div>
 
-              <div
-                className={`bg-gradient-to-br ${sym.gradient} p-[2px] rounded-2xl`}
-              >
-                <div className="bg-white rounded-[14px] p-3 text-center">
-                  <div className="text-5xl mb-0.5 leading-none">
-                    {sym.emoji}
+          {/* Play Mat (Bowl zone) */}
+          <div className="relative bg-[#cc0000] p-4 rounded-3xl shadow-2xl min-h-[420px] flex flex-col items-center justify-center border-4 border-yellow-500/30">
+            {/* Visual background patterns */}
+            <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/az-subtle.png')]" />
+
+            <div className="relative w-64 h-64 scale-90 sm:scale-100 mb-4">
+              {/* Plate */}
+              <div className="absolute inset-0 bg-gray-100 rounded-full border-[10px] border-gray-300 shadow-2xl overflow-hidden">
+                <div className="absolute inset-2 border-2 border-gray-400/20 rounded-full border-dashed" />
+                {gameState === "result" && (
+                  <div className="absolute inset-0 flex items-center justify-center gap-2 px-6">
+                    {diceResults.map((r, i) => (
+                      <div
+                        key={i}
+                        className="w-14 h-14 bg-white rounded-xl shadow-lg border border-gray-200 flex items-center justify-center text-3xl animate-bounce-in"
+                        style={{ animationDelay: `${i * 0.1}s` }}
+                      >
+                        {SYMBOLS.find((s) => s.id === r)?.emoji}
+                      </div>
+                    ))}
                   </div>
-                  <p className="text-xs font-bold text-gray-500 mb-2">
-                    {sym.label}
-                  </p>
+                )}
+              </div>
 
-                  {bet > 0 && (
-                    <div
-                      className={`bg-gradient-to-r ${sym.gradient} rounded-lg px-2 py-1 mb-2`}
-                    >
-                      <span className="text-white font-black text-sm">
-                        {bet} xu
-                      </span>
+              {/* Bowl */}
+              {(gameState === "shaking" ||
+                gameState === "betting" ||
+                bowlLifting) && (
+                <div
+                  className={`absolute inset-0 z-30 transition-all duration-700 ease-in-out ${bowlLifting ? "translate-y-[-120%] opacity-0 scale-125" : "translate-y-[-5%]"}`}
+                >
+                  <div
+                    className={`relative w-full h-full ${gameState === "shaking" ? "animate-shake" : ""}`}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-600 rounded-full border-[10px] border-yellow-500 shadow-2xl flex items-center justify-center overflow-hidden">
+                      <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/az-subtle.png')]" />
+
+                      {/* Top Knob & Timer */}
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/4 w-24 h-24 bg-gradient-to-b from-yellow-300 to-yellow-600 rounded-full border-4 border-yellow-500 shadow-xl flex items-center justify-center z-10">
+                        {gameState === "betting" ? (
+                          <p className="text-red-800 font-black text-2xl tracking-tighter">
+                            00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}
+                          </p>
+                        ) : (
+                          <div className="w-12 h-12 bg-yellow-400/50 rounded-full border-2 border-yellow-200 shadow-inner" />
+                        )}
+                      </div>
                     </div>
-                  )}
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeBet(sym.id);
-                      }}
-                      disabled={rolling || bet <= 0}
-                      className={`flex-1 py-1.5 rounded-lg text-sm font-bold transition-all ${
-                        bet > 0
-                          ? "bg-red-50 text-red-500 hover:bg-red-100 active:bg-red-200"
-                          : "bg-gray-50 text-gray-300 cursor-not-allowed"
-                      }`}
-                    >
-                      <Minus size={14} className="mx-auto" />
-                    </button>
-                    <button
-                      onClick={() => addBet(sym.id)}
-                      disabled={rolling || balance < selectedChip}
-                      className={`flex-[2] py-1.5 rounded-lg text-sm font-bold transition-all ${
-                        !rolling && balance >= selectedChip
-                          ? `bg-gradient-to-r ${sym.gradient} text-white shadow-md ${sym.shadow} hover:shadow-lg active:shadow-sm active:scale-95`
-                          : "bg-gray-100 text-gray-300 cursor-not-allowed"
-                      }`}
-                    >
-                      <Plus size={14} className="mx-auto" />
-                    </button>
                   </div>
                 </div>
+              )}
+            </div>
+
+            {/* Decorative Text */}
+            <p className="font-serif italic text-yellow-400/60 text-[10px] mb-4 text-center">
+              Bầu Cua Tôm Cá - Hết Kế Húp
+            </p>
+
+            {/* Main Action Control */}
+            <div className="w-full max-w-[200px] flex flex-col gap-2 relative z-50">
+              {(gameState === "idle" || gameState === "result") && (
+                <button
+                  onClick={startShaking}
+                  className={`w-full py-3 rounded-full font-black text-sm shadow-xl border-b-4 transition-all uppercase tracking-widest flex items-center justify-center gap-2 ${
+                    gameState === "idle"
+                      ? "bg-gradient-to-b from-yellow-300 to-orange-500 text-red-900 border-orange-800 active:translate-y-1 active:border-b-0"
+                      : "bg-gradient-to-b from-blue-400 to-indigo-600 text-white border-indigo-900 active:translate-y-1 active:border-b-0"
+                  }`}
+                >
+                  {gameState === "idle" ? (
+                    <Dices size={18} />
+                  ) : (
+                    <RotateCcw size={18} />
+                  )}
+                  {gameState === "idle" ? "BẮT ĐẦU" : "TIẾP TỤC"}
+                </button>
+              )}
+              {gameState === "result" && (
+                <div className="animate-bounce-in text-center mt-2">
+                  <p className="text-yellow-400 font-black text-xs drop-shadow-md flex items-center justify-center gap-1">
+                    <Trophy size={14} /> KẾT QUẢ VÁN TRƯỚC VỪA XONG
+                  </p>
+                </div>
+              )}
+              {gameState === "betting" && (
+                <div className="bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full border border-white/10 text-center animate-pulse">
+                  <p className="text-yellow-400 font-bold text-xs">
+                    Đang nhận cược ({timeLeft}s)
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Betting Zone */}
+        <div className="lg:w-[55%] w-full flex flex-col gap-4">
+          <div className="bg-white rounded-[2.5rem] p-6 shadow-xl border-t-8 border-yellow-400 flex-1">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-red-800 font-black text-lg flex items-center gap-2">
+                🏮 ĐẶT CƯỢC
+              </h3>
+              <button
+                onClick={clearBets}
+                disabled={gameState !== "betting" || (totalBet as number) === 0}
+                className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-20"
+              >
+                <Trash2 size={20} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              {SYMBOLS.map((sym) => {
+                const bet = bets[sym.id];
+                const matchCount =
+                  gameState === "result"
+                    ? diceResults.filter((r) => r === sym.id).length
+                    : 0;
+                const isWinner = gameState === "result" && matchCount > 0;
+
+                return (
+                  <button
+                    key={sym.id}
+                    onClick={() => addBet(sym.id)}
+                    disabled={gameState !== "betting"}
+                    className={`relative aspect-square sm:aspect-auto sm:h-28 bg-white rounded-2xl border-[3px] transition-all p-2 flex flex-col items-center justify-center group ${
+                      bet > 0
+                        ? "border-red-500 shadow-lg shadow-red-100"
+                        : "border-gray-100 hover:border-gray-200"
+                    } ${isWinner ? "animate-bounce ring-4 ring-yellow-400 z-10" : ""}`}
+                  >
+                    {isWinner && (
+                      <div className="absolute -top-3 -right-3 w-7 h-7 bg-yellow-400 text-red-700 rounded-full flex items-center justify-center font-black text-xs shadow-lg border-2 border-white">
+                        x{matchCount}
+                      </div>
+                    )}
+                    <span className="text-4xl sm:text-5xl group-hover:scale-110 transition-transform mb-1">
+                      {sym.emoji}
+                    </span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase leading-none">
+                      {sym.label}
+                    </span>
+                    {bet > 0 && (
+                      <div className="absolute bottom-1 right-1 bg-red-600 text-white min-w-[30px] px-1.5 py-0.5 rounded-full text-[9px] font-black shadow-md border border-white animate-bounce-in">
+                        {bet.toLocaleString()}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Chip Selector */}
+            <div className="bg-gray-50 rounded-2xl p-4">
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">
+                Tiền cược
+              </p>
+              <div className="flex flex-wrap justify-center gap-1.5 mb-2">
+                {BET_CHIPS.map((chip) => (
+                  <button
+                    key={chip}
+                    onClick={() => setSelectedChip(chip)}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-black transition-all border-2 ${
+                      selectedChip === chip
+                        ? "bg-red-600 border-red-700 text-white shadow-md -translate-y-0.5"
+                        : "bg-white border-white text-gray-400 hover:border-red-200"
+                    }`}
+                  >
+                    {chip >= 1000000
+                      ? `${chip / 1000000}M`
+                      : chip >= 1000
+                        ? `${chip / 1000}K`
+                        : chip}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setSelectedChip(balance)}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-black transition-all border-2 ${
+                    selectedChip === balance
+                      ? "bg-black border-black text-white shadow-md"
+                      : "bg-white border-black/5 text-red-600 hover:bg-neutral-100"
+                  }`}
+                >
+                  ALL IN 🔥
+                </button>
               </div>
             </div>
-          );
-        })}
-      </div>
+          </div>
 
-      {/* Instructions */}
-      <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-2xl p-4 mb-5 border border-gray-100">
-        <p className="text-xs font-bold text-gray-400 mb-1.5">💡 Cách chơi</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <div className="flex items-start gap-2">
-            <span className="text-base leading-none mt-0.5">1️⃣</span>
-            <span className="text-xs text-gray-500">
-              Chọn mệnh giá xu bên trên
-            </span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="text-base leading-none mt-0.5">2️⃣</span>
-            <span className="text-xs text-gray-500">
-              Bấm <strong className="text-green-600">+</strong> để cược,{" "}
-              <strong className="text-red-500">-</strong> để bỏ
-            </span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="text-base leading-none mt-0.5">3️⃣</span>
-            <span className="text-xs text-gray-500">
-              Bấm <strong className="text-orange-500">LẮC!</strong> rồi chờ kết
-              quả
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* History */}
-      {history.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-100 flex items-center justify-between">
-            <p className="text-sm font-bold text-gray-600">📜 Lịch sử</p>
-            <span className="text-[10px] font-bold text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full">
-              {history.length} ván
-            </span>
-          </div>
-          <div className="divide-y divide-gray-50 max-h-60 overflow-y-auto">
-            {history.map((h, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50/50 transition-colors"
-              >
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-gray-400 font-mono w-5">
-                    #{history.length - i}
-                  </span>
-                  {h.dice.map((r, j) => (
-                    <span key={j} className="text-xl leading-none">
-                      {SYMBOLS.find((s) => s.id === r)!.emoji}
-                    </span>
-                  ))}
-                </div>
-                <span
-                  className={`text-sm font-black ${h.won > 0 ? "text-green-500" : "text-red-400"}`}
+          {/* History (Clean look inside betting zone) */}
+          <div className="bg-white/50 backdrop-blur-sm rounded-[2rem] p-5 border border-white/20">
+            <h4 className="text-gray-900 font-black text-[10px] uppercase tracking-widest mb-3 opacity-50 text-center">
+              Lịch sử 5 ván gần nhất
+            </h4>
+            <div className="flex flex-col gap-2">
+              {history.slice(0, 5).map((h: any, i: any) => (
+                <div
+                  key={`history-${i}`}
+                  className="bg-white/80 rounded-xl p-3 flex items-center justify-between border border-gray-100"
                 >
-                  {h.won > 0 ? `+${h.won}` : `-${h.lost}`} xu
-                </span>
-              </div>
-            ))}
+                  <div className="flex items-center gap-3">
+                    <span className="text-[8px] font-bold text-gray-300">
+                      #{history.length - i}
+                    </span>
+                    <div className="flex gap-1">
+                      {h.dice.map((r: any, j: any) => (
+                        <span key={j} className="text-lg">
+                          {SYMBOLS.find((s) => s.id === r)?.emoji}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <span
+                    className={`font-black text-xs ${h.won > 0 ? "text-green-600" : "text-red-500"}`}
+                  >
+                    {h.won > 0 ? `+${h.won}` : h.lost > 0 ? `-${h.lost}` : "0"}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

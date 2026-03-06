@@ -1,6 +1,7 @@
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/authSlice";
+import { authApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import {
   User,
@@ -17,6 +18,7 @@ import {
   Menu,
   X,
   Gamepad2,
+  Coins,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import PriceNoticeBanner from "@/components/PriceNoticeBanner";
@@ -73,9 +75,15 @@ export default function MainLayout() {
     setMenuOpen(false);
   }, [location.pathname]);
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      dispatch(logout());
+      navigate("/login");
+    }
   };
 
   const isActiveRoute = (path: string) => {
@@ -135,8 +143,26 @@ export default function MainLayout() {
               })}
             </nav>
 
-            {/* Right Side */}
             <div className="flex items-center gap-3">
+              {isAuthenticated && (
+                <div className="relative group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-400 to-orange-500 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
+                  <div className="relative flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-amber-100 shadow-sm">
+                    <div className="w-6 h-6 rounded-lg bg-amber-100 flex items-center justify-center">
+                      <Coins size={14} className="text-amber-600" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-0.5">
+                        Xu hiện có
+                      </span>
+                      <span className="text-sm font-black text-amber-600 leading-none">
+                        {(user?.gameCoins || 0).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {isAuthenticated ? (
                 <div className="relative" ref={dropdownRef}>
                   {/* User Button */}

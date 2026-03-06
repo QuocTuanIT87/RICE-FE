@@ -24,6 +24,7 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
 // Request interceptor - thêm token vào header
@@ -71,6 +72,8 @@ export const authApi = {
 
   login: (data: { email: string; password: string }) =>
     api.post<ApiResponse<{ token: string; user: User }>>("/auth/login", data),
+
+  logout: () => api.post<ApiResponse>("/auth/logout"),
 
   getMe: () => api.get<ApiResponse<User>>("/auth/me"),
 
@@ -264,6 +267,24 @@ export const statisticsApi = {
         items: Array<{ name: string; count: number }>;
       }>
     >("/statistics/menu-items", { params }),
+};
+
+// =============================================
+// GAME COINS API
+// =============================================
+export const gameCoinsApi = {
+  getBalance: () =>
+    api.get<ApiResponse<{ gameCoins: number }>>("/game-coins/balance"),
+
+  updateCoins: (delta: number) =>
+    api.post<ApiResponse<{ gameCoins: number }>>("/game-coins/update", {
+      delta,
+    }),
+
+  exchange: (packageId: string) =>
+    api.post<ApiResponse<{ gameCoins: number }>>("/game-coins/exchange", {
+      packageId,
+    }),
 };
 
 export default api;

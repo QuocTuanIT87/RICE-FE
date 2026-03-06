@@ -3,9 +3,9 @@ import { AuthState, User } from "@/types";
 
 const initialState: AuthState = {
   user: null,
-  token: localStorage.getItem("token"),
-  isAuthenticated: !!localStorage.getItem("token"),
-  isLoading: false,
+  token: null,
+  isAuthenticated: false,
+  isLoading: true, // Bắt đầu ở trạng thái Loading để AuthInitializer kiểm tra cookie
 };
 
 const authSlice = createSlice({
@@ -19,23 +19,27 @@ const authSlice = createSlice({
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.isAuthenticated = true;
-      localStorage.setItem("token", action.payload.token);
     },
     setUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
+      state.isAuthenticated = true; // Nếu set user thành công thì coi như đã auth
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
+    },
+    updateGameCoins: (state, action: PayloadAction<number>) => {
+      if (state.user) {
+        state.user.gameCoins = action.payload;
+      }
     },
     logout: (state) => {
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
-      localStorage.removeItem("token");
     },
   },
 });
 
-export const { setCredentials, setUser, setLoading, logout } =
+export const { setCredentials, setUser, setLoading, updateGameCoins, logout } =
   authSlice.actions;
 export default authSlice.reducer;

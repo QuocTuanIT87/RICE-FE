@@ -179,10 +179,11 @@ export default function MyPackagesPage() {
                     </div>
                     <div>
                       <p className="font-bold text-gray-900 text-sm">
-                        {pkg.name}
+                        {pkg?.name || "Gói không tên"}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {formatVND(pkg.price)} • {pkg.turns} lượt
+                        {pkg ? formatVND(pkg.price) : "0đ"} • {pkg?.turns || 0}{" "}
+                        lượt
                       </p>
                     </div>
                   </div>
@@ -231,11 +232,15 @@ export default function MyPackagesPage() {
               {activePackages.map((pkg) => {
                 const mealPkg = pkg.mealPackageId as MealPackage;
                 const isDefault = user?.activePackage?._id === pkg._id;
+
+                // Safety check for mealPkg
+                const totalTurns = mealPkg?.turns || pkg.remainingTurns || 1;
                 const percent = Math.round(
-                  (pkg.remainingTurns / mealPkg.turns) * 100,
+                  (pkg.remainingTurns / totalTurns) * 100,
                 );
-                const isNoRice = mealPkg.packageType === "no-rice";
-                const color = isNoRice ? "blue" : "orange";
+                const isNoRice = mealPkg?.packageType === "no-rice";
+                const isCoin = pkg.packageType === "coin-exchange";
+                const color = isCoin ? "purple" : isNoRice ? "blue" : "orange";
 
                 return (
                   <div
@@ -268,12 +273,13 @@ export default function MyPackagesPage() {
                           </div>
                           <div className="min-w-0">
                             <p className="font-bold text-gray-900 truncate">
-                              {mealPkg.name}
+                              {mealPkg?.name ||
+                                (isCoin ? "Gói đổi xu" : "Gói không tên")}
                             </p>
                             <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                               <span className="flex items-center gap-1">
                                 <Package size={12} />
-                                Còn {pkg.remainingTurns}/{mealPkg.turns} lượt
+                                Còn {pkg.remainingTurns}/{totalTurns} lượt
                               </span>
                               <span className="flex items-center gap-1">
                                 <CalendarClock size={12} />
@@ -351,7 +357,7 @@ export default function MyPackagesPage() {
                     </div>
                     <div>
                       <p className="font-bold text-gray-700 text-sm">
-                        {mealPkg.name}
+                        {mealPkg?.name || "Gói không tên"}
                       </p>
                       <p className="text-xs text-gray-500">
                         {pkg.remainingTurns} lượt còn • Hết hạn{" "}
