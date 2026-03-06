@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { logout } from "@/store/authSlice";
+import { authApi } from "@/services/api";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
@@ -30,9 +31,15 @@ export default function AdminLayout() {
   const { user } = useAppSelector((state) => state.auth);
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      dispatch(logout());
+      navigate("/login");
+    }
   };
 
   return (

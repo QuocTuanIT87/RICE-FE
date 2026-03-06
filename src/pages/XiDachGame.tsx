@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import {
   RotateCcw,
   Hand,
@@ -159,6 +159,7 @@ interface XiDachGameProps {
   balance: number;
   setBalance: (fn: (prev: number) => number) => void;
   onBack: () => void;
+  onGameEnd?: (delta: number) => void;
 }
 
 // ============ MAIN GAME ============
@@ -166,6 +167,7 @@ export default function XiDachGame({
   balance,
   setBalance,
   onBack,
+  onGameEnd,
 }: XiDachGameProps) {
   const [deck, setDeck] = useState<Card[]>([]);
   const [playerCards, setPlayerCards] = useState<Card[]>([]);
@@ -173,7 +175,9 @@ export default function XiDachGame({
   const [gameState, setGameState] = useState<GameState>("betting");
   const [currentBet, setCurrentBet] = useState(0);
   const [result, setResult] = useState<GameResult | null>(null);
-  const [selectedChip, setSelectedChip] = useState(10);
+  const [selectedChip, setSelectedChip] = useState(1000);
+  const initialBalanceRef = useRef(balance); // balance BEFORE any bets are placed in the round
+  const hasSyncedRef = useRef(false);
 
   const playerScore = useMemo(() => handScore(playerCards), [playerCards]);
   const dealerScore = useMemo(() => {
@@ -181,11 +185,17 @@ export default function XiDachGame({
     return handScore(dealerCards.filter((c) => c.faceUp));
   }, [dealerCards, gameState]);
 
-  const chips = [10, 20, 50, 100];
+  const chips = [1000, 2000, 5000, 10000, 20000, 50000, 1000000];
 
   // ---- DEAL ----
   const startGame = useCallback(() => {
     if (currentBet <= 0) return;
+
+    // Record balance at start of round (including the bet) for delta calc
+    // initialBalanceRef.current = balance; // MOVED to newRound/betting start
+
+    // Deduct bet from balance display immediately on game start
+    // (Actually addBet already does this, so we just keep the current balance)
 
     const newDeck = shuffleDeck(createDeck());
     const pCards = [
@@ -390,7 +400,27 @@ export default function XiDachGame({
     setCurrentBet(0);
     setResult(null);
     setGameState("betting");
-  }, []);
+    hasSyncedRef.current = false;
+    initialBalanceRef.current = balance; // Capture here before bets start
+  }, [balance]);
+
+  // Sync delta with server whenever result changes and it's a game end
+  // We use a ref to ensure it only fires ONCE per round to prevent infinite loops
+  useEffect(() => {
+    if (gameState === "result" && result && !hasSyncedRef.current) {
+      // The local balance has already been updated via setBalance in startGame/hit/stand
+      // So we calculate the net change for this round to sync with server
+      const netDelta = balance - initialBalanceRef.current;
+
+      if (onGameEnd && netDelta !== 0) {
+        hasSyncedRef.current = true;
+        onGameEnd(netDelta);
+      } else if (netDelta === 0) {
+        // Even if delta is 0, mark as synced so we don't keep checking
+        hasSyncedRef.current = true;
+      }
+    }
+  }, [gameState, result, balance, onGameEnd]);
 
   const addBet = useCallback(
     (amount: number) => {

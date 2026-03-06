@@ -14,6 +14,8 @@ import {
   UtensilsCrossed,
   Loader2,
   KeyRound,
+  Coins,
+  Sparkles,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -157,6 +159,10 @@ export default function ProfilePage() {
                     ✓ Đã xác thực
                   </span>
                 )}
+                <span className="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-amber-500/30 border border-amber-300 text-white flex items-center gap-1">
+                  <Coins size={10} />
+                  {(user?.gameCoins || 0).toLocaleString()} Xu
+                </span>
               </div>
             </div>
           </div>
@@ -200,6 +206,28 @@ export default function ProfilePage() {
             <p className="text-[11px] text-orange-100">Menu hôm nay</p>
           </div>
           <ArrowRight size={16} className="text-white/60" />
+        </Link>
+
+        {/* Entertainment Hub */}
+        <Link
+          to="/giai-tri"
+          className="group flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-600 text-white shadow-md shadow-purple-200 border border-purple-400 hover:shadow-lg transition-all col-span-2"
+        >
+          <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+            <Sparkles size={20} className="text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold">Khu giải trí</p>
+            <p className="text-[11px] text-purple-100 italic">
+              🎰 Chơi game tích xu cực cuốn
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black bg-white/20 px-2 py-0.5 rounded-lg">
+              {(user?.gameCoins || 0).toLocaleString()} Xu
+            </span>
+            <ArrowRight size={16} className="text-white/60" />
+          </div>
         </Link>
       </div>
 

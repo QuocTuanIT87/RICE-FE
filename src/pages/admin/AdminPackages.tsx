@@ -55,6 +55,9 @@ export default function AdminPackages() {
     price: 0,
     validDays: 7,
     qrCodeImage: "",
+    bonusCoins: 0,
+    coinPrice: 0,
+    packageType: "normal" as any,
   });
 
   const {
@@ -161,6 +164,9 @@ export default function AdminPackages() {
       price: 0,
       validDays: 7,
       qrCodeImage: "",
+      bonusCoins: 0,
+      coinPrice: 0,
+      packageType: "normal" as any,
     });
     setIsDialogOpen(true);
   };
@@ -173,6 +179,9 @@ export default function AdminPackages() {
       price: pkg.price,
       validDays: pkg.validDays,
       qrCodeImage: pkg.qrCodeImage || "",
+      bonusCoins: pkg.bonusCoins || 0,
+      coinPrice: pkg.coinPrice || 0,
+      packageType: pkg.packageType as any,
     });
     setIsDialogOpen(true);
   };
@@ -323,6 +332,11 @@ export default function AdminPackages() {
                           >
                             {pkg.validDays} NGÀY
                           </Badge>
+                          {pkg.packageType === "coin-exchange" && (
+                            <Badge className="text-[10px] font-bold px-1.5 h-4.5 rounded-md bg-purple-100 border-purple-200 text-purple-600">
+                              ĐỔI XU
+                            </Badge>
+                          )}
                         </div>
                       </div>
 
@@ -371,10 +385,14 @@ export default function AdminPackages() {
                       </div>
                       <div className="text-right">
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                          Giá niêm yết
+                          {pkg.packageType === "coin-exchange"
+                            ? "Giá đổi (Xu)"
+                            : "Giá niêm yết"}
                         </p>
                         <p className="text-xl font-bold text-orange-600">
-                          {formatVND(pkg.price)}
+                          {pkg.packageType === "coin-exchange"
+                            ? `${(pkg.coinPrice || 0).toLocaleString()} Xu`
+                            : formatVND(pkg.price)}
                         </p>
                       </div>
                     </div>
@@ -440,6 +458,17 @@ export default function AdminPackages() {
                           Số tiền:{" "}
                           <span className="text-orange-600">
                             {formatVND(pkg.price)}
+                          </span>
+                        </p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center justify-between">
+                          Thưởng Xu:{" "}
+                          <span className="text-amber-600 font-black">
+                            +
+                            {(pkg.bonusCoins && pkg.bonusCoins > 0
+                              ? pkg.bonusCoins
+                              : pkg.turns * 1000
+                            ).toLocaleString()}{" "}
+                            Xu
                           </span>
                         </p>
                         <p className="text-[9px] text-gray-400 italic text-right mt-1">
@@ -562,24 +591,89 @@ export default function AdminPackages() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">
-                  Giá tiền dịch vụ (VND)
-                </Label>
-                <div className="relative group">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-300 group-focus-within:text-orange-500 transition-colors">
-                    ₫
-                  </span>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={formData.price}
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">
+                    Giá tiền (VND)
+                  </Label>
+                  <div className="relative group">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-300 group-focus-within:text-orange-500 transition-colors">
+                      ₫
+                    </span>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={formData.price}
+                      onChange={(e) =>
+                        setFormData({ ...formData, price: +e.target.value })
+                      }
+                      className="h-11 pl-10 border-gray-200 focus:ring-1 focus:ring-orange-500 rounded-lg text-lg font-bold text-orange-600"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">
+                    Giá đổi (Xu)
+                  </Label>
+                  <div className="relative group">
+                    <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-purple-500 transition-colors" />
+                    <Input
+                      type="number"
+                      min={0}
+                      value={formData.coinPrice}
+                      onChange={(e) =>
+                        setFormData({ ...formData, coinPrice: +e.target.value })
+                      }
+                      placeholder="Số xu để đổi"
+                      className="h-11 pl-11 border-gray-200 focus:ring-1 focus:ring-orange-500 rounded-lg text-lg font-bold text-purple-600"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">
+                    Loại gói
+                  </Label>
+                  <select
+                    value={formData.packageType}
                     onChange={(e) =>
-                      setFormData({ ...formData, price: +e.target.value })
+                      setFormData({
+                        ...formData,
+                        packageType: e.target.value as any,
+                      })
                     }
-                    className="h-11 pl-10 border-gray-200 focus:ring-1 focus:ring-orange-500 rounded-lg text-lg font-bold text-orange-600"
-                    required
-                  />
+                    className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="normal">Có cơm (Normal)</option>
+                    <option value="no-rice">Không cơm (No rice)</option>
+                    <option value="coin-exchange">
+                      Gói đổi xu (Coin Exchange)
+                    </option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">
+                    Thưởng Xu Bonus
+                  </Label>
+                  <div className="relative group">
+                    <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-amber-500 transition-colors" />
+                    <Input
+                      type="number"
+                      min={0}
+                      value={formData.bonusCoins}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          bonusCoins: +e.target.value,
+                        })
+                      }
+                      placeholder="Để 0 để dùng mặc định"
+                      className="h-11 pl-11 border-gray-200 focus:ring-1 focus:ring-orange-500 rounded-lg"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

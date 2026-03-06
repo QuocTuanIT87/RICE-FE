@@ -116,31 +116,24 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 // Auth initializer
 function AuthInitializer({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
-  const { token } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
     const initAuth = async () => {
-      if (token) {
-        dispatch(setLoading(true));
-        try {
-          const response = await authApi.getMe();
-          if (response.data.data) {
-            dispatch(setUser(response.data.data));
-          }
-        } catch (error: unknown) {
-          // Chỉ logout khi token thực sự invalid (401), không logout khi network error
-          const axiosError = error as { response?: { status?: number } };
-          if (axiosError.response?.status === 401) {
-            // Token invalid, logout đã xử lý trong interceptor
-          }
-          // Các lỗi khác (network, 500...) giữ token, có thể retry sau
-        } finally {
-          dispatch(setLoading(false));
+      dispatch(setLoading(true));
+      try {
+        const response = await authApi.getMe();
+        if (response.data.data) {
+          dispatch(setUser(response.data.data));
         }
+      } catch (error: unknown) {
+        // Lỗi 401 hoặc network error đều được xử lý im lặng ở đây
+        // isAuthenticated mặc định là false
+      } finally {
+        dispatch(setLoading(false));
       }
     };
     initAuth();
-  }, [dispatch, token]);
+  }, [dispatch]);
 
   return <>{children}</>;
 }

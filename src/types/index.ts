@@ -14,6 +14,7 @@ export interface User {
   isBlocked?: boolean;
   activePackage?: UserPackage;
   activePackageId?: any; // Để hỗ trợ populate từ backend
+  gameCoins?: number; // Xu chơi game giải trí
   createdAt?: string;
   updatedAt?: string;
 }
@@ -38,7 +39,7 @@ export interface RegisterData {
 }
 
 // Meal Package types
-export type PackageType = "normal" | "no-rice";
+export type PackageType = "normal" | "no-rice" | "coin-exchange";
 
 export interface MealPackage {
   _id: string;
@@ -48,6 +49,8 @@ export interface MealPackage {
   validDays: number;
   packageType: PackageType;
   qrCodeImage?: string;
+  bonusCoins?: number; // Game coins bonus when purchased
+  coinPrice?: number; // Cost in coins for redemption
   isActive: boolean;
   createdAt: string;
 }

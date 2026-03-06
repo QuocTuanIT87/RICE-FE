@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
-import { Lock, Sparkles, RotateCcw, Coins } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Lock, Sparkles, Coins, ShoppingCart } from "lucide-react";
+import { useAppSelector } from "@/store/hooks";
+import { useNavigate } from "react-router-dom";
+import { gameCoinsApi } from "@/services/api";
 import BauCuaGame from "@/pages/BauCuaGame";
 import XiDachGame from "@/pages/XiDachGame";
 
 const ACCESS_CODE = "MINHLAOMA";
-const STORAGE_KEYS = { balance: "baucua_balance", access: "baucua_access" };
 
 type GameId = "menu" | "baucua" | "xidach";
 
@@ -45,7 +47,7 @@ function CodeGate({ onUnlock }: { onUnlock: () => void }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (code.trim().toUpperCase() === ACCESS_CODE) {
-      sessionStorage.setItem(STORAGE_KEYS.access, "true");
+      sessionStorage.setItem("entertainment_access", "true");
       onUnlock();
     } else {
       setError("Sai mã rồi đạo hữu ơi! 😅");
@@ -93,7 +95,7 @@ function CodeGate({ onUnlock }: { onUnlock: () => void }) {
             autoFocus
           />
           {error && (
-            <p className="text-red-500 text-sm font-semibold text-center mt-3 animate-fade-in">
+            <p className="text-red-500 text-sm font-semibold text-center mt-3">
               {error}
             </p>
           )}
@@ -116,15 +118,14 @@ function CodeGate({ onUnlock }: { onUnlock: () => void }) {
 function GameMenu({
   onSelect,
   balance,
-  onResetBalance,
+  onGoToShop,
 }: {
   onSelect: (id: GameId) => void;
   balance: number;
-  onResetBalance: () => void;
+  onGoToShop: () => void;
 }) {
   return (
     <div className="max-w-lg mx-auto pb-10">
-      {/* Header */}
       <div className="text-center mb-6">
         <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-5 py-1.5 rounded-full text-xs font-bold shadow-lg shadow-purple-200 mb-2">
           <Sparkles size={14} />
@@ -143,22 +144,20 @@ function GameMenu({
             </div>
             <div>
               <p className="text-white/70 text-[10px] font-bold uppercase tracking-wider">
-                Số dư chung
+                Xu của bạn
               </p>
               <p className="text-white text-xl font-black leading-tight">
                 {balance.toLocaleString()} xu
               </p>
             </div>
           </div>
-          {balance === 0 && (
-            <button
-              onClick={onResetBalance}
-              className="flex items-center gap-1.5 bg-white/25 hover:bg-white/35 text-white px-3 py-2 rounded-xl text-xs font-bold transition-all backdrop-blur-sm"
-            >
-              <RotateCcw size={13} />
-              Nạp 1000 xu
-            </button>
-          )}
+          <button
+            onClick={onGoToShop}
+            className="flex items-center gap-1.5 bg-white/25 hover:bg-white/35 text-white px-3 py-2 rounded-xl text-xs font-bold transition-all backdrop-blur-sm"
+          >
+            <ShoppingCart size={13} />
+            Đổi lượt cơm
+          </button>
         </div>
       </div>
 
@@ -168,39 +167,68 @@ function GameMenu({
           <button
             key={game.id}
             onClick={() => onSelect(game.id)}
-            className="group relative overflow-hidden rounded-3xl border-2 border-gray-100 bg-white shadow-md hover:shadow-xl transition-all hover:-translate-y-1 active:translate-y-0 text-left"
+            disabled={balance <= 0}
+            className={`group relative overflow-hidden rounded-3xl border-2 border-gray-100 bg-white shadow-md transition-all text-left ${
+              balance > 0
+                ? "hover:shadow-xl hover:-translate-y-1 active:translate-y-0"
+                : "opacity-50 cursor-not-allowed"
+            }`}
           >
-            {/* Gradient top bar */}
             <div className={`h-2 bg-gradient-to-r ${game.gradient}`} />
-
             <div className="p-5 flex items-center gap-4">
-              {/* Icon */}
               <div
                 className={`w-16 h-16 bg-gradient-to-br ${game.gradient} rounded-2xl flex items-center justify-center text-3xl shadow-lg ${game.shadow} group-hover:scale-110 transition-transform`}
               >
                 {game.emoji}
               </div>
-
-              {/* Info */}
               <div className="flex-1">
                 <h3 className="text-lg font-black text-gray-900 group-hover:text-orange-600 transition-colors">
                   {game.title}
                 </h3>
                 <p className="text-sm text-gray-400">{game.desc}</p>
               </div>
-
-              {/* Arrow */}
               <div className="text-gray-300 group-hover:text-orange-400 group-hover:translate-x-1 transition-all text-xl">
                 →
               </div>
             </div>
           </button>
         ))}
+
+        {/* Shop card (Redirect version) */}
+        <button
+          onClick={onGoToShop}
+          className="group relative overflow-hidden rounded-3xl border-2 border-dashed border-gray-200 bg-gradient-to-r from-gray-50 to-slate-50 shadow-sm hover:shadow-md transition-all text-left hover:-translate-y-0.5 active:translate-y-0"
+        >
+          <div className="p-5 flex items-center gap-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl flex items-center justify-center text-3xl shadow-lg shadow-emerald-200 group-hover:scale-110 transition-transform">
+              🏪
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-black text-gray-900 group-hover:text-emerald-600 transition-colors">
+                Đổi Xu → Lượt Cơm
+              </h3>
+              <p className="text-sm text-gray-400">
+                100,000 xu = 1 lượt cơm miễn phí!
+              </p>
+            </div>
+            <div className="text-gray-300 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all text-xl">
+              →
+            </div>
+          </div>
+        </button>
       </div>
 
-      {/* Fun note */}
+      {balance <= 0 && (
+        <div className="mt-4 bg-amber-50 border border-amber-200 rounded-2xl p-3 text-center">
+          <p className="text-amber-600 text-sm font-bold">
+            ⚠️ Bạn chưa có xu! Hãy mua gói đặt cơm để nhận xu bonus.
+          </p>
+        </div>
+      )}
+
       <p className="text-center text-xs text-gray-400 mt-6">
-        🎰 Xu ảo dùng chung giữa các game • Chơi vui là chính! 😄
+        🎰 Mua gói cơm = nhận xu bonus (1 lượt = 1,000 xu) • Chơi game tích xu!
+        🎉
       </p>
     </div>
   );
@@ -208,31 +236,110 @@ function GameMenu({
 
 // ============ MAIN PAGE ============
 export default function EntertainmentPage() {
+  const navigate = useNavigate();
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+
   const [unlocked, setUnlocked] = useState(
-    () => sessionStorage.getItem(STORAGE_KEYS.access) === "true",
+    () => sessionStorage.getItem("entertainment_access") === "true",
   );
   const [currentGame, setCurrentGame] = useState<GameId>("menu");
-  const [balance, setBalance] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.balance);
-    return saved ? parseInt(saved) : 1000;
-  });
+  const [balance, setBalance] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  // Persist balance
+  // Fetch balance from server
+  const fetchBalance = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const res = await gameCoinsApi.getBalance();
+      setBalance(res.data.data?.gameCoins || 0);
+    } catch {
+      // silent fail
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
+
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.balance, balance.toString());
-  }, [balance]);
+    if (isAuthenticated) {
+      fetchBalance();
+    } else {
+      setLoading(false);
+    }
+  }, [isAuthenticated, fetchBalance]);
 
-  const resetBalance = () => setBalance(1000);
-  const setBalanceFn = (fn: (prev: number) => number) => setBalance(fn);
+  // Sync coins with server after game ends
+  const syncCoins = useCallback(
+    async (delta: number) => {
+      if (!isAuthenticated || delta === 0) return;
+      try {
+        const res = await gameCoinsApi.updateCoins(delta);
+        setBalance(res.data.data?.gameCoins || 0);
+      } catch {
+        // fallback: refetch
+        fetchBalance();
+      }
+    },
+    [isAuthenticated, fetchBalance],
+  );
+
+  const setBalanceFn = useCallback((fn: (prev: number) => number) => {
+    setBalance(fn);
+  }, []);
+
+  // Sync when returning to menu
+  const handleBackToMenu = useCallback(async () => {
+    // Sync with server
+    await fetchBalance();
+    setCurrentGame("menu");
+  }, [fetchBalance]);
+
+  const handleGoToShop = () => {
+    navigate("/packages?tab=coin-exchange");
+  };
+
+  // Redirect if not logged in
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center px-4">
+        <div className="text-center max-w-sm">
+          <div className="text-6xl mb-4">🔐</div>
+          <h2 className="text-2xl font-black text-gray-900 mb-2">
+            Cần đăng nhập
+          </h2>
+          <p className="text-gray-400 text-sm mb-6">
+            Đăng nhập để chơi game và tích xu nhé!
+          </p>
+          <button
+            onClick={() => navigate("/login")}
+            className="px-8 py-3 bg-gradient-to-r from-violet-500 to-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-purple-200 hover:-translate-y-0.5 transition-all"
+          >
+            Đăng nhập ngay
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!unlocked) return <CodeGate onUnlock={() => setUnlocked(true)} />;
+
+  if (loading) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl animate-bounce mb-3">🎮</div>
+          <p className="text-gray-400 font-bold">Đang tải...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (currentGame === "baucua") {
     return (
       <BauCuaGame
         balance={balance}
         setBalance={setBalanceFn}
-        onBack={() => setCurrentGame("menu")}
+        onBack={handleBackToMenu}
+        onGameEnd={syncCoins}
       />
     );
   }
@@ -242,7 +349,8 @@ export default function EntertainmentPage() {
       <XiDachGame
         balance={balance}
         setBalance={setBalanceFn}
-        onBack={() => setCurrentGame("menu")}
+        onBack={handleBackToMenu}
+        onGameEnd={syncCoins}
       />
     );
   }
@@ -251,7 +359,7 @@ export default function EntertainmentPage() {
     <GameMenu
       onSelect={setCurrentGame}
       balance={balance}
-      onResetBalance={resetBalance}
+      onGoToShop={handleGoToShop}
     />
   );
 }

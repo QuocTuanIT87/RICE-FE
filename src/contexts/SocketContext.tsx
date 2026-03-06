@@ -6,8 +6,9 @@ import {
   ReactNode,
 } from "react";
 import { io, Socket } from "socket.io-client";
-import { useAppSelector } from "@/store/hooks";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { RootState } from "@/store";
+import { updateGameCoins } from "@/store/authSlice";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface SocketContextType {
@@ -25,11 +26,15 @@ export const useSocket = () => useContext(SocketContext);
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const { user, token } = useAppSelector((state: RootState) => state.auth);
+  const { user, token, isAuthenticated } = useAppSelector(
+    (state: RootState) => state.auth,
+  );
+  const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!token || !user) {
+    // Chỉ connect khi đã xác thực (qua cookie hoặc token cũ)
+    if (!isAuthenticated || !user) {
       if (socket) {
         socket.disconnect();
         setSocket(null);
@@ -44,8 +49,9 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
     const newSocket = io(socketUrl, {
       auth: {
-        token: token,
+        token: token, // Vẫn giữ token phòng hờ trường hợp dùng localStorage
       },
+      withCredentials: true, // QUAN TRỌNG: Gửi kèm Cookie lên server
       // Polling trước, rồi upgrade lên websocket
       // Render free tier không hỗ trợ sticky sessions → websocket-first sẽ fail
       transports: ["polling", "websocket"],
@@ -93,7 +99,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       newSocket.disconnect();
     };
-  }, [token, user?.role, user?.id, user?._id]);
+  }, [isAuthenticated, user?.role, user?.id, user?._id]);
 
   // ============================================
   // GLOBAL SOCKET LISTENERS
@@ -132,14 +138,25 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       queryClient.invalidateQueries({ queryKey: ["mealPackages"] });
     });
 
-    socket.on("purchase_request_approved", () => {
+    socket.on("purchase_request_approved", (data) => {
       queryClient.invalidateQueries({ queryKey: ["myPackages"] });
       queryClient.invalidateQueries({ queryKey: ["myActivePackages"] });
       queryClient.invalidateQueries({ queryKey: ["myPurchaseRequests"] });
+
+      // Cập nhật xu ngay lập tức nếu có thông tin
+      if (data?.gameCoins !== undefined) {
+        dispatch(updateGameCoins(data.gameCoins));
+      }
     });
 
     socket.on("purchase_request_rejected", () => {
       queryClient.invalidateQueries({ queryKey: ["myPurchaseRequests"] });
+    });
+
+    socket.on("coins_updated", (data) => {
+      if (data?.gameCoins !== undefined) {
+        dispatch(updateGameCoins(data.gameCoins));
+      }
     });
 
     socket.on("order_confirmed", () => {
@@ -175,6 +192,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       socket.off("package_deleted");
       socket.off("purchase_request_approved");
       socket.off("purchase_request_rejected");
+      socket.off("coins_updated");
       socket.off("order_confirmed");
       socket.off("menu_created");
       socket.off("menu_updated");
