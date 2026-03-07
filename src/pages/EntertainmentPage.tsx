@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { Lock, Sparkles, Coins, ShoppingCart } from "lucide-react";
 import { useAppSelector } from "@/store/hooks";
 import { useNavigate } from "react-router-dom";
-import { gameCoinsApi } from "@/services/api";
-import BauCuaGame from "@/pages/BauCuaGame";
-import XiDachGame from "@/pages/XiDachGame";
+import BauCuaGame from "./BauCuaGame";
+import MultiBauCuaGame from "./MultiBauCuaGame";
+import XiDachGame from "./XiDachGame";
+import { useSocket } from "@/contexts/SocketContext";
 
 const ACCESS_CODE = "MINHLAOMA";
 
@@ -243,55 +244,35 @@ export default function EntertainmentPage() {
     () => sessionStorage.getItem("entertainment_access") === "true",
   );
   const [currentGame, setCurrentGame] = useState<GameId>("menu");
-  const [balance, setBalance] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [baucuaMode, setBaucuaMode] = useState<"menu" | "single" | "multi">(
+    "menu",
+  );
+  const [selectedRoomIdx, setSelectedRoomIdx] = useState<number | null>(null);
+  const [rooms, setRooms] = useState<any[]>([]);
+  const { socket } = useSocket();
+  const balance = useAppSelector((state) => state.auth.user?.gameCoins || 0);
 
-  // Fetch balance from server
-  const fetchBalance = useCallback(async () => {
-    if (!isAuthenticated) return;
-    try {
-      const res = await gameCoinsApi.getBalance();
-      setBalance(res.data.data?.gameCoins || 0);
-    } catch {
-      // silent fail
-    } finally {
-      setLoading(false);
-    }
-  }, [isAuthenticated]);
+  const setBalanceFn = useCallback(() => {
+    // No-op: Balance is handled by sync events in Redux
+  }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchBalance();
-    } else {
-      setLoading(false);
-    }
-  }, [isAuthenticated, fetchBalance]);
+    if (!socket || currentGame !== "baucua" || baucuaMode !== "multi") return;
 
-  // Sync coins with server after game ends
-  const syncCoins = useCallback(
-    async (delta: number) => {
-      if (!isAuthenticated || delta === 0) return;
-      try {
-        const res = await gameCoinsApi.updateCoins(delta);
-        setBalance(res.data.data?.gameCoins || 0);
-      } catch {
-        // fallback: refetch
-        fetchBalance();
-      }
-    },
-    [isAuthenticated, fetchBalance],
-  );
+    socket.emit("baucua:get_rooms");
+    socket.on("baucua:rooms_list", (data) => setRooms(data));
 
-  const setBalanceFn = useCallback((fn: (prev: number) => number) => {
-    setBalance(fn);
-  }, []);
+    return () => {
+      socket.off("baucua:rooms_list");
+    };
+  }, [socket, currentGame, baucuaMode]);
 
   // Sync when returning to menu
   const handleBackToMenu = useCallback(async () => {
-    // Sync with server
-    await fetchBalance();
     setCurrentGame("menu");
-  }, [fetchBalance]);
+    setBaucuaMode("menu");
+    setSelectedRoomIdx(null);
+  }, []);
 
   const handleGoToShop = () => {
     navigate("/packages?tab=coin-exchange");
@@ -322,24 +303,128 @@ export default function EntertainmentPage() {
 
   if (!unlocked) return <CodeGate onUnlock={() => setUnlocked(true)} />;
 
-  if (loading) {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-4xl animate-bounce mb-3">🎮</div>
-          <p className="text-gray-400 font-bold">Đang tải...</p>
-        </div>
-      </div>
-    );
-  }
-
   if (currentGame === "baucua") {
+    if (baucuaMode === "menu") {
+      return (
+        <div className="max-w-lg mx-auto pb-10">
+          <button
+            onClick={() => setCurrentGame("menu")}
+            className="mb-6 text-gray-500 hover:text-orange-600 font-bold flex items-center gap-1 transition-colors"
+          >
+            ← Quay lại
+          </button>
+          <h2 className="text-2xl font-black text-gray-900 mb-6 text-center">
+            Bầu Cua Tôm Cá 🎲
+          </h2>
+          <div className="grid grid-cols-1 gap-4">
+            <button
+              onClick={() => setBaucuaMode("single")}
+              className="p-6 bg-white border-2 border-orange-100 rounded-3xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all text-left group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                  🤖
+                </div>
+                <div>
+                  <h3 className="font-black text-lg text-gray-900">
+                    Chơi với Máy
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Tự do trải nghiệm, không cần chờ đợi
+                  </p>
+                </div>
+              </div>
+            </button>
+            <button
+              onClick={() => setBaucuaMode("multi")}
+              className="p-6 bg-white border-2 border-red-100 rounded-3xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all text-left group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                  👥
+                </div>
+                <div>
+                  <h3 className="font-black text-lg text-gray-900">
+                    Bầu Cua Online
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Đua tài cùng các huynh đệ, làm Cái cực phê
+                  </p>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (baucuaMode === "multi" && selectedRoomIdx === null) {
+      return (
+        <div className="max-w-2xl mx-auto pb-10">
+          <button
+            onClick={() => setBaucuaMode("menu")}
+            className="mb-6 text-gray-500 hover:text-orange-600 font-bold flex items-center gap-1 transition-colors"
+          >
+            ← Chọn chế độ
+          </button>
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-black text-gray-900 mb-2">
+              Sảnh Chờ 🏆
+            </h2>
+            <p className="text-gray-500">Chọn một phòng để bắt đầu sát phạt!</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {rooms.length > 0 ? (
+              rooms.map((room, idx) => (
+                <button
+                  key={room.id}
+                  onClick={() => setSelectedRoomIdx(idx)}
+                  className="p-5 bg-white border-2 border-gray-100 rounded-3xl shadow-sm hover:shadow-lg hover:border-orange-300 transition-all text-left group relative overflow-hidden"
+                >
+                  <div
+                    className={`absolute top-0 right-0 px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${room.status === "BETTING" ? "bg-green-500 text-white" : "bg-gray-200 text-gray-500"}`}
+                  >
+                    {room.status === "BETTING" ? "Đang cược" : "Chờ khách"}
+                  </div>
+                  <h3 className="font-black text-gray-900 text-lg mb-1 group-hover:text-orange-600">
+                    Phòng {idx + 1}
+                  </h3>
+                  <div className="flex items-center gap-4 text-sm text-gray-500 font-medium">
+                    <span className="flex items-center gap-1">
+                      👤 {room.playerCount}/6
+                    </span>
+                    <span className="flex items-center gap-1">
+                      👑 {room.hasDealer ? "Đã có Cái" : "Chưa có Cái"}
+                    </span>
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="col-span-full py-10 text-center animate-pulse text-gray-400 font-bold">
+                🚀 Đang kết nối tới máy chủ...
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (baucuaMode === "multi" && selectedRoomIdx !== null) {
+      return (
+        <MultiBauCuaGame
+          roomIdx={selectedRoomIdx}
+          balance={balance}
+          onBack={() => setSelectedRoomIdx(null)}
+        />
+      );
+    }
+
     return (
       <BauCuaGame
         balance={balance}
         setBalance={setBalanceFn}
         onBack={handleBackToMenu}
-        onGameEnd={syncCoins}
       />
     );
   }
@@ -350,7 +435,6 @@ export default function EntertainmentPage() {
         balance={balance}
         setBalance={setBalanceFn}
         onBack={handleBackToMenu}
-        onGameEnd={syncCoins}
       />
     );
   }
