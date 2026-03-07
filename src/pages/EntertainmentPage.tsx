@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { Lock, Sparkles, Coins, ShoppingCart } from "lucide-react";
-import { useAppSelector } from "@/store/hooks";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { useNavigate } from "react-router-dom";
 import BauCuaGame from "./BauCuaGame";
 import MultiBauCuaGame from "./MultiBauCuaGame";
 import XiDachGame from "./XiDachGame";
 import { useSocket } from "@/contexts/SocketContext";
+import { gameCoinsApi } from "@/services/api";
+import { updateGameCoins } from "@/store/authSlice";
 
 const ACCESS_CODE = "MINHLAOMA";
 
@@ -251,10 +253,29 @@ export default function EntertainmentPage() {
   const [rooms, setRooms] = useState<any[]>([]);
   const { socket } = useSocket();
   const balance = useAppSelector((state) => state.auth.user?.gameCoins || 0);
+  const dispatch = useAppDispatch();
 
-  const setBalanceFn = useCallback(() => {
-    // No-op: Balance is handled by sync events in Redux
-  }, []);
+  // Sync coins with server after game ends
+  const syncCoins = useCallback(
+    async (delta: number) => {
+      if (!isAuthenticated || delta === 0) return;
+      try {
+        const res = await gameCoinsApi.updateCoins(delta);
+        dispatch(updateGameCoins(res.data.data?.gameCoins || 0));
+      } catch {
+        // silent fail - real gameCoins will sync when they next refresh or via socket
+      }
+    },
+    [isAuthenticated, dispatch],
+  );
+
+  const setBalanceFn = useCallback(
+    (fn: (prev: number) => number) => {
+      // Optimistic update
+      dispatch(updateGameCoins(fn(balance)));
+    },
+    [balance, dispatch],
+  );
 
   useEffect(() => {
     if (!socket || currentGame !== "baucua" || baucuaMode !== "multi") return;
@@ -425,6 +446,7 @@ export default function EntertainmentPage() {
         balance={balance}
         setBalance={setBalanceFn}
         onBack={handleBackToMenu}
+        onGameEnd={syncCoins}
       />
     );
   }
@@ -435,6 +457,7 @@ export default function EntertainmentPage() {
         balance={balance}
         setBalance={setBalanceFn}
         onBack={handleBackToMenu}
+        onGameEnd={syncCoins}
       />
     );
   }
