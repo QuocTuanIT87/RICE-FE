@@ -185,7 +185,9 @@ export default function XiDachGame({
     return handScore(dealerCards.filter((c) => c.faceUp));
   }, [dealerCards, gameState]);
 
-  const chips = [1000, 2000, 5000, 10000, 20000, 50000, 1000000];
+  const chips = [
+    1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000,
+  ];
 
   // ---- DEAL ----
   const startGame = useCallback(() => {
@@ -681,7 +683,11 @@ export default function XiDachGame({
                       : "bg-white text-gray-600 border-2 border-gray-200 hover:border-purple-300 hover:text-purple-600"
                 }`}
               >
-                +{chip} xu
+                {chip >= 1000000
+                  ? `${chip / 1000000}M`
+                  : chip >= 1000
+                    ? `${chip / 1000}K`
+                    : chip}
               </button>
             ))}
             <button

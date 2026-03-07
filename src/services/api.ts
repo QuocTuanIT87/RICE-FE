@@ -88,6 +88,10 @@ export const authApi = {
 // USERS API (Admin)
 // =============================================
 export const usersApi = {
+  getLeaderboard: () => api.get<ApiResponse<any[]>>("/users/leaderboard"),
+  getTopCoins: () => api.get<ApiResponse<any[]>>("/users/leaderboard/coins"),
+  getTopOrders: () => api.get<ApiResponse<any[]>>("/users/leaderboard/orders"),
+
   getUsers: (params?: {
     role?: string;
     isBlocked?: boolean;
