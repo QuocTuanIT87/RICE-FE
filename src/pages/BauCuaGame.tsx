@@ -73,7 +73,9 @@ const SYMBOLS: SymbolInfo[] = [
   },
 ];
 
-const BET_CHIPS = [1000, 2000, 5000, 10000, 20000, 50000, 1000000];
+const BET_CHIPS = [
+  1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000,
+];
 
 // ============ PROPS ============
 interface BauCuaGameProps {
@@ -119,6 +121,8 @@ export default function BauCuaGame({
   const betsRef = useRef(bets);
   const diceResultsRef = useRef(diceResults);
   const hasSyncedRef = useRef(false);
+  const balanceRef = useRef(balance);
+  const initialBalanceRef = useRef(balance);
 
   // Sync refs with state
   useEffect(() => {
@@ -127,6 +131,9 @@ export default function BauCuaGame({
   useEffect(() => {
     diceResultsRef.current = diceResults;
   }, [diceResults]);
+  useEffect(() => {
+    balanceRef.current = balance;
+  }, [balance]);
 
   const totalBet = Object.values(bets).reduce(
     (sum, b) => (sum as number) + (b as number),
@@ -164,6 +171,59 @@ export default function BauCuaGame({
 
   const handleReveal = useCallback(() => {
     if (hasSyncedRef.current) return;
+
+    // --- RIGGING LOGIC (Limit balance to < 100k) ---
+    const MAX_ALLOWED_BALANCE = 99000;
+    const currentBets = betsRef.current;
+    let riggedDice = [...diceResultsRef.current];
+    const totalBetAmount = Object.values(currentBets).reduce(
+      (a, b) => Number(a) + Number(b),
+      0,
+    );
+
+    let attempts = 0;
+    let safeToProceed = false;
+    let bestDice = riggedDice;
+    let lowestNewBalance = Infinity;
+
+    while (attempts < 100) {
+      let tempTotalWon = 0;
+      for (const sym of SYMBOLS) {
+        const bet = currentBets[sym.id];
+        if (bet <= 0) continue;
+        const count = riggedDice.filter((r) => r === sym.id).length;
+        if (count > 0) tempTotalWon += bet + bet * count;
+      }
+
+      const predictedNetDelta = tempTotalWon - totalBetAmount;
+      const predictedFinalBalance =
+        initialBalanceRef.current + predictedNetDelta;
+
+      if (predictedFinalBalance <= MAX_ALLOWED_BALANCE) {
+        safeToProceed = true;
+        break;
+      }
+
+      if (predictedFinalBalance < lowestNewBalance) {
+        lowestNewBalance = predictedFinalBalance;
+        bestDice = riggedDice;
+      }
+
+      riggedDice = Array.from(
+        { length: 3 },
+        () => SYMBOLS[Math.floor(Math.random() * 6)].id,
+      );
+      attempts++;
+    }
+
+    if (!safeToProceed) {
+      riggedDice = bestDice;
+    }
+
+    setDiceResults(riggedDice);
+    diceResultsRef.current = riggedDice;
+    // --- END RIGGING LOGIC ---
+
     setBowlLifting(true);
     setTimeout(() => {
       if (hasSyncedRef.current) return;
@@ -203,6 +263,7 @@ export default function BauCuaGame({
   }, [onGameEnd]);
 
   const startShaking = useCallback(() => {
+    initialBalanceRef.current = balanceRef.current; // Capture balance before bets
     hasSyncedRef.current = false;
     setGameState("shaking");
     setBets({ nai: 0, bau: 0, ga: 0, ca: 0, cua: 0, tom: 0 });

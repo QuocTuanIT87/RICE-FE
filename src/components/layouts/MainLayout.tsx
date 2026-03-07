@@ -19,6 +19,7 @@ import {
   X,
   Gamepad2,
   Coins,
+  Trophy,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import PriceNoticeBanner from "@/components/PriceNoticeBanner";
@@ -27,6 +28,7 @@ const customerNavItems = [
   { path: "/", label: "Trang chủ", icon: Home },
   { path: "/order", label: "Đặt cơm", icon: UtensilsCrossed },
   { path: "/packages", label: "Mua gói", icon: ShoppingBag },
+  { path: "/leaderboard", label: "Bảng xếp hạng", icon: Trophy },
   { path: "/giai-tri", label: "Giải trí", icon: Gamepad2 },
 ];
 

@@ -26,6 +26,7 @@ import MyPackagesPage from "@/pages/MyPackagesPage";
 import ProfilePage from "@/pages/ProfilePage";
 import OrderHistoryPage from "@/pages/OrderHistoryPage";
 import EntertainmentPage from "@/pages/EntertainmentPage";
+import LeaderboardPage from "@/pages/LeaderboardPage";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -164,6 +165,14 @@ function AppRoutes() {
           element={
             <PublicRoute>
               <EntertainmentPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/leaderboard"
+          element={
+            <PublicRoute>
+              <LeaderboardPage />
             </PublicRoute>
           }
         />
