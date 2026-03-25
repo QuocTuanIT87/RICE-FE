@@ -270,17 +270,33 @@ export default function AdminOrders() {
                               </div>
                             </div>
 
-                            <div className="flex-1 flex flex-wrap gap-1.5 md:justify-center">
-                              {order.orderItems?.map((item: any) => (
-                                <Badge
-                                  key={item._id}
-                                  variant="secondary"
-                                  className="bg-orange-50 text-orange-700 hover:bg-orange-100 border-none font-bold text-[10px] px-2.5 py-0.5 rounded-lg uppercase"
-                                >
-                                  {(item.menuItemId as MenuItem)?.name ||
-                                    "Món đã xóa"}
-                                </Badge>
-                              ))}
+                            <div className="flex-1 flex flex-col gap-1.5 md:px-4">
+                              {order.orderItems?.map((item: any) => {
+                                const menuItem = item.menuItemId as MenuItem;
+                                return (
+                                  <div
+                                    key={item._id}
+                                    className="flex items-start gap-2"
+                                  >
+                                    <Badge
+                                      variant="secondary"
+                                      className="bg-orange-50 text-orange-700 hover:bg-orange-100 border-none font-bold text-[10px] px-2.5 py-0.5 rounded-lg uppercase shrink-0"
+                                    >
+                                      {menuItem?.name || "Món đã xóa"}
+                                    </Badge>
+                                    {item.quantity && item.quantity > 1 && (
+                                      <Badge className="bg-orange-600 text-white font-black text-[10px] px-1.5 py-0.5 rounded-md shrink-0">
+                                        ×{item.quantity}
+                                      </Badge>
+                                    )}
+                                    {item.note && item.note.trim() && (
+                                      <span className="text-[10px] text-gray-400 italic truncate">
+                                        📝 {item.note}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
 
                             <div className="flex items-center md:items-end flex-col gap-1 shrink-0">

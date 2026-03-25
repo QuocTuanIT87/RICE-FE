@@ -5,13 +5,14 @@ import { useNavigate } from "react-router-dom";
 import BauCuaGame from "./BauCuaGame";
 import MultiBauCuaGame from "./MultiBauCuaGame";
 import XiDachGame from "./XiDachGame";
+import TienLenGame from "./TienLenGame";
 import { useSocket } from "@/contexts/SocketContext";
 import { gameCoinsApi } from "@/services/api";
 import { updateGameCoins } from "@/store/authSlice";
 
 const ACCESS_CODE = "MINHLAOMA";
 
-type GameId = "menu" | "baucua" | "xidach";
+type GameId = "menu" | "baucua" | "xidach" | "tienlen";
 
 interface GameOption {
   id: GameId;
@@ -38,6 +39,14 @@ const GAMES: GameOption[] = [
     desc: "Blackjack phiên bản Việt Nam",
     gradient: "from-violet-500 via-purple-500 to-indigo-500",
     shadow: "shadow-purple-200",
+  },
+  {
+    id: "tienlen",
+    title: "Tiến Lên Miền Nam",
+    emoji: "⚔️",
+    desc: "Đánh bài Solo với Máy (1vs1)",
+    gradient: "from-red-600 via-rose-600 to-orange-600",
+    shadow: "shadow-red-200",
   },
 ];
 
@@ -454,6 +463,17 @@ export default function EntertainmentPage() {
   if (currentGame === "xidach") {
     return (
       <XiDachGame
+        balance={balance}
+        setBalance={setBalanceFn}
+        onBack={handleBackToMenu}
+        onGameEnd={syncCoins}
+      />
+    );
+  }
+
+  if (currentGame === "tienlen") {
+    return (
+      <TienLenGame
         balance={balance}
         setBalance={setBalanceFn}
         onBack={handleBackToMenu}

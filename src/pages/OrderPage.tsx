@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { dailyMenusApi, ordersApi, userPackagesApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/useToast";
 import {
   UtensilsCrossed,
@@ -15,6 +14,8 @@ import {
   Zap,
   Lock,
   Timer,
+  Minus,
+  Plus,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { MenuItem, DailyMenu, PackageType } from "@/types";
@@ -23,7 +24,9 @@ import { useSocket } from "@/contexts/SocketContext";
 export default function OrderPage() {
   const queryClient = useQueryClient();
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [itemQuantities, setItemQuantities] = useState<Record<string, number>>(
+    {},
+  );
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({});
   const [orderType, setOrderType] = useState<PackageType>("normal");
   const { socket } = useSocket();
@@ -84,7 +87,7 @@ export default function OrderPage() {
       type,
       menuId,
     }: {
-      items: Array<{ menuItemId: string; note?: string }>;
+      items: Array<{ menuItemId: string; note?: string; quantity?: number }>;
       type: PackageType;
       menuId: string;
     }) => ordersApi.createOrder(items, type, menuId),
@@ -127,20 +130,39 @@ export default function OrderPage() {
   );
   const remainingTurns = orderType === "normal" ? normalTurns : noRiceTurns;
 
+  // Tính tổng số lượng đã chọn
+  const selectedItemIds = Object.keys(itemQuantities).filter(
+    (id) => itemQuantities[id] > 0,
+  );
+  const totalQuantity = Object.values(itemQuantities).reduce(
+    (sum, qty) => sum + qty,
+    0,
+  );
+
   const currentMenu =
     menus.find((m: DailyMenu) => m._id === activeMenuId) ||
     (menus as DailyMenu[])[0];
 
-  const handleToggleItem = (itemId: string) => {
-    setSelectedItems((prev) => {
-      if (prev.includes(itemId)) {
+  const handleIncrement = (itemId: string) => {
+    setItemQuantities((prev) => ({
+      ...prev,
+      [itemId]: (prev[itemId] || 0) + 1,
+    }));
+  };
+
+  const handleDecrement = (itemId: string) => {
+    setItemQuantities((prev) => {
+      const current = prev[itemId] || 0;
+      if (current <= 1) {
+        // Xóa item khỏi danh sách
+        const newQuantities = { ...prev };
+        delete newQuantities[itemId];
         const newNotes = { ...itemNotes };
         delete newNotes[itemId];
         setItemNotes(newNotes);
-        return prev.filter((id) => id !== itemId);
-      } else {
-        return [...prev, itemId];
+        return newQuantities;
       }
+      return { ...prev, [itemId]: current - 1 };
     });
   };
 
@@ -150,12 +172,12 @@ export default function OrderPage() {
 
   const handleTabChange = (value: PackageType) => {
     setOrderType(value);
-    setSelectedItems([]);
+    setItemQuantities({});
     setItemNotes({});
   };
 
   const handleSubmitOrder = () => {
-    if (selectedItems.length === 0) {
+    if (selectedItemIds.length === 0) {
       toast({
         title: "⚠️ Chưa chọn món",
         description: "Vui lòng chọn ít nhất 1 món ăn",
@@ -163,9 +185,10 @@ export default function OrderPage() {
       });
       return;
     }
-    const items = selectedItems.map((itemId) => ({
+    const items = selectedItemIds.map((itemId) => ({
       menuItemId: itemId,
       note: itemNotes[itemId] || "",
+      quantity: itemQuantities[itemId] || 1,
     }));
     createOrderMutation.mutate({
       items,
@@ -267,6 +290,11 @@ export default function OrderPage() {
                   <div>
                     <span className="font-bold text-gray-900 text-sm">
                       {(item.menuItemId as MenuItem)?.name || "Món đã bị xóa"}
+                      {item.quantity && item.quantity > 1 && (
+                        <span className="text-orange-500 ml-1">
+                          ×{item.quantity}
+                        </span>
+                      )}
                     </span>
                     {item.note && (
                       <p className="text-xs text-gray-400 mt-0.5">
@@ -322,7 +350,7 @@ export default function OrderPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
+    <div className="w-full max-w-2xl mx-auto space-y-5">
       {/* Header */}
       <div>
         <p className="text-orange-500 font-bold text-xs uppercase tracking-widest mb-1">
@@ -339,7 +367,7 @@ export default function OrderPage() {
               key={menu._id}
               onClick={() => {
                 setActiveMenuId(menu._id);
-                setSelectedItems([]);
+                setItemQuantities({});
                 setItemNotes({});
               }}
               className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
@@ -488,7 +516,8 @@ export default function OrderPage() {
               {/* Items */}
               <div className="divide-y divide-gray-50">
                 {items.map((item) => {
-                  const isSelected = selectedItems.includes(item._id);
+                  const qty = itemQuantities[item._id] || 0;
+                  const isSelected = qty > 0;
                   const isDisabled = !canOrder || remainingTurns === 0;
                   const accentColor =
                     orderType === "normal" ? "orange" : "blue";
@@ -502,21 +531,12 @@ export default function OrderPage() {
                           : "hover:bg-gray-50/50"
                       } ${isDisabled ? "opacity-50" : ""}`}
                     >
-                      <label
-                        className={`flex items-center gap-4 px-5 py-3.5 cursor-pointer ${
+                      <div
+                        className={`flex items-center gap-3 px-5 py-3.5 ${
                           isDisabled ? "pointer-events-none" : ""
                         }`}
                       >
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => handleToggleItem(item._id)}
-                          disabled={isDisabled}
-                          className={
-                            isSelected
-                              ? `border-${accentColor}-500 bg-${accentColor}-500`
-                              : ""
-                          }
-                        />
+                        {/* Tên món */}
                         <span
                           className={`flex-1 text-sm ${
                             isSelected
@@ -526,17 +546,43 @@ export default function OrderPage() {
                         >
                           {item.name}
                         </span>
-                        {isSelected && (
-                          <CheckCircle2
-                            size={16}
-                            className={`text-${accentColor}-500`}
-                          />
-                        )}
-                      </label>
+
+                        {/* Nút +/- */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          {isSelected && (
+                            <button
+                              type="button"
+                              onClick={() => handleDecrement(item._id)}
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-${accentColor}-100 text-${accentColor}-600 hover:bg-${accentColor}-200`}
+                            >
+                              <Minus size={14} />
+                            </button>
+                          )}
+                          {isSelected && (
+                            <span
+                              className={`w-8 text-center text-sm font-bold text-${accentColor}-700`}
+                            >
+                              {qty}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleIncrement(item._id)}
+                            disabled={isDisabled}
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                              isSelected
+                                ? `bg-${accentColor}-500 text-white hover:bg-${accentColor}-600`
+                                : `bg-${accentColor}-100 text-${accentColor}-500 hover:bg-${accentColor}-200 hover:text-${accentColor}-600`
+                            }`}
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                      </div>
 
                       {/* Note input */}
                       {isSelected && (
-                        <div className="px-5 pb-3.5 pl-14">
+                        <div className="px-5 pb-3.5 pl-5">
                           <div className="flex items-center gap-1.5 text-[11px] text-gray-400 mb-1.5">
                             <MessageSquare size={10} />
                             Ghi chú (VD: lấy phần đuôi, không cay...)
@@ -567,15 +613,15 @@ export default function OrderPage() {
         <div className="rounded-2xl bg-white border border-gray-200 shadow-xl shadow-gray-200/50 p-4 flex items-center justify-between gap-4">
           <div className="min-w-0">
             <p className="font-bold text-gray-900 text-sm">
-              {selectedItems.length > 0
-                ? `Đã chọn ${selectedItems.length} món`
+              {totalQuantity > 0
+                ? `Đã chọn ${totalQuantity} phần (${selectedItemIds.length} món)`
                 : "Chưa chọn món nào"}
             </p>
             <p className="text-xs text-gray-400 flex items-center gap-1.5">
               {orderType === "normal" ? "🍚 Có cơm" : "🥢 Không cơm"} •{" "}
               <span className="font-bold">Còn {remainingTurns} lượt</span>
             </p>
-            {selectedItems.length > remainingTurns && (
+            {totalQuantity > remainingTurns && (
               <p className="text-xs text-red-500 font-bold mt-0.5">
                 ⚠️ Vượt quá số lượt còn lại!
               </p>
@@ -585,8 +631,8 @@ export default function OrderPage() {
             onClick={handleSubmitOrder}
             disabled={
               !canOrder ||
-              selectedItems.length === 0 ||
-              selectedItems.length > remainingTurns ||
+              totalQuantity === 0 ||
+              totalQuantity > remainingTurns ||
               remainingTurns === 0 ||
               createOrderMutation.isPending
             }

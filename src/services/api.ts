@@ -226,7 +226,7 @@ export const ordersApi = {
   getMyTodayOrder: () => api.get<ApiResponse<Order | null>>("/orders/today"),
 
   createOrder: (
-    items: Array<{ menuItemId: string; note?: string }>,
+    items: Array<{ menuItemId: string; note?: string; quantity?: number }>,
     orderType: PackageType = "normal",
     menuId: string,
   ) => api.post<ApiResponse<Order>>("/orders", { items, orderType, menuId }),

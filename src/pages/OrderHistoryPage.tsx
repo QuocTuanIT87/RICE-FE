@@ -72,7 +72,12 @@ export default function OrderHistoryPage() {
     const confirmed = filteredOrders.filter((o) => o.isConfirmed).length;
     const pending = filteredOrders.filter((o) => !o.isConfirmed).length;
     const totalItems = filteredOrders.reduce(
-      (sum, o) => sum + (o.orderItems?.length || 0),
+      (sum, o) =>
+        sum +
+        (o.orderItems?.reduce(
+          (itemSum: number, item: any) => itemSum + (item.quantity || 1),
+          0,
+        ) || 0),
       0,
     );
     return { total: filteredOrders.length, confirmed, pending, totalItems };
@@ -354,6 +359,9 @@ export default function OrderHistoryPage() {
                         className="px-3 py-1.5 bg-orange-50 text-orange-700 rounded-lg text-xs font-semibold border border-orange-100"
                       >
                         {menuItem?.name || "Món ăn"}
+                        {(item as any).quantity && (item as any).quantity > 1 && (
+                          <span className="text-orange-500"> ×{(item as any).quantity}</span>
+                        )}
                       </span>
                     );
                   })}

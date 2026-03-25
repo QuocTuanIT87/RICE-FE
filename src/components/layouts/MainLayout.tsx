@@ -1,7 +1,8 @@
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/authSlice";
-import { authApi } from "@/services/api";
+import { useQuery } from "@tanstack/react-query";
+import { authApi, usersApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import {
   User,
@@ -56,6 +57,22 @@ export default function MainLayout() {
 
   const isAdmin = user?.role === "admin";
   const navItems = isAdmin ? adminNavItems : customerNavItems;
+
+  // Fetch top leaderboards for marquee
+  const { data: topCoinsData } = useQuery({
+    queryKey: ["topCoins"],
+    queryFn: () => usersApi.getTopCoins(),
+    enabled: !isAdmin,
+  });
+
+  const { data: topOrdersData } = useQuery({
+    queryKey: ["topOrders"],
+    queryFn: () => usersApi.getTopOrders(),
+    enabled: !isAdmin,
+  });
+
+  const topCoins = topCoinsData?.data.data || [];
+  const topOrders = topOrdersData?.data.data || [];
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -113,7 +130,7 @@ export default function MainLayout() {
               </div>
               <div className="flex flex-col">
                 <span className="text-lg font-black bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-                  Web Đặt Cơm
+                  Thiên Hương Các
                 </span>
                 {isAdmin && (
                   <span className="text-[10px] text-red-500 font-bold uppercase tracking-wider -mt-0.5">
@@ -387,19 +404,68 @@ export default function MainLayout() {
         )}
       </header>
 
+      {/* Marquee Ticker for Customers */}
+      {!isAdmin && (topCoins.length > 0 || topOrders.length > 0) && (
+        <div className="bg-orange-50/70 overflow-hidden py-3 border-b border-orange-100/50 backdrop-blur-sm shadow-sm flex items-center">
+          {/* We render the content twice side-by-side to create a seamless infinite loop */}
+          {[1, 2].map((setIndex) => (
+            <div
+              key={`marquee-set-${setIndex}`}
+              className="animate-marquee whitespace-nowrap flex-shrink-0 flex items-center text-[15px] font-medium text-gray-600 tracking-wide select-none"
+              aria-hidden={setIndex === 2 ? "true" : "false"}
+            >
+              {topOrders.slice(0, 3).map((u: any, idx: number) => (
+                <span key={`order-${setIndex}-${idx}`} className="mx-8">
+                  🍚{" "}
+                  <span className="font-bold text-orange-600">
+                    Top {idx + 1} Đặt Cơm:
+                  </span>{" "}
+                  <span className="font-bold text-gray-900">
+                    Đạo hữu <span className="text-orange-500">{u.name}</span>
+                  </span>{" "}
+                  với{" "}
+                  <strong className="text-orange-600">
+                    {u.orderCount} đơn
+                  </strong>
+                </span>
+              ))}
+              {topCoins.slice(0, 3).map((u: any, idx: number) => (
+                <span key={`coin-${setIndex}-${idx}`} className="mx-8">
+                  💰{" "}
+                  <span className="font-bold text-amber-600">
+                    Top {idx + 1} Đại Gia:
+                  </span>{" "}
+                  <span className="font-bold text-gray-900">
+                    Đạo hữu <span className="text-amber-500">{u.name}</span>
+                  </span>{" "}
+                  sở hữu{" "}
+                  <strong className="text-amber-600">
+                    {u.gameCoins?.toLocaleString() || 0} xu
+                  </strong>
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Banner */}
       {isAuthenticated && !isAdmin && <PriceNoticeBanner />}
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 flex-1">
+      <main
+        className={`${location.pathname.startsWith("/giai-tri") ? "w-full" : "container mx-auto px-4 py-8"} flex-1 flex flex-col`}
+      >
         <Outlet />
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 mt-auto">
+      <footer
+        className={`${location.pathname.startsWith("/giai-tri") ? "bg-[#0a2e1f]/90 border-t border-white/5" : "bg-gray-900"} text-white py-8 mt-auto`}
+      >
         <div className="container mx-auto px-4 text-center">
-          <p className="text-gray-400 text-sm">
-            © 2026 Web Đặt Cơm. Đặt cơm nhanh chóng và tiện lợi! 🍚
+          <p className="text-gray-400 text-sm italic">
+            © 2026 Thiên Hương Các. Chúc các đạo hữu ăn cơm ngon miệng! 🍚
           </p>
         </div>
       </footer>

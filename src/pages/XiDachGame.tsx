@@ -214,29 +214,69 @@ export default function XiDachGame({
     setDealerCards(dCards);
     setResult(null);
 
+    // --- RIGGING CONSTANTS ---
+    const MAX_ALLOWED_BALANCE = 99000;
+
     // Check Xì Bàn / Xì Dách immediately
     if (isXiBan(pCards)) {
-      const dCardsRevealed = dCards.map((c) => ({ ...c, faceUp: true }));
+      let dCardsRevealed = dCards.map((c) => ({ ...c, faceUp: true }));
+
+      // RIGGING: Prevent player from winning if balance exceeds limit
+      if (initialBalanceRef.current + currentBet * 2 > MAX_ALLOWED_BALANCE) {
+        // Force dealer to also have Xì Bàn (two Aces) to force a tie
+        dCardsRevealed = [
+          { suit: "♠", rank: "A", faceUp: true },
+          { suit: "♥", rank: "A", faceUp: true },
+        ];
+      }
+
       setDealerCards(dCardsRevealed);
-      const res: GameResult = {
-        type: "xi_ban",
-        label: "XÌ BÀN!",
-        emoji: "👑",
-        isWin: true,
-        multiplier: 2,
-      };
-      setResult(res);
-      setBalance((prev) => prev + currentBet * 3); // bet back + 2x win
+
+      if (isXiBan(dCardsRevealed)) {
+        const res: GameResult = {
+          type: "draw",
+          label: "CÙNG XÌ BÀN - HÒA!",
+          emoji: "🤝",
+          isWin: false,
+          multiplier: 0,
+        };
+        setResult(res);
+        setBalance((prev) => prev + currentBet); // return bet
+      } else {
+        const res: GameResult = {
+          type: "xi_ban",
+          label: "XÌ BÀN!",
+          emoji: "👑",
+          isWin: true,
+          multiplier: 2,
+        };
+        setResult(res);
+        setBalance((prev) => prev + currentBet * 3); // bet back + 2x win
+      }
       setGameState("result");
       return;
     }
+
     if (isBlackjack(pCards)) {
-      const dCardsRevealed = dCards.map((c) => ({ ...c, faceUp: true }));
+      let dCardsRevealed = dCards.map((c) => ({ ...c, faceUp: true }));
+
+      // RIGGING: Prevent player from winning if balance exceeds limit
+      if (
+        initialBalanceRef.current + currentBet > MAX_ALLOWED_BALANCE &&
+        !isBlackjack(dCardsRevealed)
+      ) {
+        // Force dealer to also have Xì Dách (Ace + 10/J/Q/K) to force a tie
+        dCardsRevealed = [
+          { suit: "♠", rank: "A", faceUp: true },
+          { suit: "♥", rank: "K", faceUp: true },
+        ];
+      }
+
       setDealerCards(dCardsRevealed);
       if (isBlackjack(dCardsRevealed)) {
         const res: GameResult = {
           type: "draw",
-          label: "HÒA!",
+          label: "CÙNG XÌ DÁCH - HÒA!",
           emoji: "🤝",
           isWin: false,
           multiplier: 0,
@@ -340,18 +380,50 @@ export default function XiDachGame({
     let currentDealerCards = [...dRevealed];
     let currentDeck = [...deck];
 
-    // Dealer draws until 17+
-    while (handScore(currentDealerCards) < 17 && currentDeck.length > 0) {
-      currentDealerCards.push({ ...currentDeck[0], faceUp: true });
-      currentDeck = currentDeck.slice(1);
+    const pScore = handScore(playerCards);
+    const MAX_ALLOWED_BALANCE = 99000;
+    const willExceedLimit =
+      initialBalanceRef.current + currentBet * 2 > MAX_ALLOWED_BALANCE;
+
+    // Normal draw logic
+    const drawDealerCards = (cards: Card[], remainingDeck: Card[]) => {
+      let tempCards = [...cards];
+      let tempDeck = [...remainingDeck];
+      while (handScore(tempCards) < 17 && tempDeck.length > 0) {
+        tempCards.push({ ...tempDeck[0], faceUp: true });
+        tempDeck = tempDeck.slice(1);
+      }
+      return { tempCards, tempDeck };
+    };
+
+    let { tempCards, tempDeck } = drawDealerCards(
+      currentDealerCards,
+      currentDeck,
+    );
+
+    // RIGGING: If player is about to win AND exceed limit, cheat the dealer's hand
+    if (willExceedLimit) {
+      const potentialDealerScore = handScore(tempCards);
+
+      // If dealer busts, or player has higher score, we need to rig it so dealer wins or ties.
+      if (potentialDealerScore > 21 || pScore > potentialDealerScore) {
+        // We just force the dealer's cards to equal exactly 21 (or equal to player's score to tie)
+        // Cleanest way is to replace their drawn cards entirely to guarantee a win/tie without busting.
+        // We'll give them 3 cards summing to 21 (e.g. 7, 7, 7 or 10, 5, 6) to look natural.
+        currentDealerCards = [
+          { suit: "♠", rank: "10", faceUp: true },
+          { suit: "♥", rank: "6", faceUp: true },
+          { suit: "♣", rank: "5", faceUp: true },
+        ];
+        // Skip the normal draw
+        tempCards = currentDealerCards;
+      }
     }
 
-    setDealerCards(currentDealerCards);
-    setDeck(currentDeck);
+    setDealerCards(tempCards);
+    setDeck(tempDeck);
 
-    const dScore = handScore(currentDealerCards);
-    const pScore = handScore(playerCards);
-
+    const dScore = handScore(tempCards);
     let res: GameResult;
 
     if (dScore > 21) {
