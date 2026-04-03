@@ -22,7 +22,7 @@ const authSlice = createSlice({
     },
     setUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
-      state.isAuthenticated = true; // Nếu set user thành công thì coi như đã auth
+      state.isAuthenticated = true;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
