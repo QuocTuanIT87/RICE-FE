@@ -20,9 +20,11 @@ import {
 import { Link } from "react-router-dom";
 import type { MenuItem, DailyMenu, PackageType } from "@/types";
 import { useSocket } from "@/contexts/SocketContext";
+import { useRef } from "react";
 
 export default function OrderPage() {
   const queryClient = useQueryClient();
+  const hasPrefilled = useRef<string | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [itemQuantities, setItemQuantities] = useState<Record<string, number>>(
     {},
@@ -81,6 +83,43 @@ export default function OrderPage() {
     queryFn: () => userPackagesApi.getMyActivePackages(),
   });
 
+  const menus = todayMenus?.data.data || [];
+  const order = myOrder?.data.data;
+  const packages = activePackages?.data.data || [];
+  const hasActivePackage = packages.length > 0;
+
+  // Tự động điền dữ liệu từ đơn hàng cũ nếu có và chưa confirmed
+  useEffect(() => {
+    // Chỉ nạp dữ liệu một lần cho mỗi đơn hàng (dựa trên ID đơn hàng)
+    if (order && !order.isConfirmed && hasPrefilled.current !== order._id) {
+      setOrderType(order.orderType || "normal");
+      
+      const quantities: Record<string, number> = {};
+      const notes: Record<string, string> = {};
+      
+      order.orderItems?.forEach((item: any) => {
+        const itemId = typeof item.menuItemId === 'object' ? item.menuItemId._id : item.menuItemId;
+        if (itemId) {
+          quantities[itemId] = item.quantity || 1;
+          notes[itemId] = item.note || "";
+        }
+      });
+      
+      setItemQuantities(quantities);
+      setItemNotes(notes);
+      
+      // Xử lý menuId (có thể là object hoặc string)
+      const menuId = typeof order.dailyMenuId === 'object' ? order.dailyMenuId._id : order.dailyMenuId;
+      if (menuId && menuId !== activeMenuId) {
+        setActiveMenuId(menuId);
+      }
+      
+      hasPrefilled.current = order._id;
+    } else if (!order) {
+      hasPrefilled.current = null;
+    }
+  }, [order, activeMenuId]);
+
   const createOrderMutation = useMutation({
     mutationFn: ({
       items,
@@ -109,10 +148,27 @@ export default function OrderPage() {
     },
   });
 
-  const menus = todayMenus?.data.data || [];
-  const order = myOrder?.data.data;
-  const packages = activePackages?.data.data || [];
-  const hasActivePackage = packages.length > 0;
+  const deleteOrderMutation = useMutation({
+    mutationFn: (id: string) => ordersApi.deleteOrder(id),
+    onSuccess: (response) => {
+      toast({
+        title: "🗑️ Đã hủy đơn cơm",
+        description: response.data.message,
+      });
+      queryClient.invalidateQueries({ queryKey: ["myTodayOrder"] });
+      queryClient.invalidateQueries({ queryKey: ["myActivePackages"] });
+      // Reset form
+      setItemQuantities({});
+      setItemNotes({});
+    },
+    onError: (error: any) => {
+      toast({
+        title: "❌ Hủy đơn thất bại",
+        description: error.response?.data?.error?.message || "Có lỗi xảy ra",
+        variant: "destructive",
+      });
+    },
+  });
 
   const normalPackages = packages.filter(
     (pkg) => pkg.packageType === "normal" || !pkg.packageType,
@@ -129,6 +185,11 @@ export default function OrderPage() {
     0,
   );
   const remainingTurns = orderType === "normal" ? normalTurns : noRiceTurns;
+  
+  // Lưu ý: Trong hệ thống này, lượt chỉ được trừ khi Admin duyệt (Confirm).
+  // Vì vậy remainingTurns từ server đã bao gồm cả lượt của đơn hiện tại (nếu chưa duyệt).
+  // Ta không cần cộng dồn thêm để tránh sai lệch.
+  const totalEffectiveTurns = remainingTurns;
 
   // Tính tổng số lượng đã chọn
   const selectedItemIds = Object.keys(itemQuantities).filter(
@@ -249,8 +310,8 @@ export default function OrderPage() {
     );
   }
 
-  // ========== ALREADY ORDERED ==========
-  if (order) {
+  // ========== ALREADY ORDERED & CONFIRMED ==========
+  if (order && order.isConfirmed) {
     const isNoRice = order.orderType === "no-rice";
     return (
       <div className="max-w-lg mx-auto">
@@ -619,7 +680,7 @@ export default function OrderPage() {
             </p>
             <p className="text-xs text-gray-400 flex items-center gap-1.5">
               {orderType === "normal" ? "🍚 Có cơm" : "🥢 Không cơm"} •{" "}
-              <span className="font-bold">Còn {remainingTurns} lượt</span>
+              <span className="font-bold">Khả dụng: {totalEffectiveTurns} lượt</span>
             </p>
             {totalQuantity > remainingTurns && (
               <p className="text-xs text-red-500 font-bold mt-0.5">
@@ -627,13 +688,13 @@ export default function OrderPage() {
               </p>
             )}
           </div>
-          <Button
+            <Button
             onClick={handleSubmitOrder}
             disabled={
               !canOrder ||
               totalQuantity === 0 ||
-              totalQuantity > remainingTurns ||
-              remainingTurns === 0 ||
+              totalQuantity > totalEffectiveTurns ||
+              (totalEffectiveTurns === 0) ||
               createOrderMutation.isPending
             }
             className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-xl font-bold px-6 h-12 shadow-lg shadow-orange-200 shrink-0 gap-2"
@@ -645,11 +706,30 @@ export default function OrderPage() {
               </>
             ) : (
               <>
-                <Zap size={16} />
-                Đặt cơm
+                {order && !order.isConfirmed ? <Timer size={16} /> : <Zap size={16} />}
+                {order && !order.isConfirmed ? "Cập nhật đơn" : "Đặt cơm"}
               </>
             )}
           </Button>
+          
+          {order && !order.isConfirmed && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (window.confirm("Bạn có chắc chắn muốn hủy đơn đặt cơm này?")) {
+                  deleteOrderMutation.mutate(order._id);
+                }
+              }}
+              disabled={deleteOrderMutation.isPending || !canOrder}
+              className="border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-xl font-bold h-12"
+            >
+              {deleteOrderMutation.isPending ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                "Hủy đơn"
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </div>

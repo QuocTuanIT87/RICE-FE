@@ -231,6 +231,8 @@ export const ordersApi = {
     menuId: string,
   ) => api.post<ApiResponse<Order>>("/orders", { items, orderType, menuId }),
 
+  deleteOrder: (id: string) => api.delete<ApiResponse>(`/orders/${id}`),
+
   // Admin
   getOrdersByDate: (date: string) =>
     api.get<
