@@ -7,7 +7,7 @@
     "dev": "vite",
     "clean": "rimraf dist",
     "build": "npm run clean && tsc -b && vite build",
-    "preview": "vite preview",
+    "preview": "vite preview --host --port 3000",
     "start:prod": "pm2 start serve --name rice-order -- -s dist -l 5000",
     "type-check": "tsc --noEmit"
   },
