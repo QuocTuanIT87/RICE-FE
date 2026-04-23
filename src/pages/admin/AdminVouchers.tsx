@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { Pagination } from "@/components/Pagination";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -38,6 +39,7 @@ export default function AdminVouchers() {
   const [isUserPickerOpen, setIsUserPickerOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [userSearchTerm, setUserSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -54,21 +56,20 @@ export default function AdminVouchers() {
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["adminVouchers"],
-    queryFn: () => vouchersApi.getVouchers(),
+    queryKey: ["adminVouchers", page],
+    queryFn: () => vouchersApi.getVouchers({ page, limit: 6 }),
   });
+
+  const vouchersResponse = data?.data.data;
 
   const { data: usersData } = useQuery({
-    queryKey: ["adminUsersList"],
-    queryFn: () => usersApi.getUsers(),
+    queryKey: ["adminUsersList", userSearchTerm],
+    queryFn: () => usersApi.getUsers({ search: userSearchTerm, limit: 100 }),
   });
 
-  // Filter out admins and apply search
-  const filteredUsers = (usersData?.data.data || []).filter(
-    (u: any) =>
-      u.role !== "admin" &&
-      (u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-        u.email.toLowerCase().includes(userSearchTerm.toLowerCase())),
+  // Filter out admins (Backend already filters, but we double check for safety)
+  const filteredUsers = (usersData?.data.data?.docs || []).filter(
+    (u: any) => u.role !== "admin",
   );
 
   const createMutation = useMutation({
@@ -156,7 +157,7 @@ export default function AdminVouchers() {
     });
   };
 
-  const vouchers = data?.data.data || [];
+  const vouchers = vouchersResponse?.docs || [];
 
   if (isLoading) {
     return (
@@ -167,35 +168,41 @@ export default function AdminVouchers() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-8">
-        <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">
-            Quản lý Voucher
-          </h1>
-          <p className="text-gray-500 font-medium">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 animate-in fade-in duration-700">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-orange-600 rounded-xl shadow-lg shadow-orange-100 text-white">
+              <Ticket size={24} />
+            </div>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight uppercase">
+              Quản lý Voucher
+            </h1>
+          </div>
+          <p className="text-gray-500 font-medium text-sm">
             Thiết lập các chương trình khuyến mãi và tặng quà cho khách hàng.
           </p>
         </div>
         <Button
           onClick={() => setIsDialogOpen(true)}
-          className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold gap-2 px-6 shadow-lg shadow-orange-100 h-12 transition-all"
+          className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold gap-2 px-6 shadow-lg shadow-orange-100 h-11 transition-all text-sm"
         >
-          <Plus size={20} />
+          <Plus size={18} />
           THÊM MÃ MỚI
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
         {vouchers.map((v: any) => (
           <div
             key={v._id}
-            className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:border-orange-200 transition-all group"
+            className="bg-white border border-gray-100 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl hover:border-orange-200 transition-all group"
           >
-            <div className="p-6 border-b border-gray-50 flex items-start justify-between bg-gray-50/30">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-100">
-                  <Ticket size={24} className="text-white" />
+            <div className="p-5 border-b border-gray-50 flex items-start justify-between bg-gray-50/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-100">
+                  <Ticket size={20} className="text-white" />
                 </div>
                 <div>
                   <h3 className="font-black text-gray-900 text-lg uppercase tracking-wider">
@@ -241,12 +248,12 @@ export default function AdminVouchers() {
                 </Button>
               </div>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-5 space-y-3">
               <p className="text-sm text-gray-600 font-bold leading-relaxed line-clamp-2 min-h-[40px]">
                 {v.description}
               </p>
 
-              <div className="grid grid-cols-2 gap-y-3 gap-x-2">
+              <div className="grid grid-cols-2 gap-y-2 gap-x-2">
                 <div className="flex items-center gap-2.5 text-xs font-bold text-gray-500">
                   <div className="w-6 h-6 rounded-lg bg-gray-50 flex items-center justify-center">
                     <Tag size={12} className="text-orange-500" />
@@ -311,6 +318,14 @@ export default function AdminVouchers() {
           </div>
         )}
       </div>
+
+      {vouchersResponse && (
+        <Pagination 
+          currentPage={vouchersResponse.page}
+          totalPages={vouchersResponse.pages}
+          onPageChange={setPage}
+        />
+      )}
 
       {/* Main Voucher Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

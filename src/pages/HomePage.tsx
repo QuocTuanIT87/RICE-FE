@@ -29,7 +29,7 @@ export default function HomePage() {
 
   const { data: packages } = useQuery({
     queryKey: ["mealPackages"],
-    queryFn: () => mealPackagesApi.getPackages(true),
+    queryFn: () => mealPackagesApi.getPackages({ isActive: true }),
   });
 
   const { data: todayMenu } = useQuery({
@@ -54,7 +54,7 @@ export default function HomePage() {
     };
   }, [socket, queryClient]);
 
-  const activePackages = packages?.data.data || [];
+  const activePackages = packages?.data.data?.docs || [];
   const menus = todayMenu?.data.data || [];
   const menu = menus.length > 0 ? menus[0] : null;
 

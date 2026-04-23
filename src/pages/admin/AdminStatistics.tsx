@@ -79,7 +79,7 @@ export default function AdminStatistics() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 animate-in fade-in duration-700">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100 pb-10">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100">
         <div className="space-y-1.5">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-orange-600 rounded-xl shadow-lg shadow-orange-100 text-white">

@@ -152,6 +152,15 @@ export interface RevenueStats {
   }>;
 }
 
+// Pagination types
+export interface PaginatedData<T> {
+  docs: T[];
+  total: number;
+  limit: number;
+  page: number;
+  pages: number;
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   success: boolean;

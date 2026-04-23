@@ -13,6 +13,7 @@ import type {
   DashboardStats,
   RevenueStats,
   PackageType,
+  PaginatedData,
 } from "@/types";
 
 // API Base URL - lấy từ biến môi trường, chỉ cần thay đổi ở file .env
@@ -96,7 +97,9 @@ export const usersApi = {
     role?: string;
     isBlocked?: boolean;
     search?: string;
-  }) => api.get<ApiResponse<User[]>>("/users", { params }),
+    page?: number;
+    limit?: number;
+  }) => api.get<ApiResponse<PaginatedData<User>>>("/users", { params }),
 
   getUserById: (id: string) =>
     api.get<
@@ -116,9 +119,9 @@ export const usersApi = {
 // MEAL PACKAGES API
 // =============================================
 export const mealPackagesApi = {
-  getPackages: (isActive?: boolean) =>
-    api.get<ApiResponse<MealPackage[]>>("/meal-packages", {
-      params: isActive !== undefined ? { isActive } : {},
+  getPackages: (params?: { isActive?: boolean; page?: number; limit?: number }) =>
+    api.get<ApiResponse<PaginatedData<MealPackage>>>("/meal-packages", {
+      params,
     }),
 
   getPackageById: (id: string) =>
@@ -148,9 +151,9 @@ export const packagePurchasesApi = {
     }),
 
   // Admin
-  getAllRequests: (status?: string) =>
-    api.get<ApiResponse<PackagePurchaseRequest[]>>("/package-purchases", {
-      params: status ? { status } : {},
+  getAllRequests: (params?: { status?: string; page?: number; limit?: number }) =>
+    api.get<ApiResponse<PaginatedData<PackagePurchaseRequest>>>("/package-purchases", {
+      params,
     }),
 
   approveRequest: (id: string) =>
@@ -177,8 +180,8 @@ export const userPackagesApi = {
 // DAILY MENUS API
 // =============================================
 export const dailyMenusApi = {
-  getMenus: (limit?: number) =>
-    api.get<ApiResponse<DailyMenu[]>>("/daily-menus", { params: { limit } }),
+  getMenus: (params?: { page?: number; limit?: number }) =>
+    api.get<ApiResponse<PaginatedData<DailyMenu>>>("/daily-menus", { params }),
 
   getTodayMenu: () => api.get<ApiResponse<DailyMenu[]>>("/daily-menus/today"),
 
@@ -237,14 +240,14 @@ export const ordersApi = {
   deleteOrder: (id: string) => api.delete<ApiResponse>(`/orders/${id}`),
 
   // Admin
-  getOrdersByDate: (date: string) =>
+  getOrdersByDate: (date: string, page?: number, limit?: number) =>
     api.get<
       ApiResponse<{
         menu: DailyMenu;
-        orders: Order[];
+        orders: PaginatedData<Order>;
         summary: Array<{ name: string; count: number }>;
       }>
-    >(`/orders/by-date/${date}`),
+    >(`/orders/by-date/${date}`, { params: { page, limit } }),
 
   confirmAllOrders: (menuId: string) =>
     api.post<ApiResponse<{ confirmedCount: number }>>("/orders/confirm-all", {
@@ -300,7 +303,8 @@ export const gameCoinsApi = {
 // VOUCHERS API
 // =============================================
 export const vouchersApi = {
-  getVouchers: () => api.get<ApiResponse<any[]>>("/vouchers"),
+  getVouchers: (params?: { page?: number; limit?: number }) => 
+    api.get<ApiResponse<PaginatedData<any>>>("/vouchers", { params }),
   createVoucher: (data: any) => api.post<ApiResponse<any>>("/vouchers", data),
   updateVoucher: (id: string, data: any) =>
     api.put<ApiResponse<any>>(`/vouchers/${id}`, data),

@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+import { Pagination } from "@/components/Pagination";
+
 export default function AdminUsers() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<
@@ -40,11 +42,19 @@ export default function AdminUsers() {
   >("all");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
-  // Lấy danh sách user
+  // Lấy danh sách user với phân trang và lọc từ server
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => usersApi.getUsers(),
+    queryKey: ["users", page, search, statusFilter],
+    queryFn: () =>
+      usersApi.getUsers({
+        page,
+        limit: 10,
+        search: search || undefined,
+        isBlocked:
+          statusFilter === "all" ? undefined : statusFilter === "blocked",
+      }),
   });
 
   // Lấy chi tiết user khi mở modal
@@ -54,23 +64,20 @@ export default function AdminUsers() {
     enabled: !!selectedUserId && isModalOpen,
   });
 
-  const users = data?.data.data || [];
+  const usersResponse = data?.data.data;
+  const users = usersResponse?.docs || [];
   const userDetail = detailData?.data.data;
 
-  const filteredUsers = useMemo(() => {
-    return users.filter((user: User) => {
-      const matchesSearch =
-        user.name.toLowerCase().includes(search.toLowerCase()) ||
-        user.email.toLowerCase().includes(search.toLowerCase());
+  // Reset về trang 1 khi tìm kiếm hoặc lọc thay đổi
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setPage(1);
+  };
 
-      const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "active" && !user.isBlocked) ||
-        (statusFilter === "blocked" && user.isBlocked);
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [users, search, statusFilter]);
+  const handleStatusFilterChange = (val: typeof statusFilter) => {
+    setStatusFilter(val);
+    setPage(1);
+  };
 
   const handleBlockUser = async (
     userId: string,
@@ -130,11 +137,16 @@ export default function AdminUsers() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 animate-in fade-in duration-500">
       {/* Page Header - Clean & Sharp */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100 pb-8">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-            Người dùng
-          </h1>
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-orange-600 rounded-xl shadow-lg shadow-orange-100 text-white">
+              <Users size={24} />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight uppercase">
+              Tài khoản người dùng
+            </h1>
+          </div>
           <p className="text-gray-500 font-medium text-sm">
             Quản lý và theo dõi danh sách thành viên hệ thống.
           </p>
@@ -155,7 +167,7 @@ export default function AdminUsers() {
             <Input
               placeholder="Tìm kiếm..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-10 h-10 border-gray-200 focus:ring-1 focus:ring-orange-500 rounded-lg transition-all"
             />
           </div>
@@ -180,19 +192,19 @@ export default function AdminUsers() {
               className="w-48 rounded-lg shadow-lg border-gray-100"
             >
               <DropdownMenuItem
-                onClick={() => setStatusFilter("all")}
+                onClick={() => handleStatusFilterChange("all")}
                 className="cursor-pointer"
               >
                 Tất cả
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => setStatusFilter("active")}
+                onClick={() => handleStatusFilterChange("active")}
                 className="cursor-pointer text-emerald-600"
               >
                 Đang hoạt động
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => setStatusFilter("blocked")}
+                onClick={() => handleStatusFilterChange("blocked")}
                 className="cursor-pointer text-rose-600"
               >
                 Bị khóa
@@ -241,14 +253,14 @@ export default function AdminUsers() {
 
       {/* User List - Clean Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {filteredUsers.length === 0 ? (
+        {users.length === 0 ? (
           <div className="lg:col-span-2 py-32 text-center bg-gray-50/30 border border-dashed rounded-xl border-gray-200">
             <p className="text-gray-400 font-medium">
               Không tìm thấy người dùng nào phù hợp
             </p>
           </div>
         ) : (
-          filteredUsers.map((user: User) => (
+          users.map((user: User) => (
             <Card
               key={user._id}
               className={`border-gray-100 shadow-sm hover:border-orange-200 transition-all rounded-xl overflow-hidden cursor-default group ${user.isBlocked ? "bg-gray-50/50 grayscale-[0.5]" : "bg-white"}`}
@@ -330,6 +342,14 @@ export default function AdminUsers() {
           ))
         )}
       </div>
+
+      {usersResponse && (
+        <Pagination
+          currentPage={usersResponse.page}
+          totalPages={usersResponse.pages}
+          onPageChange={setPage}
+        />
+      )}
 
       {/* User Detail Modal - Clean & Modern */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

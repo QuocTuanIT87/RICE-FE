@@ -42,6 +42,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { Pagination } from "@/components/Pagination";
+
 export default function AdminPackages() {
   const queryClient = useQueryClient();
   const { socket } = useSocket();
@@ -60,14 +62,17 @@ export default function AdminPackages() {
     packageType: "normal" as any,
   });
 
+  const [packagePage, setPackagePage] = useState(1);
+  const [requestPage, setRequestPage] = useState(1);
+
   const {
     data: packagesData,
     isLoading: packagesLoading,
     refetch: refetchPackages,
     isFetching: isFetchingPackages,
   } = useQuery({
-    queryKey: ["adminMealPackages"],
-    queryFn: () => mealPackagesApi.getPackages(),
+    queryKey: ["adminMealPackages", packagePage],
+    queryFn: () => mealPackagesApi.getPackages({ page: packagePage, limit: 4 }),
   });
 
   const {
@@ -75,8 +80,13 @@ export default function AdminPackages() {
     refetch: refetchRequests,
     isFetching: isFetchingRequests,
   } = useQuery({
-    queryKey: ["adminPurchaseRequests", "pending"],
-    queryFn: () => packagePurchasesApi.getAllRequests("pending"),
+    queryKey: ["adminPurchaseRequests", "pending", requestPage],
+    queryFn: () =>
+      packagePurchasesApi.getAllRequests({
+        status: "pending",
+        page: requestPage,
+        limit: 4,
+      }),
   });
 
   // Real-time listener
@@ -144,8 +154,11 @@ export default function AdminPackages() {
     onError: () => toast({ title: "Có lỗi xảy ra", variant: "destructive" }),
   });
 
-  const packages = packagesData?.data.data || [];
-  const pendingRequests = requestsData?.data.data || [];
+  const packagesResponse = packagesData?.data.data;
+  const packages = packagesResponse?.docs || [];
+
+  const requestsResponse = requestsData?.data.data;
+  const pendingRequests = requestsResponse?.docs || [];
 
   const stats = useMemo(
     () => ({
@@ -211,10 +224,13 @@ export default function AdminPackages() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 animate-in fade-in duration-500">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100 pb-8">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+            <div className="p-2 bg-orange-600 rounded-xl shadow-lg shadow-orange-100 text-white">
+              <Package size={24} />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight uppercase">
               Gói cơm
             </h1>
             {stats.pending > 0 && (
@@ -410,6 +426,14 @@ export default function AdminPackages() {
               </Card>
             ))}
           </div>
+
+          {packagesResponse && (
+            <Pagination
+              currentPage={packagesResponse.page}
+              totalPages={packagesResponse.pages}
+              onPageChange={setPackagePage}
+            />
+          )}
         </div>
 
         {/* Sidebar - Pending Requests */}
@@ -451,20 +475,30 @@ export default function AdminPackages() {
 
                       <div className="p-3 bg-gray-50 rounded-lg space-y-1 border border-gray-100/50">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Đăng ký:</span>
-                          <span className="text-xs font-bold text-gray-900">{pkg.name}</span>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                            Đăng ký:
+                          </span>
+                          <span className="text-xs font-bold text-gray-900">
+                            {pkg.name}
+                          </span>
                         </div>
-                        
+
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Giá niêm yết:</span>
-                          <span className={`text-xs font-bold ${req.discountAmount ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                            Giá niêm yết:
+                          </span>
+                          <span
+                            className={`text-xs font-bold ${req.discountAmount ? "text-gray-400 line-through" : "text-gray-900"}`}
+                          >
                             {formatVND(pkg.price)}
                           </span>
                         </div>
 
                         {req.discountAmount && req.discountAmount > 0 && (
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Giảm giá:</span>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                              Giảm giá:
+                            </span>
                             <span className="text-xs font-black text-emerald-600">
                               -{formatVND(req.discountAmount)}
                             </span>
@@ -472,16 +506,25 @@ export default function AdminPackages() {
                         )}
 
                         <div className="flex items-center justify-between pt-1 border-t border-gray-100 mt-1">
-                          <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Thanh toán:</span>
+                          <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest">
+                            Thanh toán:
+                          </span>
                           <span className="text-sm font-black text-orange-600">
                             {formatVND(req.finalPrice || pkg.price)}
                           </span>
                         </div>
 
                         <div className="flex items-center justify-between mt-2">
-                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Thưởng Xu:</span>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                            Thưởng Xu:
+                          </span>
                           <span className="text-[10px] font-black text-amber-600">
-                            +{(pkg.bonusCoins && pkg.bonusCoins > 0 ? pkg.bonusCoins : pkg.turns * 1000).toLocaleString()} Xu
+                            +
+                            {(pkg.bonusCoins && pkg.bonusCoins > 0
+                              ? pkg.bonusCoins
+                              : pkg.turns * 1000
+                            ).toLocaleString()}{" "}
+                            Xu
                           </span>
                         </div>
 
@@ -517,7 +560,16 @@ export default function AdminPackages() {
             )}
           </div>
 
-          <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
+          {requestsResponse && (
+            <Pagination
+              currentPage={requestsResponse.page}
+              totalPages={requestsResponse.pages}
+              onPageChange={setRequestPage}
+              className="mt-6"
+            />
+          )}
+
+          <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 space-y-4 mt-6">
             <div className="flex items-center gap-3">
               <AlertCircle className="text-orange-500" size={20} />
               <h4 className="text-xs font-bold text-gray-900 uppercase tracking-widest leading-tight">

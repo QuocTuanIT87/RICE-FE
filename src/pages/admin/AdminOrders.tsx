@@ -25,20 +25,29 @@ import type { User, MenuItem } from "@/types";
 import { useSocket } from "@/contexts/SocketContext";
 import { Badge } from "@/components/ui/badge";
 
+import { Pagination } from "@/components/Pagination";
+
 export default function AdminOrders() {
   const queryClient = useQueryClient();
   const today = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState(today);
+  const [page, setPage] = useState(1);
   const { socket } = useSocket();
 
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["adminOrders", selectedDate],
-    queryFn: () => ordersApi.getOrdersByDate(selectedDate),
+    queryKey: ["adminOrders", selectedDate, page],
+    queryFn: () => ordersApi.getOrdersByDate(selectedDate, page, 4),
   });
 
   const menu = data?.data.data?.menu;
-  const orders = data?.data.data?.orders || [];
+  const ordersResponse = data?.data.data?.orders;
+  const orders = ordersResponse?.docs || [];
   const summary = data?.data.data?.summary || [];
+
+  // Reset về trang 1 khi đổi ngày
+  useEffect(() => {
+    setPage(1);
+  }, [selectedDate]);
 
   // Real-time listener
   useEffect(() => {
@@ -96,11 +105,14 @@ export default function AdminOrders() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 animate-in fade-in duration-500">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100 pb-8">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-              Đơn hàng
+            <div className="p-2 bg-orange-600 rounded-xl shadow-lg shadow-orange-100 text-white">
+              <ClipboardList size={24} />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight uppercase">
+              Đơn đặt cơm
             </h1>
             {menu && (
               <Badge className="bg-orange-50 text-orange-600 border-orange-100 font-black text-[10px] px-2 h-5 rounded uppercase">
@@ -321,6 +333,15 @@ export default function AdminOrders() {
                   })
                 )}
               </div>
+
+              {ordersResponse && (
+                <Pagination
+                  currentPage={ordersResponse.page}
+                  totalPages={ordersResponse.pages}
+                  onPageChange={setPage}
+                  className="mt-6"
+                />
+              )}
             </div>
 
             {/* Summary Sidebar */}

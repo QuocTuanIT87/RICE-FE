@@ -31,7 +31,7 @@ export default function PackagesPage() {
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["mealPackages", true],
-    queryFn: () => mealPackagesApi.getPackages(true),
+    queryFn: () => mealPackagesApi.getPackages({ isActive: true }),
   });
 
   useEffect(() => {
@@ -49,7 +49,7 @@ export default function PackagesPage() {
     };
   }, [socket, queryClient]);
 
-  const allPackages = data?.data.data || [];
+  const allPackages = data?.data.data?.docs || [];
   const normalPackages = allPackages.filter(
     (pkg) => pkg.packageType === "normal" || !pkg.packageType,
   );
