@@ -141,9 +141,10 @@ export const packagePurchasesApi = {
   getMyRequests: () =>
     api.get<ApiResponse<PackagePurchaseRequest[]>>("/package-purchases/my"),
 
-  createRequest: (mealPackageId: string) =>
+  createRequest: (mealPackageId: string, voucherCode?: string) =>
     api.post<ApiResponse<PackagePurchaseRequest>>("/package-purchases", {
       mealPackageId,
+      voucherCode,
     }),
 
   // Admin
@@ -222,8 +223,10 @@ export const dailyMenusApi = {
 export const ordersApi = {
   getMyOrders: () => api.get<ApiResponse<Order[]>>("/orders/my"),
 
-  // API trả về single order (1 đơn/ngày)
-  getMyTodayOrder: () => api.get<ApiResponse<Order | null>>("/orders/today"),
+  getMyTodayOrder: (menuId?: string) =>
+    api.get<ApiResponse<Order | null>>("/orders/today", {
+      params: menuId ? { menuId } : {},
+    }),
 
   createOrder: (
     items: Array<{ menuItemId: string; note?: string; quantity?: number }>,
@@ -291,6 +294,29 @@ export const gameCoinsApi = {
     api.post<ApiResponse<{ gameCoins: number }>>("/game-coins/exchange", {
       packageId,
     }),
+};
+
+// =============================================
+// VOUCHERS API
+// =============================================
+export const vouchersApi = {
+  getVouchers: () => api.get<ApiResponse<any[]>>("/vouchers"),
+  createVoucher: (data: any) => api.post<ApiResponse<any>>("/vouchers", data),
+  updateVoucher: (id: string, data: any) =>
+    api.put<ApiResponse<any>>(`/vouchers/${id}`, data),
+  deleteVoucher: (id: string) => api.delete<ApiResponse>(`/vouchers/${id}`),
+  checkVoucher: (code: string, amount: number) =>
+    api.post<
+      ApiResponse<{
+        voucherId: string;
+        code: string;
+        discountType: string;
+        discountValue: number;
+        discountAmount: number;
+        finalPrice: number;
+      }>
+    >("/vouchers/check", { code, amount }),
+  getMyVouchers: () => api.get<ApiResponse<any[]>>("/vouchers/my"),
 };
 
 export default api;

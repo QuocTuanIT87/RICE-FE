@@ -9,6 +9,7 @@ import {
   BarChart3,
   LogOut,
   ChevronUp,
+  Ticket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
@@ -21,6 +22,7 @@ const sidebarItems = [
   { icon: Users, label: "Người dùng", path: "/admin/users" },
   { icon: UtensilsCrossed, label: "Menu hôm nay", path: "/admin/menus" },
   { icon: ClipboardList, label: "Đơn đặt cơm", path: "/admin/orders" },
+  { icon: Ticket, label: "Mã giảm giá", path: "/admin/vouchers" },
   { icon: BarChart3, label: "Thống kê", path: "/admin/statistics" },
 ];
 

@@ -35,6 +35,7 @@ import AdminMenus from "@/pages/admin/AdminMenus";
 import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminStatistics from "@/pages/admin/AdminStatistics";
+import AdminVouchers from "@/pages/admin/AdminVouchers";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -238,6 +239,7 @@ function AppRoutes() {
         <Route path="menus" element={<AdminMenus />} />
         <Route path="orders" element={<AdminOrders />} />
         <Route path="users" element={<AdminUsers />} />
+        <Route path="vouchers" element={<AdminVouchers />} />
         <Route path="statistics" element={<AdminStatistics />} />
       </Route>
 

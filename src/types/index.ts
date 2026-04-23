@@ -74,6 +74,9 @@ export interface PackagePurchaseRequest {
   userId: User | string;
   mealPackageId: MealPackage | string;
   status: PurchaseStatus;
+  voucherId?: string;
+  discountAmount?: number;
+  finalPrice?: number;
   requestedAt: string;
   processedAt?: string;
   createdAt?: string;

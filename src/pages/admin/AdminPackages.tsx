@@ -450,28 +450,42 @@ export default function AdminPackages() {
                       </div>
 
                       <div className="p-3 bg-gray-50 rounded-lg space-y-1 border border-gray-100/50">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center justify-between">
-                          Đăng ký:{" "}
-                          <span className="text-gray-900">{pkg.name}</span>
-                        </p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center justify-between">
-                          Số tiền:{" "}
-                          <span className="text-orange-600">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Đăng ký:</span>
+                          <span className="text-xs font-bold text-gray-900">{pkg.name}</span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Giá niêm yết:</span>
+                          <span className={`text-xs font-bold ${req.discountAmount ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
                             {formatVND(pkg.price)}
                           </span>
-                        </p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center justify-between">
-                          Thưởng Xu:{" "}
-                          <span className="text-amber-600 font-black">
-                            +
-                            {(pkg.bonusCoins && pkg.bonusCoins > 0
-                              ? pkg.bonusCoins
-                              : pkg.turns * 1000
-                            ).toLocaleString()}{" "}
-                            Xu
+                        </div>
+
+                        {req.discountAmount && req.discountAmount > 0 && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Giảm giá:</span>
+                            <span className="text-xs font-black text-emerald-600">
+                              -{formatVND(req.discountAmount)}
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between pt-1 border-t border-gray-100 mt-1">
+                          <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Thanh toán:</span>
+                          <span className="text-sm font-black text-orange-600">
+                            {formatVND(req.finalPrice || pkg.price)}
                           </span>
-                        </p>
-                        <p className="text-[9px] text-gray-400 italic text-right mt-1">
+                        </div>
+
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Thưởng Xu:</span>
+                          <span className="text-[10px] font-black text-amber-600">
+                            +{(pkg.bonusCoins && pkg.bonusCoins > 0 ? pkg.bonusCoins : pkg.turns * 1000).toLocaleString()} Xu
+                          </span>
+                        </div>
+
+                        <p className="text-[9px] text-gray-400 italic text-right mt-1 border-t border-gray-100/50 pt-1">
                           {formatDate(req.requestedAt)}
                         </p>
                       </div>

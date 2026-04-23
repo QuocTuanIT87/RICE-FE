@@ -74,8 +74,8 @@ export default function OrderPage() {
   }, [socket, queryClient]);
 
   const { data: myOrder } = useQuery({
-    queryKey: ["myTodayOrder"],
-    queryFn: () => ordersApi.getMyTodayOrder(),
+    queryKey: ["myTodayOrder", activeMenuId],
+    queryFn: () => ordersApi.getMyTodayOrder(activeMenuId || undefined),
   });
 
   const { data: activePackages } = useQuery({
@@ -310,67 +310,6 @@ export default function OrderPage() {
     );
   }
 
-  // ========== ALREADY ORDERED & CONFIRMED ==========
-  if (order && order.isConfirmed) {
-    const isNoRice = order.orderType === "no-rice";
-    return (
-      <div className="max-w-lg mx-auto">
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 overflow-hidden">
-          <div className="text-center pt-8 pb-4">
-            <div className="w-16 h-16 mx-auto bg-emerald-100 rounded-2xl flex items-center justify-center mb-4">
-              <CheckCircle2 size={32} className="text-emerald-600" />
-            </div>
-            <h2 className="text-xl font-black text-emerald-700 mb-2">
-              Bạn đã đặt cơm hôm nay!
-            </h2>
-            <span
-              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold ${
-                isNoRice
-                  ? "bg-blue-100 text-blue-700"
-                  : "bg-orange-100 text-orange-700"
-              }`}
-            >
-              {isNoRice ? "🥢 Không cơm" : "🍚 Có cơm"}
-            </span>
-          </div>
-
-          <div className="px-6 pb-6">
-            <p className="text-sm text-gray-500 mb-3 font-medium">
-              Món đã chọn ({order.orderItems?.length || 0} món):
-            </p>
-            <div className="space-y-2">
-              {order.orderItems?.map((item: any) => (
-                <div
-                  key={item._id}
-                  className="flex items-start gap-3 p-3 bg-white rounded-xl border border-emerald-100"
-                >
-                  <CheckCircle2
-                    size={16}
-                    className="text-emerald-500 shrink-0 mt-0.5"
-                  />
-                  <div>
-                    <span className="font-bold text-gray-900 text-sm">
-                      {(item.menuItemId as MenuItem)?.name || "Món đã bị xóa"}
-                      {item.quantity && item.quantity > 1 && (
-                        <span className="text-orange-500 ml-1">
-                          ×{item.quantity}
-                        </span>
-                      )}
-                    </span>
-                    {item.note && (
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        📝 {item.note}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (!currentMenu) return null;
 
@@ -443,22 +382,82 @@ export default function OrderPage() {
         </div>
       )}
 
-      {/* Time Info */}
-      <div className="flex items-center gap-3 px-5 py-3.5 rounded-xl bg-white border border-gray-100">
-        <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
-          <Timer size={20} className="text-orange-500" />
+      {/* Content - Phụ thuộc vào việc đơn hàng đã được chốt hay chưa */}
+      {order && order.isConfirmed ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 overflow-hidden">
+          <div className="text-center pt-8 pb-4">
+            <div className="w-16 h-16 mx-auto bg-emerald-100 rounded-2xl flex items-center justify-center mb-4">
+              <CheckCircle2 size={32} className="text-emerald-600" />
+            </div>
+            <h2 className="text-xl font-black text-emerald-700 mb-2">
+              Bạn đã đặt cơm hôm nay!
+            </h2>
+            <p className="text-xs text-emerald-600 font-medium mb-3">
+              (Đơn hàng này đã được Admin xác nhận, không thể chỉnh sửa)
+            </p>
+            <span
+              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold ${
+                order.orderType === "no-rice"
+                  ? "bg-blue-100 text-blue-700"
+                  : "bg-orange-100 text-orange-700"
+              }`}
+            >
+              {order.orderType === "no-rice" ? "🥢 Không cơm" : "🍚 Có cơm"}
+            </span>
+          </div>
+
+          <div className="px-6 pb-6">
+            <p className="text-sm text-gray-500 mb-3 font-medium">
+              Món đã chọn ({order.orderItems?.length || 0} món):
+            </p>
+            <div className="space-y-2">
+              {order.orderItems?.map((item: any) => (
+                <div
+                  key={item._id}
+                  className="flex items-start gap-3 p-3 bg-white rounded-xl border border-emerald-100"
+                >
+                  <CheckCircle2
+                    size={16}
+                    className="text-emerald-500 shrink-0 mt-0.5"
+                  />
+                  <div>
+                    <span className="font-bold text-gray-900 text-sm">
+                      {(item.menuItemId as MenuItem)?.name || "Món đã bị xóa"}
+                      {item.quantity && item.quantity > 1 && (
+                        <span className="text-orange-500 ml-1">
+                          ×{item.quantity}
+                        </span>
+                      )}
+                    </span>
+                    {item.note && (
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        📝 {item.note}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-        <div>
-          <p className="text-sm font-bold text-gray-900">
-            Thời gian đặt: {currentMenu.beginAt} - {currentMenu.endAt}
-          </p>
-          <p className="text-xs text-gray-400">
-            {canOrder
-              ? "✅ Đang trong thời gian đặt cơm"
-              : "⛔ Ngoài thời gian đặt"}
-          </p>
-        </div>
-      </div>
+      ) : (
+        <>
+          {/* Time Info */}
+          <div className="flex items-center gap-3 px-5 py-3.5 rounded-xl bg-white border border-gray-100">
+            <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
+              <Timer size={20} className="text-orange-500" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-900">
+                Thời gian đặt: {currentMenu.beginAt} - {currentMenu.endAt}
+              </p>
+              <p className="text-xs text-gray-400">
+                {canOrder
+                  ? "✅ Đang trong thời gian đặt cơm"
+                  : "⛔ Ngoài thời gian đặt"}
+              </p>
+            </div>
+          </div>
 
       {/* Order Type Toggle */}
       <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
@@ -732,6 +731,8 @@ export default function OrderPage() {
           )}
         </div>
       </div>
-    </div>
+    </>
+  )}
+</div>
   );
 }
