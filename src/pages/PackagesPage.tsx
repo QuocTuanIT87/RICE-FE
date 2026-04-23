@@ -31,7 +31,7 @@ export default function PackagesPage() {
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["mealPackages", true],
-    queryFn: () => mealPackagesApi.getPackages({ isActive: true }),
+    queryFn: () => mealPackagesApi.getPackages({ isActive: true, limit: 100 }),
   });
 
   useEffect(() => {

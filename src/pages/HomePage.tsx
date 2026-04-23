@@ -29,7 +29,7 @@ export default function HomePage() {
 
   const { data: packages } = useQuery({
     queryKey: ["mealPackages"],
-    queryFn: () => mealPackagesApi.getPackages({ isActive: true }),
+    queryFn: () => mealPackagesApi.getPackages({ isActive: true, limit: 100 }),
   });
 
   const { data: todayMenu } = useQuery({
