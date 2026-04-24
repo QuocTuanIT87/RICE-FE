@@ -57,6 +57,10 @@ export default function MainLayout() {
 
   const isAdmin = user?.role === "admin";
   const navItems = isAdmin ? adminNavItems : customerNavItems;
+  const { config: systemConfig } = useAppSelector((state) => state.system);
+  const websiteName = systemConfig?.websiteName || "Thiên Hương Các";
+  const websiteLogo = systemConfig?.websiteLogo || "";
+  const contactPhone = systemConfig?.contactPhone || "0123.456.789";
 
   // Fetch top leaderboards for marquee
   const { data: topCoinsData } = useQuery({
@@ -125,12 +129,16 @@ export default function MainLayout() {
               to={isAdmin ? "/admin" : "/"}
               className="flex items-center gap-2.5 group"
             >
-              <div className="w-9 h-9 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl flex items-center justify-center shadow-md shadow-orange-200 group-hover:shadow-lg group-hover:shadow-orange-300 transition-shadow">
-                <span className="text-white text-lg">🍚</span>
+              <div className="w-9 h-9 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl flex items-center justify-center shadow-md shadow-orange-200 group-hover:shadow-lg group-hover:shadow-orange-300 transition-shadow overflow-hidden">
+                {websiteLogo ? (
+                  <img src={websiteLogo} alt="Logo" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-white text-lg">🍚</span>
+                )}
               </div>
               <div className="flex flex-col">
                 <span className="text-lg font-black bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-                  Thiên Hương Các
+                  {websiteName}
                 </span>
                 {isAdmin && (
                   <span className="text-[10px] text-red-500 font-bold uppercase tracking-wider -mt-0.5">
@@ -463,9 +471,12 @@ export default function MainLayout() {
       <footer
         className={`${location.pathname.startsWith("/giai-tri") ? "bg-[#0a2e1f]/90 border-t border-white/5" : "bg-gray-900"} text-white py-8 mt-auto`}
       >
-        <div className="container mx-auto px-4 text-center">
+        <div className="container mx-auto px-4 text-center space-y-2">
           <p className="text-gray-400 text-sm italic">
-            © 2026 Thiên Hương Các. Chúc các đạo hữu ăn cơm ngon miệng! 🍚
+            © 2026 {websiteName}. Chúc các đạo hữu ăn cơm ngon miệng! 🍚
+          </p>
+          <p className="text-gray-500 text-xs font-bold tracking-widest uppercase">
+            Hotline: <span className="text-orange-500">{contactPhone}</span>
           </p>
         </div>
       </footer>

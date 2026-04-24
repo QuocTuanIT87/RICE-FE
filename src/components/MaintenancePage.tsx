@@ -3,9 +3,12 @@ import { Clock, Hammer, ShieldAlert } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 const MaintenancePage: React.FC = () => {
-  const { maintenanceEnd, maintenanceMessage } = useAppSelector(
+  const { maintenanceEnd, maintenanceMessage, config: systemConfig } = useAppSelector(
     (state) => state.system,
   );
+  const websiteBanner = systemConfig?.websiteBanner || "";
+  const websiteName = systemConfig?.websiteName || "Thiên Hương Các";
+
   const [timeLeft, setTimeLeft] = useState<{
     d: number;
     h: number;
@@ -41,6 +44,18 @@ const MaintenancePage: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-[9999] bg-slate-950 flex flex-col items-center justify-center p-6 text-white overflow-hidden">
+      {/* Background Banner Blur */}
+      {websiteBanner && (
+        <div 
+          className="absolute inset-0 z-0 opacity-20 blur-sm scale-105"
+          style={{
+            backgroundImage: `url('${websiteBanner}')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+      )}
+      
       {/* Background Decorative Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-orange-500/10 blur-[120px] rounded-full animate-pulse" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 blur-[120px] rounded-full animate-pulse" />
@@ -97,7 +112,7 @@ const MaintenancePage: React.FC = () => {
         </div>
 
         <p className="text-gray-600 text-[11px] font-bold uppercase tracking-[0.3em]">
-          Powered by Minh Lao Ma
+          Powered by {websiteName}
         </p>
       </div>
 

@@ -58,6 +58,9 @@ export default function HomePage() {
   const menus = todayMenu?.data.data || [];
   const menu = menus.length > 0 ? menus[0] : null;
 
+  const { config: systemConfig } = useAppSelector((state) => state.system);
+  const bannerUrl = systemConfig?.websiteBanner || "https://www.shutterstock.com/image-photo/blurred-modern-restaurant-interior-warm-260nw-2687315663.jpg";
+
   return (
     <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen -mt-8 -mb-8 overflow-x-hidden">
       {/* ===================== HERO ===================== */}
@@ -66,7 +69,7 @@ export default function HomePage() {
         style={{
           minHeight: "100vh",
           backgroundImage:
-            "url('https://www.shutterstock.com/image-photo/blurred-modern-restaurant-interior-warm-260nw-2687315663.jpg')",
+            `url('${bannerUrl}')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundAttachment: "fixed",

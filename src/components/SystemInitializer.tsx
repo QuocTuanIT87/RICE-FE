@@ -9,8 +9,15 @@ export default function SystemInitializer({ children }: { children: React.ReactN
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const { user } = useAppSelector((state) => state.auth);
-  const { isMaintenance } = useAppSelector((state) => state.system);
+  const { isMaintenance, config: systemConfig } = useAppSelector((state) => state.system);
   const prevMaintenanceRef = useRef<boolean | null>(null);
+
+  // 0. Cập nhật tiêu đề trang từ cấu hình
+  useEffect(() => {
+    if (systemConfig?.websiteName) {
+      document.title = `${systemConfig.websiteName} 🍚`;
+    }
+  }, [systemConfig?.websiteName]);
 
   // 1. Khi Admin tắt bảo trì thủ công qua Socket -> logout user
   useEffect(() => {

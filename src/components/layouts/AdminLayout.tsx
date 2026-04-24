@@ -33,6 +33,9 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
+  const { config: systemConfig } = useAppSelector((state) => state.system);
+  const websiteName = systemConfig?.websiteName || "Thiên Hương Các";
+  const websiteLogo = systemConfig?.websiteLogo || "";
   const [showDropdown, setShowDropdown] = useState(false);
 
   const handleLogout = async () => {
@@ -53,10 +56,16 @@ export default function AdminLayout() {
         {/* Logo at top */}
         <div className="p-4 border-b border-gray-800">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">🍚</span>
+            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center overflow-hidden">
+              {websiteLogo ? (
+                <img src={websiteLogo} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-2xl">🍚</span>
+              )}
+            </div>
             <div>
-              <h1 className="font-bold text-lg">Admin Panel</h1>
-              <p className="text-xs text-gray-400">Web Đặt Cơm</p>
+              <h1 className="font-bold text-lg leading-none">Admin Panel</h1>
+              <p className="text-[10px] text-gray-400 mt-1 truncate max-w-[120px]">{websiteName}</p>
             </div>
           </div>
         </div>
