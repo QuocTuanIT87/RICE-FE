@@ -1,10 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Provider } from "react-redux";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { store } from "@/store";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setUser, setLoading } from "@/store/authSlice";
+import { setUser, setLoading, logout } from "@/store/authSlice";
 import { authApi } from "@/services/api";
 import { Toaster } from "@/components/ui/toaster";
 import { SocketProvider } from "@/contexts/SocketContext";
@@ -36,6 +36,9 @@ import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminStatistics from "@/pages/admin/AdminStatistics";
 import AdminVouchers from "@/pages/admin/AdminVouchers";
+import AdminSystem from "@/pages/admin/AdminSystem";
+import MaintenancePage from "@/components/MaintenancePage";
+import SystemInitializer from "@/components/SystemInitializer";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -141,6 +144,62 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
 }
 
 function AppRoutes() {
+  const dispatch = useAppDispatch();
+  const {
+    isMaintenance,
+    maintenanceStart,
+    maintenanceEnd,
+    isLoading: isSystemLoading,
+  } = useAppSelector((state) => state.system);
+  const { user } = useAppSelector((state) => state.auth);
+  const [tick, setTick] = useState(0);
+
+  // Hẹn giờ tự động kích hoạt / kết thúc bảo trì
+  useEffect(() => {
+    if (!isMaintenance || user?.role === "admin") return;
+
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const now = Date.now();
+    const start = maintenanceStart ? new Date(maintenanceStart).getTime() : 0;
+    const end = maintenanceEnd ? new Date(maintenanceEnd).getTime() : 0;
+
+    // Đến giờ bắt đầu -> ép re-render để hiện trang bảo trì
+    if (start > now) {
+      timers.push(setTimeout(() => setTick((t) => t + 1), start - now));
+    }
+
+    // Đến giờ kết thúc -> logout + về trang đăng nhập
+    if (end > now) {
+      timers.push(
+        setTimeout(() => {
+          dispatch(logout());
+          window.location.href = "/login";
+        }, end - now),
+      );
+    }
+
+    return () => timers.forEach((t) => clearTimeout(t));
+  }, [isMaintenance, maintenanceStart, maintenanceEnd, user, dispatch, tick]);
+
+  if (isSystemLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // Kiểm tra bảo trì với thời gian thực tại
+  const now = new Date();
+  const isStarted = !maintenanceStart || now >= new Date(maintenanceStart);
+  const isExpired = maintenanceEnd && now > new Date(maintenanceEnd);
+
+
+
+  if (isMaintenance && user?.role !== "admin" && isStarted && !isExpired) {
+    return <MaintenancePage />;
+  }
+
   return (
     <Routes>
       {/* Public routes with MainLayout */}
@@ -241,6 +300,7 @@ function AppRoutes() {
         <Route path="users" element={<AdminUsers />} />
         <Route path="vouchers" element={<AdminVouchers />} />
         <Route path="statistics" element={<AdminStatistics />} />
+        <Route path="system" element={<AdminSystem />} />
       </Route>
 
       {/* 404 */}
@@ -269,8 +329,10 @@ export default function App() {
         <BrowserRouter>
           <AuthInitializer>
             <SocketProvider>
-              <AppRoutes />
-              <Toaster />
+              <SystemInitializer>
+                <AppRoutes />
+                <Toaster />
+              </SystemInitializer>
             </SocketProvider>
           </AuthInitializer>
         </BrowserRouter>

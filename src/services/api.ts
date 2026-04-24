@@ -48,8 +48,13 @@ api.interceptors.response.use(
     const isAuthMeRequest = error.config?.url === "/auth/me";
 
     if (error.response?.status === 401 && !isAuthMeRequest) {
-      store.dispatch(logout());
-      window.location.href = "/login";
+      // Chỉ redirect nếu user ĐANG đăng nhập (có token) mà bị 401
+      // User chưa đăng nhập thì không redirect, để họ xem trang công khai
+      const hasToken = store.getState().auth.token || store.getState().auth.isAuthenticated;
+      if (hasToken) {
+        store.dispatch(logout());
+        window.location.href = "/login";
+      }
     }
     return Promise.reject(error);
   },
@@ -321,6 +326,14 @@ export const vouchersApi = {
       }>
     >("/vouchers/check", { code, amount }),
   getMyVouchers: () => api.get<ApiResponse<any[]>>("/vouchers/my"),
+};
+
+// =============================================
+// SYSTEM API
+// =============================================
+export const systemApi = {
+  getConfig: () => api.get<ApiResponse<any>>("/system/config"),
+  updateConfig: (data: any) => api.put<ApiResponse<any>>("/system/config", data),
 };
 
 export default api;

@@ -10,6 +10,7 @@ import {
   LogOut,
   ChevronUp,
   Ticket,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
@@ -24,6 +25,7 @@ const sidebarItems = [
   { icon: ClipboardList, label: "Đơn đặt cơm", path: "/admin/orders" },
   { icon: Ticket, label: "Mã giảm giá", path: "/admin/vouchers" },
   { icon: BarChart3, label: "Thống kê", path: "/admin/statistics" },
+  { icon: Settings, label: "Cấu hình", path: "/admin/system" },
 ];
 
 export default function AdminLayout() {
