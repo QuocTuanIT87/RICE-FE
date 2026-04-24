@@ -245,14 +245,15 @@ export const ordersApi = {
   deleteOrder: (id: string) => api.delete<ApiResponse>(`/orders/${id}`),
 
   // Admin
-  getOrdersByDate: (date: string, page?: number, limit?: number) =>
+  getOrdersByDate: (date: string, page?: number, limit?: number, menuId?: string) =>
     api.get<
       ApiResponse<{
+        menus?: DailyMenu[];
         menu: DailyMenu;
         orders: PaginatedData<Order>;
         summary: Array<{ name: string; count: number }>;
       }>
-    >(`/orders/by-date/${date}`, { params: { page, limit } }),
+    >(`/orders/by-date/${date}`, { params: { page, limit, menuId } }),
 
   confirmAllOrders: (menuId: string) =>
     api.post<ApiResponse<{ confirmedCount: number }>>("/orders/confirm-all", {

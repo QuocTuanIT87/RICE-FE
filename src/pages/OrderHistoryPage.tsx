@@ -329,8 +329,13 @@ export default function OrderHistoryPage() {
                     )}
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900 text-sm">
+                    <p className="font-bold text-gray-900 text-sm flex items-center gap-2">
                       {order.createdAt ? formatDate(order.createdAt) : "N/A"}
+                      {(order as any).menuIndex && (
+                        <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] uppercase font-black tracking-wider">
+                          Menu {(order as any).menuIndex}
+                        </span>
+                      )}
                     </p>
                     <p className="text-[11px] text-gray-400">
                       {order.orderItems?.length || 0} món đã đặt

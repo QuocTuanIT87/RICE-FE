@@ -1,29 +1,29 @@
-import { useState, useEffect, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ordersApi } from "@/services/api";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useSocket } from "@/contexts/SocketContext";
 import { toast } from "@/hooks/useToast";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
+import { ordersApi } from "@/services/api";
+import type { MenuItem, User } from "@/types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ClipboardList,
-  Check,
-  Copy,
+  AlertCircle,
   Calendar,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  Clock,
+  Copy,
+  Hash,
+  Mail,
+  RefreshCw,
+  User as UserIcon,
   Users,
   Utensils,
-  Clock,
-  CheckCircle2,
-  Mail,
-  User as UserIcon,
-  Hash,
-  ChevronRight,
-  AlertCircle,
-  RefreshCw,
 } from "lucide-react";
-import type { User, MenuItem } from "@/types";
-import { useSocket } from "@/contexts/SocketContext";
-import { Badge } from "@/components/ui/badge";
+import { useEffect, useMemo, useState } from "react";
 
 import { Pagination } from "@/components/Pagination";
 
@@ -32,13 +32,16 @@ export default function AdminOrders() {
   const today = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState(today);
   const [page, setPage] = useState(1);
+  const [activeMenuId, setActiveMenuId] = useState<string | undefined>();
   const { socket } = useSocket();
 
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ["adminOrders", selectedDate, page],
-    queryFn: () => ordersApi.getOrdersByDate(selectedDate, page, 4),
+    queryKey: ["adminOrders", selectedDate, page, activeMenuId],
+    queryFn: () =>
+      ordersApi.getOrdersByDate(selectedDate, page, 4, activeMenuId),
   });
 
+  const menus = data?.data.data?.menus || [];
   const menu = data?.data.data?.menu;
   const ordersResponse = data?.data.data?.orders;
   const orders = ordersResponse?.docs || [];
@@ -47,6 +50,7 @@ export default function AdminOrders() {
   // Reset về trang 1 khi đổi ngày
   useEffect(() => {
     setPage(1);
+    setActiveMenuId(undefined);
   }, [selectedDate]);
 
   // Real-time listener
@@ -146,6 +150,33 @@ export default function AdminOrders() {
           </div>
         </div>
       </div>
+
+      {/* Menu Switcher */}
+      {menus.length > 1 && (
+        <div className="flex gap-2 bg-gray-50 p-1 rounded-xl w-max border border-gray-100 animate-in fade-in">
+          {menus.map((m, index) => {
+            const isActive =
+              activeMenuId === m._id || (!activeMenuId && menu?._id === m._id);
+            return (
+              <button
+                key={m._id}
+                onClick={() => {
+                  setActiveMenuId(m._id);
+                  setPage(1);
+                }}
+                className={cn(
+                  "px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                  isActive
+                    ? "bg-white text-orange-600 shadow-sm border border-orange-100"
+                    : "text-gray-400 hover:text-gray-600",
+                )}
+              >
+                Menu {index + 1}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
