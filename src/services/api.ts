@@ -1,3 +1,4 @@
+import { showLicenseOverlay } from "@/utils/licenseOverlay";
 import axios from "axios";
 import { store } from "@/store";
 import { logout } from "@/store/authSlice";
@@ -49,12 +50,16 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && !isAuthMeRequest) {
       // Chỉ redirect nếu user ĐANG đăng nhập (có token) mà bị 401
-      // User chưa đăng nhập thì không redirect, để họ xem trang công khai
       const hasToken = store.getState().auth.token || store.getState().auth.isAuthenticated;
       if (hasToken) {
         store.dispatch(logout());
         window.location.href = "/login";
       }
+    }
+
+    // Xử lý lỗi bản quyền (License Key)
+    if (error.response?.data?.error?.code === "LICENSE_REQUIRED") {
+      showLicenseOverlay(error.response.data.error.message);
     }
     return Promise.reject(error);
   },
@@ -309,7 +314,7 @@ export const gameCoinsApi = {
 // VOUCHERS API
 // =============================================
 export const vouchersApi = {
-  getVouchers: (params?: { page?: number; limit?: number }) => 
+  getVouchers: (params?: { page?: number; limit?: number }) =>
     api.get<ApiResponse<PaginatedData<any>>>("/vouchers", { params }),
   createVoucher: (data: any) => api.post<ApiResponse<any>>("/vouchers", data),
   updateVoucher: (id: string, data: any) =>
