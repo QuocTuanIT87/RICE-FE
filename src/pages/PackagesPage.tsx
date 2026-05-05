@@ -95,7 +95,7 @@ export default function PackagesPage() {
     } catch (error: any) {
       toast({
         title: "Đổi thất bại",
-        description: error.response?.data?.message || "Có lỗi xảy ra",
+        description: error.response?.data?.error?.message || "Có lỗi xảy ra",
         variant: "destructive",
       });
     }

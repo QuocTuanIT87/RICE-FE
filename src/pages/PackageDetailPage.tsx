@@ -83,6 +83,13 @@ export default function PackageDetailPage() {
       await queryClient.invalidateQueries({ queryKey: ["myPackages"] });
       navigate("/my-packages");
     },
+    onError: (error: any) => {
+      toast({
+        title: "❌ Gửi yêu cầu thất bại",
+        description: error.response?.data?.error?.message || "Có lỗi xảy ra",
+        variant: "destructive",
+      });
+    },
   });
 
   const checkVoucherMutation = useMutation({
