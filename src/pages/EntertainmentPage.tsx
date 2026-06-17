@@ -168,7 +168,7 @@ function GameMenu({
             className="flex items-center gap-1.5 bg-white/25 hover:bg-white/35 text-white px-3 py-2 rounded-xl text-xs font-bold transition-all backdrop-blur-sm"
           >
             <ShoppingCart size={13} />
-            Đổi lượt cơm
+            Đổi số dư ví
           </button>
         </div>
       </div>
@@ -217,10 +217,10 @@ function GameMenu({
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-black text-gray-900 group-hover:text-emerald-600 transition-colors">
-                Đổi Xu → Lượt Cơm
+                Đổi Xu → Số Dư Ví
               </h3>
               <p className="text-sm text-gray-400">
-                100,000 xu = 1 lượt cơm miễn phí!
+                100,000 xu = 30,000 VND vào ví tiền!
               </p>
             </div>
             <div className="text-gray-300 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all text-xl">
@@ -233,14 +233,13 @@ function GameMenu({
       {balance <= 0 && (
         <div className="mt-4 bg-amber-50 border border-amber-200 rounded-2xl p-3 text-center">
           <p className="text-amber-600 text-sm font-bold">
-            ⚠️ Bạn chưa có xu! Hãy mua gói đặt cơm để nhận xu bonus.
+            ⚠️ Bạn chưa có xu! Hãy tích cực nạp tiền và chơi game tích xu.
           </p>
         </div>
       )}
 
       <p className="text-center text-xs text-gray-400 mt-6">
-        🎰 Mua gói cơm = nhận xu bonus (1 lượt = 1,000 xu) • Chơi game tích xu!
-        🎉
+        🎰 Tích cực chơi game và quy đổi xu để nhận thêm số dư ví! 🎉
       </p>
     </div>
   );
@@ -305,7 +304,7 @@ export default function EntertainmentPage() {
   }, []);
 
   const handleGoToShop = () => {
-    navigate("/packages?tab=coin-exchange");
+    navigate("/wallet");
   };
 
   // Redirect if not logged in

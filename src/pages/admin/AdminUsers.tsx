@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { usersApi } from "@/services/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,16 +13,16 @@ import {
   UserX,
   ShieldCheck,
   Phone,
-  Package,
   Filter,
   RefreshCw,
+  Wallet,
 } from "lucide-react";
-import type { User, UserPackage } from "@/types";
+import type { User } from "@/types";
 import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatVND } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import {
@@ -43,6 +43,30 @@ export default function AdminUsers() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
+  const [balanceUser, setBalanceUser] = useState<{ id: string; name: string; balance: number } | null>(null);
+  const [newBalance, setNewBalance] = useState<number>(0);
+
+  const updateBalanceMutation = useMutation({
+    mutationFn: ({ id, balance }: { id: string; balance: number }) =>
+      usersApi.updateBalance(id, balance),
+    onSuccess: (response: any) => {
+      toast({
+        title: "Cập nhật số dư thành công",
+        description: response.data.message || "Đã điều chỉnh số dư tài khoản của thành viên.",
+        variant: "success",
+      });
+      setIsBalanceModalOpen(false);
+      refetch();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Cập nhật số dư thất bại",
+        description: error.response?.data?.error?.message || "Có lỗi xảy ra",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Lấy danh sách user với phân trang và lọc từ server
   const { data, isLoading, refetch, isFetching } = useQuery({
@@ -275,7 +299,7 @@ export default function AdminUsers() {
                       {user.name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-0.5">
                       <h3 className="font-bold text-gray-900 truncate group-hover:text-orange-600 transition-colors uppercase text-sm tracking-tight">
                         {user.name}
@@ -286,9 +310,12 @@ export default function AdminUsers() {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 truncate font-medium">
-                      {user.email}
-                    </p>
+                    <div className="flex items-center gap-3 text-xs text-gray-500 font-medium">
+                      <span className="truncate">{user.email}</span>
+                      <span className="shrink-0 font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+                        Ví: {formatVND(user.balance || 0)}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -314,6 +341,16 @@ export default function AdminUsers() {
                       align="end"
                       className="w-48 rounded-lg shadow-xl"
                     >
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setBalanceUser({ id: user._id, name: user.name, balance: user.balance || 0 });
+                          setNewBalance(user.balance || 0);
+                          setIsBalanceModalOpen(true);
+                        }}
+                        className="cursor-pointer font-semibold text-xs py-2 text-emerald-600 gap-2"
+                      >
+                        Điều chỉnh số dư
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() =>
                           handleBlockUser(user._id, user.isBlocked || false)
@@ -425,7 +462,7 @@ export default function AdminUsers() {
                       value="packages"
                       className="rounded-md px-6 text-[10px] font-bold uppercase tracking-widest"
                     >
-                      Gói cơm ({userDetail?.packages?.length || 0})
+                      Lịch sử nạp ({userDetail?.packages?.length || 0})
                     </TabsTrigger>
                     <TabsTrigger
                       value="orders"
@@ -462,11 +499,9 @@ export default function AdminUsers() {
                             icon: Mail,
                           },
                           {
-                            label: "Gói hiện tại",
-                            value:
-                              userDetail?.user?.activePackageId?.mealPackageId
-                                ?.name || "Chưa chọn gói",
-                            icon: Package,
+                            label: "Số dư tài khoản",
+                            value: formatVND(userDetail?.user?.balance || 0),
+                            icon: Wallet,
                           },
                         ].map((item, id) => (
                           <div
@@ -491,46 +526,50 @@ export default function AdminUsers() {
                       {!userDetail?.packages ||
                       userDetail?.packages?.length === 0 ? (
                         <p className="text-center py-10 text-gray-400 text-xs font-medium italic">
-                          Không có gói cơm nào
+                          Không có yêu cầu nạp tiền nào
                         </p>
                       ) : (
-                        userDetail?.packages?.map((pkg: UserPackage) => {
-                          const mealPkg = pkg.mealPackageId as any;
+                        userDetail?.packages?.map((req: any) => {
+                          const credit = req.amount;
+
+                          const statusColors = req.status === "approved"
+                            ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                            : req.status === "rejected"
+                              ? "bg-rose-50 text-rose-600 border border-rose-200"
+                              : req.status === "pending"
+                                ? "bg-amber-50 text-amber-600 border border-amber-200"
+                                : "bg-gray-100 text-gray-600 border border-gray-200";
+
                           return (
                             <div
-                              key={pkg._id}
+                              key={req._id}
                               className="p-5 border border-gray-100 rounded-xl bg-white flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:border-gray-200 transition-colors"
                             >
                               <div>
                                 <h4 className="font-bold text-gray-900 text-sm uppercase tracking-tight">
-                                  {mealPkg.name}
+                                  Nạp tiền ví
                                 </h4>
                                 <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-400 font-bold uppercase">
                                   <span>
-                                    {mealPkg.packageType === "no-rice"
-                                      ? "Không cơm"
-                                      : "Có cơm"}
+                                    Chuyển khoản
                                   </span>
                                   <span>•</span>
-                                  <span>Mở: {formatDate(pkg.purchasedAt)}</span>
+                                  <span>Yêu cầu: {formatDate(req.requestedAt)}</span>
                                 </div>
                               </div>
                               <div className="flex items-center gap-6">
                                 <div className="text-right">
                                   <p className="text-[10px] font-bold text-gray-400 uppercase mb-0.5">
-                                    Số lượt
+                                    Cộng ví
                                   </p>
-                                  <p className="text-xl font-bold text-orange-600">
-                                    {pkg.remainingTurns}
-                                    <span className="text-gray-200 text-sm">
-                                      /{mealPkg.turns}
-                                    </span>
+                                  <p className="text-lg font-bold text-emerald-600">
+                                    +{formatVND(credit)}
                                   </p>
                                 </div>
                                 <Badge
-                                  className={`rounded-md text-[9px] font-bold uppercase ${pkg.isActive ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-400"} border-none`}
+                                  className={`rounded-md text-[9px] font-bold uppercase ${statusColors} border-none`}
                                 >
-                                  {pkg.isActive ? "Hiệu lực" : "Hết hạn"}
+                                  {req.status === "approved" ? "Đã duyệt" : req.status === "rejected" ? "Từ chối" : "Đang chờ"}
                                 </Badge>
                               </div>
                             </div>
@@ -604,6 +643,92 @@ export default function AdminUsers() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      {/* Balance Adjustment Dialog */}
+      <Dialog open={isBalanceModalOpen} onOpenChange={setIsBalanceModalOpen}>
+        <DialogContent className="max-w-md rounded-xl border-none shadow-2xl p-0 overflow-hidden bg-white">
+          <div className="p-6 bg-gradient-to-r from-orange-500 to-red-500 text-white">
+            <h2 className="text-lg font-black uppercase tracking-tight">Điều chỉnh số dư ví</h2>
+            <p className="text-xs text-white/80 mt-1">Thay đổi số dư ví tài khoản của thành viên.</p>
+          </div>
+          <div className="p-6 space-y-6">
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Thành viên</p>
+              <p className="font-bold text-gray-800 text-sm uppercase">{balanceUser?.name}</p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">
+                Số dư mới (VND)
+              </label>
+              <div className="relative group">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-gray-400 group-focus-within:text-orange-500 transition-colors">
+                  ₫
+                </span>
+                <Input
+                  type="number"
+                  min={0}
+                  value={newBalance}
+                  onChange={(e) => setNewBalance(+e.target.value)}
+                  className="h-11 pl-10 border-gray-200 focus:ring-1 focus:ring-orange-500 rounded-lg text-lg font-bold text-orange-600"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setNewBalance((prev) => prev + 50000)}
+                className="flex-1 rounded-lg text-xs font-bold"
+              >
+                +50k
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setNewBalance((prev) => prev + 100000)}
+                className="flex-1 rounded-lg text-xs font-bold"
+              >
+                +100k
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setNewBalance((prev) => prev + 200000)}
+                className="flex-1 rounded-lg text-xs font-bold"
+              >
+                +200k
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setNewBalance((prev) => Math.max(0, prev - 50000))}
+                className="flex-1 rounded-lg text-xs font-bold text-rose-600 border-rose-100 hover:bg-rose-50"
+              >
+                -50k
+              </Button>
+            </div>
+          </div>
+          <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => setIsBalanceModalOpen(false)}
+              className="rounded-lg h-10 px-6 font-bold text-xs uppercase tracking-widest text-gray-400 hover:text-gray-900"
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={() => {
+                if (balanceUser) {
+                  updateBalanceMutation.mutate({ id: balanceUser.id, balance: newBalance });
+                }
+              }}
+              disabled={updateBalanceMutation.isPending}
+              className="bg-orange-600 hover:bg-orange-700 text-white h-10 px-8 rounded-lg font-bold text-xs uppercase tracking-widest shadow-lg"
+            >
+              Cập nhật
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

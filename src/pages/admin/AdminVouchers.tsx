@@ -45,6 +45,7 @@ export default function AdminVouchers() {
   const [formData, setFormData] = useState({
     code: "",
     description: "",
+    voucherType: "order" as "deposit" | "order",
     discountType: "fixed" as "fixed" | "percentage",
     discountValue: 0,
     minPurchase: 0,
@@ -116,6 +117,7 @@ export default function AdminVouchers() {
     setFormData({
       code: v.code,
       description: v.description,
+      voucherType: v.voucherType || "order",
       discountType: v.discountType,
       discountValue: v.discountValue,
       minPurchase: v.minPurchase || 0,
@@ -135,6 +137,7 @@ export default function AdminVouchers() {
     setFormData({
       code: "",
       description: "",
+      voucherType: "order",
       discountType: "fixed",
       discountValue: 0,
       minPurchase: 0,
@@ -208,17 +211,25 @@ export default function AdminVouchers() {
                   <h3 className="font-black text-gray-900 text-lg uppercase tracking-wider">
                     {v.code}
                   </h3>
-                  <div className="flex gap-2 mt-1">
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    <Badge
+                      className={cn(
+                        "text-[9px] font-black h-4.5 px-1.5 border-none uppercase tracking-widest text-white shadow-sm",
+                        v.voucherType === "deposit" ? "bg-indigo-500 hover:bg-indigo-600" : "bg-teal-500 hover:bg-teal-600",
+                      )}
+                    >
+                      {v.voucherType === "deposit" ? "VÍ NẠP TIỀN" : "ĐẶT CƠM"}
+                    </Badge>
                     <Badge
                       variant="outline"
                       className="text-[9px] font-black h-4.5 px-1.5 border-gray-200 text-gray-500 uppercase tracking-widest"
                     >
-                      {v.discountType === "fixed" ? "GIẢM TIỀN" : "GIẢM %"}
+                      {v.discountType === "fixed" ? (v.voucherType === "deposit" ? "TẶNG TIỀN" : "GIẢM TIỀN") : (v.voucherType === "deposit" ? "TẶNG %" : "GIẢM %")}
                     </Badge>
                     <Badge
                       className={cn(
                         "text-[9px] font-black h-4.5 px-1.5 border-none uppercase tracking-widest text-white shadow-sm",
-                        v.isPublic ? "bg-emerald-500" : "bg-orange-600",
+                        v.isPublic ? "bg-emerald-500 hover:bg-emerald-600" : "bg-orange-600 hover:bg-orange-700",
                       )}
                     >
                       {v.isPublic ? "CÔNG KHAI" : "CHỈ ĐỊNH"}
@@ -372,7 +383,25 @@ export default function AdminVouchers() {
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
-                Loại giảm giá
+                Loại Voucher
+              </Label>
+              <select
+                className="w-full h-12 px-4 py-2 bg-white border border-gray-200 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                value={formData.voucherType}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    voucherType: e.target.value as any,
+                  })
+                }
+              >
+                <option value="order">Đặt cơm trưa (Order)</option>
+                <option value="deposit">Nạp tiền vào ví (Deposit)</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
+                {formData.voucherType === "deposit" ? "Kiểu tặng thưởng" : "Loại giảm giá"}
               </Label>
               <select
                 className="w-full h-12 px-4 py-2 bg-white border border-gray-200 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20"
@@ -390,7 +419,7 @@ export default function AdminVouchers() {
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
-                Giá trị giảm
+                {formData.voucherType === "deposit" ? "Giá trị tặng" : "Giá trị giảm"}
               </Label>
               <Input
                 type="number"
@@ -406,7 +435,7 @@ export default function AdminVouchers() {
             </div>
             <div className="space-y-2">
               <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
-                Mua tối thiểu (VNĐ)
+                {formData.voucherType === "deposit" ? "Nạp tối thiểu (VNĐ)" : "Mua tối thiểu (VNĐ)"}
               </Label>
               <Input
                 type="number"

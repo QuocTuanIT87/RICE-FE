@@ -91,11 +91,11 @@ export default function AdminDashboard() {
             desc: "Tổng suất ăn khách đã đặt",
           },
           {
-            label: "Yêu cầu mua gói",
+            label: "Yêu cầu nạp tiền",
             val: stats?.pendingPurchaseRequests || 0,
             icon: Package,
             color: (stats?.pendingPurchaseRequests || 0) > 0 ? "rose" : "gray",
-            desc: "Khách đang chờ duyệt thanh toán",
+            desc: "Khách đang chờ duyệt nạp tiền",
             accent: (stats?.pendingPurchaseRequests || 0) > 0,
           },
           {
@@ -103,7 +103,7 @@ export default function AdminDashboard() {
             val: formatVND(stats?.monthlyRevenue || 0),
             icon: TrendingUp,
             color: "emerald",
-            desc: "Tổng tiền từ các gói cơm",
+            desc: "Doanh thu nạp tiền ví",
           },
           {
             label: "Trạng thái Menu",
@@ -182,11 +182,11 @@ export default function AdminDashboard() {
                 desc: "Chốt số lượng suất ăn",
               },
               {
-                to: "/admin/packages",
-                label: "Quản lý Gói",
+                to: "/admin/deposits",
+                label: "Duyệt nạp",
                 icon: Package,
                 color: "blue",
-                desc: "Cấu hình gói linh hoạt",
+                desc: "Phê duyệt nạp tiền ví",
               },
             ].map((action, i) => (
               <Link key={i} to={action.to} className="group">
@@ -247,9 +247,9 @@ export default function AdminDashboard() {
                     <span className="text-lg inline-block px-2 bg-white text-rose-600 rounded-md mx-1">
                       {stats?.pendingPurchaseRequests}
                     </span>{" "}
-                    thượng đế đang chờ xác nhận mua gói cơm.
+                    thượng đế đang chờ xác nhận nạp tiền.
                   </p>
-                  <Link to="/admin/packages">
+                  <Link to="/admin/deposits">
                     <Button className="w-full h-12 bg-white text-rose-600 hover:bg-rose-50 rounded-xl font-black text-xs uppercase shadow-lg shadow-rose-900/20 tracking-widest">
                       Xử lý ngay lập tức <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
@@ -267,7 +267,7 @@ export default function AdminDashboard() {
                   Tuyệt vời!
                 </p>
                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                  Không có yêu cầu mua gói cơm nào đang tồn đọng.
+                  Không có yêu cầu nạp tiền nào đang tồn đọng.
                 </p>
               </CardContent>
             </Card>

@@ -12,9 +12,8 @@ export interface User {
   role: UserRole;
   isVerified: boolean;
   isBlocked?: boolean;
-  activePackage?: UserPackage;
-  activePackageId?: any; // Để hỗ trợ populate từ backend
   gameCoins?: number; // Xu chơi game giải trí
+  balance?: number; // Số dư tiền ví VND (mới)
   createdAt?: string;
   updatedAt?: string;
 }
@@ -38,48 +37,36 @@ export interface RegisterData {
   password: string;
 }
 
-// Meal Package types
-export type PackageType = "normal" | "no-rice" | "coin-exchange";
-
-export interface MealPackage {
-  _id: string;
-  name: string;
-  turns: number;
-  price: number;
-  validDays: number;
-  packageType: PackageType;
-  qrCodeImage?: string;
-  bonusCoins?: number; // Game coins bonus when purchased
-  coinPrice?: number; // Cost in coins for redemption
-  isActive: boolean;
-  createdAt: string;
-}
-
-export interface UserPackage {
-  _id: string;
-  userId: string;
-  mealPackageId: MealPackage | string;
-  packageType: PackageType;
-  remainingTurns: number;
-  purchasedAt: string;
-  expiresAt: string;
-  isActive: boolean;
-}
-
-// Package Purchase types
+// Package Purchase/Deposit types
 export type PurchaseStatus = "pending" | "approved" | "rejected";
+export type PackageType = "normal" | "no-rice";
 
-export interface PackagePurchaseRequest {
+export interface DepositRequest {
   _id: string;
   userId: User | string;
-  mealPackageId: MealPackage | string;
+  amount: number;
   status: PurchaseStatus;
-  voucherId?: string;
-  discountAmount?: number;
-  finalPrice?: number;
+  voucherCode?: string;
+  bonusAmount?: number;
   requestedAt: string;
   processedAt?: string;
   createdAt?: string;
+}
+
+// System Config Type
+export interface SystemConfig {
+  _id: string;
+  isMaintenance: boolean;
+  maintenanceMessage?: string;
+  websiteName: string;
+  websiteLogo?: string;
+  websiteBanner?: string;
+  contactPhone?: string;
+  priceNormal: number;
+  priceNoRice: number;
+  bankId: string;
+  bankAccountNo: string;
+  bankAccountName: string;
 }
 
 // Menu types
@@ -116,9 +103,11 @@ export interface Order {
   _id: string;
   userId: User | string;
   dailyMenuId: DailyMenu | string;
-  userPackageId: string;
-  orderType?: PackageType; // Loại đặt: có cơm hoặc không cơm
+  orderType?: "normal" | "no-rice"; // Loại đặt: có cơm hoặc không cơm
   isConfirmed: boolean;
+  totalPrice?: number; // Tổng tiền đơn hàng (mới)
+  voucherCode?: string;
+  discountAmount?: number;
   orderedAt: string;
   orderItems?: OrderItem[];
   createdAt?: string;
@@ -170,4 +159,26 @@ export interface ApiResponse<T = unknown> {
     code: string;
     message: string;
   };
+}
+
+// Voucher interface
+export interface Voucher {
+  _id: string;
+  code: string;
+  description: string;
+  voucherType: "deposit" | "order";
+  discountType: "fixed" | "percentage";
+  discountValue: number;
+  minPurchase?: number;
+  maxDiscount?: number;
+  validFrom: string;
+  validTo: string;
+  usageLimit: number;
+  usedCount: number;
+  isActive: boolean;
+  usedByUsers: string[];
+  isPublic: boolean;
+  targetUsers?: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }

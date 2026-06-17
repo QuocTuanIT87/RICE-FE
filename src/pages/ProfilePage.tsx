@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSocket } from "@/contexts/SocketContext";
 import { toast } from "@/hooks/useToast";
+import { useShowBalance } from "@/hooks/useShowBalance";
 import { cn, formatVND } from "@/lib/utils";
 import { authApi, vouchersApi } from "@/services/api";
 import { setUser } from "@/store/authSlice";
@@ -28,7 +29,7 @@ import {
   Loader2,
   Lock,
   Mail,
-  Package,
+  Wallet,
   Phone,
   RefreshCw,
   Save,
@@ -38,6 +39,8 @@ import {
   User as UserIcon,
   UtensilsCrossed,
   Zap,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -49,6 +52,8 @@ export default function ProfilePage() {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   const { socket } = useSocket();
+
+  const [showBalance, setShowBalance] = useShowBalance();
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
   const [isEditing, setIsEditing] = useState(false);
@@ -74,21 +79,33 @@ export default function ProfilePage() {
       });
     };
 
+    const handleCoinsUpdated = () => {
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+    };
+
     socket.on("voucher_created", handleVoucherUpdate);
     socket.on("voucher_updated", handleVoucherUpdate);
+    socket.on("coins_updated", handleCoinsUpdated);
 
     return () => {
       socket.off("voucher_created", handleVoucherUpdate);
       socket.off("voucher_updated", handleVoucherUpdate);
+      socket.off("coins_updated", handleCoinsUpdated);
     };
   }, [socket, queryClient]);
 
-  const userInitial = user?.name?.charAt(0)?.toUpperCase() || "U";
+  const { data: profileData } = useQuery({
+    queryKey: ["userProfile"],
+    queryFn: () => authApi.getMe(),
+  });
+
+  const freshUser = profileData?.data.data || user;
+  const userInitial = freshUser?.name?.charAt(0)?.toUpperCase() || "U";
 
   const { data: vouchersData, isLoading: vouchersLoading } = useQuery({
     queryKey: ["myVouchers"],
     queryFn: () => vouchersApi.getMyVouchers(),
-    enabled: !!user,
+    enabled: !!freshUser,
   });
 
   const myVouchers = vouchersData?.data.data || [];
@@ -179,14 +196,14 @@ export default function ProfilePage() {
             </div>
             <div className="min-w-0">
               <h2 className="font-bold text-gray-900 truncate uppercase tracking-tight">
-                {user?.name}
+                {freshUser?.name}
               </h2>
               <p className="text-[11px] text-gray-400 truncate">
-                {user?.email}
+                {freshUser?.email}
               </p>
               <Badge className="mt-1 bg-amber-50 text-amber-600 border-amber-100 text-[9px] font-black h-4.5">
                 <Coins size={10} className="mr-1" />
-                {(user?.gameCoins || 0).toLocaleString()} Xu
+                {(freshUser?.gameCoins || 0).toLocaleString()} Xu
               </Badge>
             </div>
           </div>
@@ -250,7 +267,7 @@ export default function ProfilePage() {
                 <div className="relative z-10 flex items-center justify-between">
                   <div>
                     <h1 className="text-3xl font-black text-white italic">
-                      Chào {user?.name.split(" ").pop()}! 👋
+                      Chào {freshUser?.name ? freshUser.name.split(" ").pop() : ""}! 👋
                     </h1>
                     <p className="text-orange-100 font-medium mt-1">
                       Hôm nay bạn muốn thưởng thức món gì?
@@ -258,7 +275,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="hidden sm:block">
                     <Badge className="bg-white/20 backdrop-blur-md text-white border-white/20 px-4 py-1.5 rounded-full font-black text-xs uppercase tracking-widest">
-                      {user?.role === "admin"
+                      {freshUser?.role === "admin"
                         ? "👑 Admin Access"
                         : "👤 Thành viên"}
                     </Badge>
@@ -269,27 +286,42 @@ export default function ProfilePage() {
               {/* Quick Actions Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Link
-                  to="/my-packages"
+                  to="/wallet"
                   className="group p-6 rounded-2xl bg-white border border-gray-100 hover:border-orange-200 hover:shadow-xl transition-all"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Package size={24} className="text-orange-500" />
+                      <Wallet size={24} className="text-orange-500" />
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-black text-gray-900 uppercase tracking-tight">
-                        Gói của tôi
+                        Ví tiền của tôi
                       </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {user?.activePackage?.mealPackageId
-                          ? "Đang hoạt động"
-                          : "Chưa đăng ký gói"}
+                      <p className="text-xs text-gray-500 mt-0.5 font-bold">
+                        {showBalance
+                          ? freshUser?.balance !== undefined
+                            ? formatVND(freshUser.balance)
+                            : "0 đ"
+                          : "••••••"}
                       </p>
                     </div>
-                    <ArrowRight
-                      size={18}
-                      className="text-gray-300 group-hover:text-orange-500 transition-colors"
-                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowBalance(!showBalance);
+                        }}
+                        className="text-gray-400 hover:text-gray-600 transition-colors p-1.5 rounded-lg hover:bg-gray-50 focus:outline-none"
+                        title={showBalance ? "Ẩn số dư" : "Hiện số dư"}
+                      >
+                        {showBalance ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                      <ArrowRight
+                        size={18}
+                        className="text-gray-300 group-hover:text-orange-500 transition-colors"
+                      />
+                    </div>
                   </div>
                 </Link>
 
@@ -334,7 +366,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="px-3 py-1 bg-white/10 rounded-lg text-xs font-black">
-                        {(user?.gameCoins || 0).toLocaleString()} Xu
+                        {(freshUser?.gameCoins || 0).toLocaleString()} Xu
                       </div>
                       <ArrowRight
                         size={18}
@@ -501,7 +533,7 @@ export default function ProfilePage() {
                       <p className="text-gray-400 text-sm font-medium italic">
                         Ví của bạn đang trống trải...
                       </p>
-                      <Link to="/packages">
+                      <Link to="/order">
                         <Button className="rounded-xl font-black text-xs bg-orange-500 text-white hover:bg-orange-600 px-8 h-10">
                           SĂN MÃ NGAY
                         </Button>

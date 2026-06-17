@@ -5,9 +5,6 @@ import { logout } from "@/store/authSlice";
 import type {
   ApiResponse,
   User,
-  MealPackage,
-  UserPackage,
-  PackagePurchaseRequest,
   DailyMenu,
   MenuItem,
   Order,
@@ -15,6 +12,7 @@ import type {
   RevenueStats,
   PackageType,
   PaginatedData,
+  DepositRequest,
 } from "@/types";
 
 // API Base URL - lấy từ biến môi trường, chỉ cần thay đổi ở file .env
@@ -113,7 +111,7 @@ export const usersApi = {
 
   getUserById: (id: string) =>
     api.get<
-      ApiResponse<{ user: User; packages: UserPackage[]; orders: Order[] }>
+      ApiResponse<{ user: User; packages: DepositRequest[]; orders: Order[] }>
     >(`/users/${id}`),
 
   blockUser: (id: string) => api.patch<ApiResponse<User>>(`/users/${id}/block`),
@@ -123,67 +121,32 @@ export const usersApi = {
 
   resetPassword: (id: string) =>
     api.patch<ApiResponse>(`/users/${id}/reset-password`),
+
+  updateBalance: (id: string, balance: number) =>
+    api.put<ApiResponse<User>>(`/users/${id}/balance`, { balance }),
 };
 
 // =============================================
-// MEAL PACKAGES API
+// DEPOSIT REQUESTS API
 // =============================================
-export const mealPackagesApi = {
-  getPackages: (params?: { isActive?: boolean; page?: number; limit?: number }) =>
-    api.get<ApiResponse<PaginatedData<MealPackage>>>("/meal-packages", {
-      params,
-    }),
-
-  getPackageById: (id: string) =>
-    api.get<ApiResponse<MealPackage>>(`/meal-packages/${id}`),
-
-  createPackage: (data: Partial<MealPackage>) =>
-    api.post<ApiResponse<MealPackage>>("/meal-packages", data),
-
-  updatePackage: (id: string, data: Partial<MealPackage>) =>
-    api.put<ApiResponse<MealPackage>>(`/meal-packages/${id}`, data),
-
-  deletePackage: (id: string) =>
-    api.delete<ApiResponse>(`/meal-packages/${id}`),
-};
-
-// =============================================
-// PACKAGE PURCHASES API
-// =============================================
-export const packagePurchasesApi = {
+export const depositRequestsApi = {
   getMyRequests: () =>
-    api.get<ApiResponse<PackagePurchaseRequest[]>>("/package-purchases/my"),
+    api.get<ApiResponse<DepositRequest[]>>("/deposit-requests/my"),
 
-  createRequest: (mealPackageId: string, voucherCode?: string) =>
-    api.post<ApiResponse<PackagePurchaseRequest>>("/package-purchases", {
-      mealPackageId,
-      voucherCode,
-    }),
+  createRequest: (amount: number, voucherCode?: string) =>
+    api.post<ApiResponse<DepositRequest>>("/deposit-requests", { amount, voucherCode }),
 
   // Admin
   getAllRequests: (params?: { status?: string; page?: number; limit?: number }) =>
-    api.get<ApiResponse<PaginatedData<PackagePurchaseRequest>>>("/package-purchases", {
+    api.get<ApiResponse<PaginatedData<DepositRequest>>>("/deposit-requests", {
       params,
     }),
 
   approveRequest: (id: string) =>
-    api.post<ApiResponse>(`/package-purchases/${id}/approve`),
+    api.post<ApiResponse>(`/deposit-requests/${id}/approve`),
 
   rejectRequest: (id: string) =>
-    api.post<ApiResponse>(`/package-purchases/${id}/reject`),
-};
-
-// =============================================
-// USER PACKAGES API
-// =============================================
-export const userPackagesApi = {
-  getMyPackages: () => api.get<ApiResponse<UserPackage[]>>("/user-packages/my"),
-
-  getMyActivePackages: () =>
-    api.get<ApiResponse<UserPackage[]>>("/user-packages/my/active"),
-
-  setActivePackage: (id: string) =>
-    api.post<ApiResponse<UserPackage>>(`/user-packages/${id}/set-active`),
+    api.post<ApiResponse>(`/deposit-requests/${id}/reject`),
 };
 
 // =============================================
@@ -245,7 +208,8 @@ export const ordersApi = {
     items: Array<{ menuItemId: string; note?: string; quantity?: number }>,
     orderType: PackageType = "normal",
     menuId: string,
-  ) => api.post<ApiResponse<Order>>("/orders", { items, orderType, menuId }),
+    voucherCode?: string,
+  ) => api.post<ApiResponse<Order>>("/orders", { items, orderType, menuId, voucherCode }),
 
   deleteOrder: (id: string) => api.delete<ApiResponse>(`/orders/${id}`),
 
@@ -304,9 +268,9 @@ export const gameCoinsApi = {
       delta,
     }),
 
-  exchange: (packageId: string) =>
-    api.post<ApiResponse<{ gameCoins: number }>>("/game-coins/exchange", {
-      packageId,
+  exchange: (turns: number) =>
+    api.post<ApiResponse<{ gameCoins: number; balance: number }>>("/game-coins/exchange", {
+      turns,
     }),
 };
 
@@ -320,7 +284,7 @@ export const vouchersApi = {
   updateVoucher: (id: string, data: any) =>
     api.put<ApiResponse<any>>(`/vouchers/${id}`, data),
   deleteVoucher: (id: string) => api.delete<ApiResponse>(`/vouchers/${id}`),
-  checkVoucher: (code: string, amount: number) =>
+  checkVoucher: (code: string, amount: number, voucherType?: "deposit" | "order") =>
     api.post<
       ApiResponse<{
         voucherId: string;
@@ -330,8 +294,9 @@ export const vouchersApi = {
         discountAmount: number;
         finalPrice: number;
       }>
-    >("/vouchers/check", { code, amount }),
-  getMyVouchers: () => api.get<ApiResponse<any[]>>("/vouchers/my"),
+    >("/vouchers/check", { code, amount, voucherType }),
+  getMyVouchers: (voucherType?: "deposit" | "order") =>
+    api.get<ApiResponse<any[]>>("/vouchers/my", { params: voucherType ? { voucherType } : {} }),
 };
 
 // =============================================

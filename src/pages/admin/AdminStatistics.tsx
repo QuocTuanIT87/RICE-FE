@@ -26,6 +26,7 @@ import {
   Target,
   Zap,
   ChevronDown,
+  Coins,
 } from "lucide-react";
 import { formatVND } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -161,9 +162,9 @@ export default function AdminStatistics() {
             up: true,
           },
           {
-            label: "Gói cơm đã bán",
+            label: "Lượt nạp tiền ví",
             val: revenue?.totalPackagesSold || 0,
-            icon: Package,
+            icon: Coins,
             color: "emerald",
             trend: "+8%",
             up: true,
@@ -223,7 +224,7 @@ export default function AdminStatistics() {
                 <Target size={18} />
               </div>
               <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">
-                Cơ cấu doanh thu theo gói
+                Cơ cấu doanh thu nạp tiền
               </h2>
             </div>
             <Badge className="bg-blue-50 text-blue-600 font-black text-[9px] uppercase tracking-widest px-3 h-6 rounded-lg pointer-events-none">
@@ -359,11 +360,11 @@ export default function AdminStatistics() {
         </Card>
       </div>
 
-      {/* Package Breakdown Table-style View */}
+      {/* Deposit Breakdown Table-style View */}
       <Card className="border-none shadow-sm rounded-[2.5rem] bg-white border border-gray-50 overflow-hidden">
         <div className="p-8 border-b border-gray-50 flex items-center justify-between">
           <h2 className="text-lg font-black text-gray-900 uppercase tracking-tight">
-            Chi tiết hiệu suất gói cơm
+            Chi tiết hiệu suất nạp tiền
           </h2>
           <Badge className="bg-emerald-50 text-emerald-600 font-black text-[9px] uppercase tracking-widest px-3 h-6 rounded-lg border-none">
             DỮ LIỆU THỜI GIAN THỰC
@@ -375,10 +376,10 @@ export default function AdminStatistics() {
               <thead>
                 <tr className="bg-gray-50/50">
                   <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                    Loại gói cơm
+                    Hình thức nạp tiền
                   </th>
                   <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                    Số lượng bán
+                    Số lượt nạp
                   </th>
                   <th className="px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">
                     Doanh thu
@@ -408,7 +409,7 @@ export default function AdminStatistics() {
                     </td>
                     <td className="px-8 py-6">
                       <span className="font-bold text-gray-600 text-sm">
-                        {item.count} gói
+                        {item.count} lượt
                       </span>
                     </td>
                     <td className="px-8 py-6">

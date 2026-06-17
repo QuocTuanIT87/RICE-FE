@@ -48,12 +48,9 @@ export default function LeaderboardPage() {
     switch (activeTab) {
       case "turns":
         return (
-          <>
-            <strong className="text-orange-600">{user.totalTurns} lượt</strong>
-            <span className="text-gray-400 text-[10px] sm:text-xs ml-1 block sm:inline">
-              từ {user.packageCount} gói
-            </span>
-          </>
+          <strong className="text-orange-600">
+            {formatVND(user.totalTurns || 0)}
+          </strong>
         );
       case "coins":
         return (

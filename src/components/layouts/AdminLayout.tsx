@@ -2,7 +2,6 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import {
   LayoutDashboard,
-  Package,
   Users,
   UtensilsCrossed,
   ClipboardList,
@@ -11,6 +10,7 @@ import {
   ChevronUp,
   Ticket,
   Settings,
+  Coins,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
@@ -19,7 +19,7 @@ import { authApi } from "@/services/api";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
-  { icon: Package, label: "Gói đặt cơm", path: "/admin/packages" },
+  { icon: Coins, label: "Duyệt nạp tiền", path: "/admin/deposits" },
   { icon: Users, label: "Người dùng", path: "/admin/users" },
   { icon: UtensilsCrossed, label: "Menu hôm nay", path: "/admin/menus" },
   { icon: ClipboardList, label: "Đơn đặt cơm", path: "/admin/orders" },

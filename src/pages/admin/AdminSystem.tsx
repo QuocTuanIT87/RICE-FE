@@ -11,6 +11,7 @@ import {
   Calendar,
   Lock,
   KeyRound,
+  Wallet,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { systemApi } from "@/services/api";
@@ -55,6 +56,11 @@ const AdminSystem: React.FC = () => {
     maintenanceStart: "",
     maintenanceEnd: "",
     maintenanceMessage: "",
+    priceNormal: 30000,
+    priceNoRice: 20000,
+    bankId: "MB",
+    bankAccountNo: "0999999999",
+    bankAccountName: "NGUYEN VAN A",
   });
 
   const { data: configData, isLoading } = useQuery({
@@ -326,6 +332,112 @@ const AdminSystem: React.FC = () => {
                   placeholder="0123.456.789"
                   className="h-12 rounded-xl bg-gray-50 border-gray-100 focus:bg-white transition-all font-bold"
                 />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-xl shadow-gray-100 rounded-[2rem] overflow-hidden">
+            <CardHeader className="bg-gray-50/50 border-b border-gray-100 p-8">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-blue-500">
+                  <Wallet className="w-6 h-6" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-black">
+                    Cấu hình chuyển khoản (VietQR)
+                  </CardTitle>
+                  <CardDescription>
+                    Tài khoản ngân hàng nhận tiền nạp tự động của hệ thống
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-black uppercase tracking-widest text-gray-400">
+                    Mã ngân hàng (ví dụ: MB, VCB, TCB,...)
+                  </Label>
+                  <Input
+                    name="bankId"
+                    value={formData.bankId || ""}
+                    onChange={handleChange}
+                    placeholder="Ví dụ: MB"
+                    className="h-12 rounded-xl bg-gray-50 border-gray-100 focus:bg-white transition-all font-bold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-black uppercase tracking-widest text-gray-400">
+                    Số tài khoản ngân hàng
+                  </Label>
+                  <Input
+                    name="bankAccountNo"
+                    value={formData.bankAccountNo || ""}
+                    onChange={handleChange}
+                    placeholder="Ví dụ: 0999999999"
+                    className="h-12 rounded-xl bg-gray-50 border-gray-100 focus:bg-white transition-all font-bold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-black uppercase tracking-widest text-gray-400">
+                    Tên chủ tài khoản ngân hàng
+                  </Label>
+                  <Input
+                    name="bankAccountName"
+                    value={formData.bankAccountName || ""}
+                    onChange={handleChange}
+                    placeholder="Ví dụ: NGUYEN VAN A"
+                    className="h-12 rounded-xl bg-gray-50 border-gray-100 focus:bg-white transition-all font-bold uppercase"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-xl shadow-gray-100 rounded-[2rem] overflow-hidden">
+            <CardHeader className="bg-gray-50/50 border-b border-gray-100 p-8">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-orange-500">
+                  <Settings className="w-6 h-6" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-black">
+                    Cấu hình giá bán suất ăn
+                  </CardTitle>
+                  <CardDescription>
+                    Giá bán cho từng loại đặt cơm (đồng giá)
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-black uppercase tracking-widest text-gray-400">
+                    Giá phần Có cơm (VND)
+                  </Label>
+                  <Input
+                    type="number"
+                    name="priceNormal"
+                    value={formData.priceNormal}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, priceNormal: +e.target.value }))}
+                    placeholder="30000"
+                    className="h-12 rounded-xl bg-gray-50 border-gray-100 focus:bg-white transition-all font-bold text-orange-600 text-lg"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-black uppercase tracking-widest text-gray-400">
+                    Giá phần Không cơm (VND)
+                  </Label>
+                  <Input
+                    type="number"
+                    name="priceNoRice"
+                    value={formData.priceNoRice}
+                    onChange={(e) => setFormData((prev: any) => ({ ...prev, priceNoRice: +e.target.value }))}
+                    placeholder="20000"
+                    className="h-12 rounded-xl bg-gray-50 border-gray-100 focus:bg-white transition-all font-bold text-blue-600 text-lg"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>

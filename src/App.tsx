@@ -20,9 +20,7 @@ import RegisterPage from "@/pages/RegisterPage";
 
 // User Pages
 import OrderPage from "@/pages/OrderPage";
-import PackagesPage from "@/pages/PackagesPage";
-import PackageDetailPage from "@/pages/PackageDetailPage";
-import MyPackagesPage from "@/pages/MyPackagesPage";
+import MyWalletPage from "@/pages/MyWalletPage";
 import ProfilePage from "@/pages/ProfilePage";
 import OrderHistoryPage from "@/pages/OrderHistoryPage";
 import EntertainmentPage from "@/pages/EntertainmentPage";
@@ -30,7 +28,7 @@ import LeaderboardPage from "@/pages/LeaderboardPage";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin/AdminDashboard";
-import AdminPackages from "@/pages/admin/AdminPackages";
+import AdminDeposits from "@/pages/admin/AdminDeposits";
 import AdminMenus from "@/pages/admin/AdminMenus";
 import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminUsers from "@/pages/admin/AdminUsers";
@@ -214,11 +212,7 @@ function AppRoutes() {
         />
         <Route
           path="/packages"
-          element={
-            <PublicRoute>
-              <PackagesPage />
-            </PublicRoute>
-          }
+          element={<Navigate to="/wallet" replace />}
         />
         <Route
           path="/giai-tri"
@@ -248,17 +242,17 @@ function AppRoutes() {
         />
         <Route
           path="/packages/:id"
-          element={
-            <ProtectedRoute>
-              <PackageDetailPage />
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/wallet" replace />}
         />
         <Route
           path="/my-packages"
+          element={<Navigate to="/wallet" replace />}
+        />
+        <Route
+          path="/wallet"
           element={
             <ProtectedRoute>
-              <MyPackagesPage />
+              <MyWalletPage />
             </ProtectedRoute>
           }
         />
@@ -294,7 +288,7 @@ function AppRoutes() {
         }
       >
         <Route index element={<AdminDashboard />} />
-        <Route path="packages" element={<AdminPackages />} />
+        <Route path="deposits" element={<AdminDeposits />} />
         <Route path="menus" element={<AdminMenus />} />
         <Route path="orders" element={<AdminOrders />} />
         <Route path="users" element={<AdminUsers />} />

@@ -4,45 +4,48 @@ import { logout } from "@/store/authSlice";
 import { useQuery } from "@tanstack/react-query";
 import { authApi, usersApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
+import { useShowBalance } from "@/hooks/useShowBalance";
 import {
   User,
   LogOut,
-  Package,
   History,
   UtensilsCrossed,
   LayoutDashboard,
   ClipboardList,
   Settings,
   Home,
-  ShoppingBag,
   ChevronDown,
   Menu,
   X,
   Gamepad2,
   Coins,
   Trophy,
+  Wallet,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import PriceNoticeBanner from "@/components/PriceNoticeBanner";
+import { formatVND } from "@/lib/utils";
 
 const customerNavItems = [
   { path: "/", label: "Trang chủ", icon: Home },
   { path: "/order", label: "Đặt cơm", icon: UtensilsCrossed },
-  { path: "/packages", label: "Mua gói", icon: ShoppingBag },
+  { path: "/wallet", label: "Nạp tiền", icon: Coins },
   { path: "/leaderboard", label: "Bảng xếp hạng", icon: Trophy },
   { path: "/giai-tri", label: "Giải trí", icon: Gamepad2 },
 ];
 
 const adminNavItems = [
   { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/admin/packages", label: "Quản lý gói", icon: Package },
+  { path: "/admin/deposits", label: "Duyệt nạp tiền", icon: Coins },
   { path: "/admin/menus", label: "Quản lý menu", icon: UtensilsCrossed },
   { path: "/admin/orders", label: "Quản lý đơn", icon: ClipboardList },
 ];
 
 const customerDropdownItems = [
   { path: "/profile", label: "Trang cá nhân", icon: User },
-  { path: "/my-packages", label: "Gói của tôi", icon: Package },
+  { path: "/wallet", label: "Ví của tôi", icon: Coins },
   { path: "/order-history", label: "Lịch sử đặt cơm", icon: History },
 ];
 
@@ -53,6 +56,8 @@ export default function MainLayout() {
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showBalance, setShowBalance] = useShowBalance();
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const isAdmin = user?.role === "admin";
@@ -173,19 +178,26 @@ export default function MainLayout() {
             <div className="flex items-center gap-3">
               {isAuthenticated && (
                 <div className="relative group">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-400 to-orange-500 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
-                  <div className="relative flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-amber-100 shadow-sm">
-                    <div className="w-6 h-6 rounded-lg bg-amber-100 flex items-center justify-center">
-                      <Coins size={14} className="text-amber-600" />
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-400 to-red-500 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
+                  <div className="relative flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-orange-100 shadow-sm">
+                    <div className="w-6 h-6 rounded-lg bg-orange-50 flex items-center justify-center">
+                      <Wallet size={14} className="text-orange-500" />
                     </div>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col pr-1">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-0.5">
-                        Xu hiện có
+                        Số dư ví
                       </span>
-                      <span className="text-sm font-black text-amber-600 leading-none">
-                        {(user?.gameCoins || 0).toLocaleString()}
+                      <span className="text-sm font-black text-orange-600 leading-none">
+                        {showBalance ? formatVND(user?.balance || 0) : "••••••"}
                       </span>
                     </div>
+                    <button
+                      onClick={() => setShowBalance(!showBalance)}
+                      className="text-gray-400 hover:text-gray-600 transition-colors ml-1 p-0.5 rounded-md hover:bg-gray-50 focus:outline-none"
+                      title={showBalance ? "Ẩn số dư" : "Hiện số dư"}
+                    >
+                      {showBalance ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
                   </div>
                 </div>
               )}

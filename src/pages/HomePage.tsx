@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppSelector } from "@/store/hooks";
-import { mealPackagesApi, dailyMenusApi } from "@/services/api";
+import { dailyMenusApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatVND } from "@/lib/utils";
@@ -27,11 +27,6 @@ export default function HomePage() {
   const { socket } = useSocket();
   const queryClient = useQueryClient();
 
-  const { data: packages } = useQuery({
-    queryKey: ["mealPackages"],
-    queryFn: () => mealPackagesApi.getPackages({ isActive: true, limit: 100 }),
-  });
-
   const { data: todayMenu } = useQuery({
     queryKey: ["todayMenu"],
     queryFn: () => dailyMenusApi.getTodayMenu(),
@@ -54,7 +49,6 @@ export default function HomePage() {
     };
   }, [socket, queryClient]);
 
-  const activePackages = packages?.data.data?.docs || [];
   const menus = todayMenu?.data.data || [];
   const menu = menus.length > 0 ? menus[0] : null;
 
@@ -165,8 +159,8 @@ export default function HomePage() {
               {
                 step: "01",
                 icon: Wallet,
-                title: "Mua gói lượt",
-                desc: "Chọn gói đặt cơm phù hợp, thanh toán nhanh gọn",
+                title: "Nạp tiền vào ví",
+                desc: "Tự nhập số tiền nạp, chuyển khoản VietQR tự động cực nhanh",
               },
               {
                 step: "02",
@@ -256,115 +250,34 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ===================== PACKAGES ===================== */}
-      <section className="py-20 bg-white">
-        <div className="max-w-5xl mx-auto px-6">
-          <p className="text-center text-orange-500 font-bold text-xs uppercase tracking-widest mb-2">
-            Bảng giá
+      {/* ===================== FLAT PRICING INFO ===================== */}
+      <section className="py-20 bg-white border-t border-gray-100">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <p className="text-orange-500 font-bold text-xs uppercase tracking-widest mb-2">
+            Đồng giá suất ăn
           </p>
-          <h2 className="text-center text-2xl md:text-3xl font-black text-gray-900 mb-3">
-            Chọn gói phù hợp với bạn
+          <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-3">
+            Giá tiền phần ăn cực tốt
           </h2>
-          <p className="text-center text-gray-500 text-sm max-w-xl mx-auto mb-12">
-            Mua gói nhiều lượt sẽ tiết kiệm hơn. Gói nào cũng linh hoạt sử dụng!
+          <p className="text-gray-500 text-sm max-w-xl mx-auto mb-10">
+            Hệ thống đặt cơm Thiên Hương Các áp dụng đồng giá cho tất cả các món ăn trong thực đơn hàng ngày.
           </p>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {activePackages.slice(0, 6).map((pkg: any, i: number) => {
-              const isPopular = i === 0;
-              return (
-                <div
-                  key={pkg._id}
-                  className={`rounded-2xl transition-all duration-300 hover:-translate-y-1 ${
-                    isPopular
-                      ? "bg-gradient-to-br from-orange-500 to-red-500 p-[2px] shadow-xl shadow-orange-200"
-                      : "border border-gray-200 hover:border-orange-300 hover:shadow-lg"
-                  }`}
-                >
-                  <div
-                    className={`h-full rounded-2xl p-7 ${isPopular ? "bg-white" : ""}`}
-                  >
-                    {isPopular && (
-                      <div className="flex justify-center mb-4">
-                        <span className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-black rounded-full uppercase tracking-wider">
-                          <Star size={12} fill="white" />
-                          Phổ biến nhất
-                        </span>
-                      </div>
-                    )}
-
-                    <h3 className="text-xl font-black text-center text-gray-900 mb-1">
-                      {pkg.name}
-                    </h3>
-                    <p className="text-center text-gray-400 text-sm mb-5">
-                      {pkg.turns} lượt đặt cơm
-                    </p>
-
-                    <div className="text-center mb-5">
-                      <p className="text-4xl font-black text-orange-600">
-                        {formatVND(pkg.price)}
-                      </p>
-                      <p className="text-sm text-gray-400 mt-1">
-                        chỉ{" "}
-                        <span className="font-bold text-orange-500">
-                          ~{formatVND(Math.round(pkg.price / pkg.turns))}
-                        </span>
-                        /lượt
-                      </p>
-                    </div>
-
-                    <div className="space-y-2.5 mb-6">
-                      {[
-                        `${pkg.turns} lượt đặt cơm`,
-                        `Hiệu lực ${pkg.validDays} ngày`,
-                        "Đặt món linh hoạt",
-                        "Theo dõi đơn real-time",
-                      ].map((f) => (
-                        <div
-                          key={f}
-                          className="flex items-center gap-2.5 text-sm"
-                        >
-                          <CheckCircle2
-                            size={15}
-                            className={
-                              isPopular ? "text-orange-500" : "text-emerald-500"
-                            }
-                          />
-                          <span className="text-gray-600">{f}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <Link
-                      to={isAuthenticated ? `/packages/${pkg._id}` : "/login"}
-                    >
-                      <Button
-                        className={`w-full h-11 rounded-xl font-bold text-sm ${
-                          isPopular
-                            ? "bg-orange-500 hover:bg-orange-600 text-white shadow-md shadow-orange-200"
-                            : "border-gray-200 hover:border-orange-400 hover:text-orange-600"
-                        }`}
-                        variant={isPopular ? "default" : "outline"}
-                      >
-                        {isPopular ? "🔥 Mua ngay" : "Chọn gói này"}
-                        <ArrowRight size={15} className="ml-1" />
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="text-center mt-10">
-            <Link to="/packages">
-              <Button
-                variant="ghost"
-                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 font-bold gap-2"
-              >
-                Xem tất cả các gói <ArrowRight size={16} />
-              </Button>
-            </Link>
+          <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+            <div className="p-6 rounded-2xl border border-orange-100 bg-orange-50/20 text-center">
+              <h3 className="text-lg font-bold text-gray-800 mb-2">Suất cơm thường (Có cơm)</h3>
+              <p className="text-3xl font-black text-orange-600">
+                {formatVND(systemConfig?.priceNormal || 30000)}
+              </p>
+              <p className="text-xs text-gray-400 mt-2">Đầy đủ cơm, món mặn và canh ăn kèm</p>
+            </div>
+            <div className="p-6 rounded-2xl border border-gray-100 bg-gray-50/30 text-center">
+              <h3 className="text-lg font-bold text-gray-800 mb-2">Suất không cơm</h3>
+              <p className="text-3xl font-black text-gray-600">
+                {formatVND(systemConfig?.priceNoRice || 20000)}
+              </p>
+              <p className="text-xs text-gray-400 mt-2">Dành cho phần ăn bún, mì hoặc chỉ lấy thức ăn</p>
+            </div>
           </div>
         </div>
       </section>
@@ -435,12 +348,12 @@ export default function HomePage() {
                 {isAuthenticated ? "Đặt cơm ngay" : "Bắt đầu miễn phí"}
               </Button>
             </Link>
-            <Link to="/packages">
+            <Link to="/wallet">
               <Button
                 variant="outline"
-                className="h-12 px-7 text-sm font-bold border-white/30 text-orange-600 hover:bg-white/10 rounded-full"
+                className="h-12 px-7 text-sm font-bold border-white/30 text-white hover:bg-white/10 rounded-full"
               >
-                Xem bảng giá
+                Nạp tiền vào ví
               </Button>
             </Link>
           </div>
