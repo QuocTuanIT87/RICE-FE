@@ -102,10 +102,10 @@ export default function OrderPage() {
   const user = profileData?.data.data;
   const balance = user?.balance || 0;
 
-  // Tự động điền dữ liệu từ đơn hàng cũ nếu có và chưa confirmed
+  // Tự động điền dữ liệu từ đơn hàng cũ nếu có
   useEffect(() => {
     // Chỉ nạp dữ liệu một lần cho mỗi đơn hàng (dựa trên ID đơn hàng)
-    if (order && !order.isConfirmed && hasPrefilled.current !== order._id) {
+    if (order && hasPrefilled.current !== order._id) {
       setOrderType(order.orderType || "normal");
 
       const quantities: Record<string, number> = {};
@@ -209,7 +209,9 @@ export default function OrderPage() {
   );
 
   const totalPrice = totalQuantity * currentPrice;
-  const isBalanceEnough = balance >= totalPrice;
+  const oldOrderPrice = order ? (order.totalPrice || 0) : 0;
+  const effectiveBalance = balance + oldOrderPrice;
+  const isBalanceEnough = effectiveBalance >= totalPrice;
 
   const currentMenu =
     menus.find((m: DailyMenu) => m._id === activeMenuId) ||
@@ -524,8 +526,9 @@ export default function OrderPage() {
           <div className="bg-gray-100 p-1 rounded-2xl flex items-center max-w-sm">
             <button
               onClick={() => handleTabChange("normal")}
+              disabled={!canOrder}
               className={cn(
-                "flex-1 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 font-black text-xs transition-all",
+                "flex-1 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 font-black text-xs transition-all disabled:opacity-60 disabled:cursor-not-allowed",
                 orderType === "normal"
                   ? "bg-white text-orange-600 shadow-sm"
                   : "text-gray-400",
@@ -535,8 +538,9 @@ export default function OrderPage() {
             </button>
             <button
               onClick={() => handleTabChange("no-rice")}
+              disabled={!canOrder}
               className={cn(
-                "flex-1 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 font-black text-xs transition-all",
+                "flex-1 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 font-black text-xs transition-all disabled:opacity-60 disabled:cursor-not-allowed",
                 orderType === "no-rice"
                   ? "bg-white text-blue-600 shadow-sm"
                   : "text-gray-400",
@@ -572,8 +576,7 @@ export default function OrderPage() {
                       const isDisabled =
                         !canOrder ||
                         (qty === 0 &&
-                          (totalQuantity + 1) * currentPrice > balance) ||
-                        order?.isConfirmed;
+                          (totalQuantity + 1) * currentPrice > effectiveBalance);
                       const accentColor =
                         orderType === "normal" ? "orange" : "blue";
 
@@ -613,7 +616,8 @@ export default function OrderPage() {
                                 {isSelected && (
                                   <button
                                     onClick={() => handleDecrement(item._id)}
-                                    className="w-6 h-6 rounded-md bg-white text-gray-400 hover:text-red-500 flex items-center justify-center transition-all shadow-sm"
+                                    disabled={!canOrder}
+                                    className="w-6 h-6 rounded-md bg-white text-gray-400 hover:text-red-500 flex items-center justify-center transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     <Minus size={12} strokeWidth={3} />
                                   </button>
@@ -627,7 +631,7 @@ export default function OrderPage() {
                                   onClick={() => handleIncrement(item._id)}
                                   disabled={isDisabled}
                                   className={cn(
-                                    "w-6 h-6 rounded-md flex items-center justify-center transition-all shadow-sm",
+                                    "w-6 h-6 rounded-md flex items-center justify-center transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed",
                                     isSelected
                                       ? `bg-${accentColor}-500 text-white`
                                       : "bg-white text-gray-400 hover:text-orange-500",
@@ -644,10 +648,11 @@ export default function OrderPage() {
                                   type="text"
                                   placeholder="Ghi chú món..."
                                   value={itemNotes[item._id] || ""}
+                                  disabled={!canOrder}
                                   onChange={(e) =>
                                     handleNoteChange(item._id, e.target.value)
                                   }
-                                  className="w-full px-3 py-1.5 bg-white border border-gray-100 rounded-lg text-[10px] font-bold text-gray-700 placeholder:text-gray-300 focus:outline-none focus:ring-1 focus:ring-orange-200"
+                                  className="w-full px-3 py-1.5 bg-white border border-gray-100 rounded-lg text-[10px] font-bold text-gray-700 placeholder:text-gray-300 focus:outline-none focus:ring-1 focus:ring-orange-200 disabled:opacity-60 disabled:bg-gray-50/50 disabled:cursor-not-allowed"
                                   maxLength={100}
                                 />
                               </div>
@@ -667,7 +672,7 @@ export default function OrderPage() {
         <div className="lg:col-span-4">
           <div className="lg:sticky lg:top-24 space-y-5">
             {/* 1. SELECTION BOX (Compact) */}
-            {totalQuantity > 0 && (!order || !order.isConfirmed) && (
+            {totalQuantity > 0 && (!currentMenu || !currentMenu.isLocked) && (
               <div className="bg-white rounded-3xl border-2 border-orange-500 shadow-xl overflow-hidden animate-in zoom-in duration-300">
                 <div className="p-5 space-y-4">
                   <div className="flex items-center justify-between">
@@ -782,7 +787,7 @@ export default function OrderPage() {
                           <Timer size={13} />
                         )}
                         <p className="text-[9px] font-black uppercase tracking-wider">
-                          {order.isConfirmed ? "Đã xác nhận" : "Đang chờ"}
+                          {order.isConfirmed ? "Đã thanh toán" : "Đang chờ"}
                         </p>
                       </div>
                       <div className="flex items-center justify-center px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs font-black text-gray-700">
@@ -815,7 +820,7 @@ export default function OrderPage() {
                       ))}
                     </div>
 
-                    {!order.isConfirmed && (
+                    {(!currentMenu || !currentMenu.isLocked) && (
                       <div className="grid grid-cols-2 gap-2 pt-2">
                         <Button
                           variant="outline"
@@ -1032,12 +1037,12 @@ export default function OrderPage() {
               <span
                 className={cn(
                   "font-black",
-                  balance - (appliedVoucher ? appliedVoucher.finalPrice : totalPrice) >= 0
+                  effectiveBalance - (appliedVoucher ? appliedVoucher.finalPrice : totalPrice) >= 0
                     ? "text-emerald-600"
                     : "text-red-500"
                 )}
               >
-                {(balance - (appliedVoucher ? appliedVoucher.finalPrice : totalPrice)).toLocaleString("vi-VN")} VND
+                {(effectiveBalance - (appliedVoucher ? appliedVoucher.finalPrice : totalPrice)).toLocaleString("vi-VN")} VND
               </span>
             </div>
           </div>
@@ -1056,7 +1061,7 @@ export default function OrderPage() {
               onClick={handleSubmitOrder}
               disabled={
                 createOrderMutation.isPending ||
-                balance < (appliedVoucher ? appliedVoucher.finalPrice : totalPrice)
+                effectiveBalance < (appliedVoucher ? appliedVoucher.finalPrice : totalPrice)
               }
             >
               {createOrderMutation.isPending ? (

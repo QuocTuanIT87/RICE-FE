@@ -208,13 +208,13 @@ export default function AdminOrders() {
                   color: "gray",
                 },
                 {
-                  label: "Chờ xác nhận",
+                  label: "Chưa thanh toán",
                   val: stats.pending,
                   icon: Clock,
                   color: stats.pending > 0 ? "orange" : "gray",
                 },
                 {
-                  label: "Đã xác nhận",
+                  label: "Đã thanh toán",
                   val: stats.confirmed,
                   icon: CheckCircle2,
                   color: "emerald",
@@ -252,7 +252,7 @@ export default function AdminOrders() {
                 className="h-12 bg-orange-600 hover:bg-orange-700 text-white rounded-xl gap-2 font-black transition-all shadow-lg shadow-orange-100 uppercase text-xs"
               >
                 <Check className="w-4 h-4" />
-                Xác nhận tất cả
+                Chốt & Khóa thực đơn
               </Button>
               <Button
                 variant="outline"
@@ -347,8 +347,8 @@ export default function AdminOrders() {
                                 className={`font-black text-[9px] px-2 py-0.5 rounded-md border-none uppercase ${order.isConfirmed ? "bg-emerald-50 text-emerald-600" : "bg-orange-100 text-orange-700"}`}
                               >
                                 {order.isConfirmed
-                                  ? "ĐÃ XÁC NHẬN"
-                                  : "CHỜ DUYỆT"}
+                                  ? "ĐÃ THANH TOÁN"
+                                  : "CHƯA THANH TOÁN"}
                               </Badge>
                               <p className="text-[10px] font-black text-gray-300">
                                 ID: #
@@ -433,8 +433,7 @@ export default function AdminOrders() {
                     Lưu ý nghiệp vụ
                   </h4>
                   <p className="text-[11px] text-orange-700/70 leading-relaxed font-bold italic">
-                    Hãy xác nhận tất cả đơn trước khi thực hiện "Copy danh sách"
-                    để chốt số lượng với nhà bếp.
+                    Hãy ấn nút "Chốt & Khóa thực đơn" để đóng lịch đặt cơm hôm nay trước khi thực hiện "Copy danh sách" gửi cho nhà bếp.
                   </p>
                 </div>
               </div>
