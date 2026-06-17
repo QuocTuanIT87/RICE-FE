@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { depositRequestsApi, gameCoinsApi, authApi, vouchersApi } from "@/services/api";
+import {
+  depositRequestsApi,
+  gameCoinsApi,
+  authApi,
+  vouchersApi,
+} from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatVND, formatDate, cn } from "@/lib/utils";
 import { toast } from "@/hooks/useToast";
 import { useAppSelector } from "@/store/hooks";
+import { swalAlert, swalToast } from "@/utils/swal";
 import {
   Clock,
   History,
@@ -53,33 +59,38 @@ export default function MyWalletPage() {
     const targetCode = codeToApply || voucherCode;
     if (!targetCode) return;
     if (depositAmount <= 0) {
-      toast({
+      swalAlert({
         title: "⚠️ Số tiền nạp không hợp lệ",
-        description: "Vui lòng nhập số tiền nạp trước khi áp dụng mã giảm giá",
-        variant: "destructive",
+        text: "Vui lòng nhập số tiền nạp trước khi áp dụng mã giảm giá",
+        icon: "warning",
       });
       return;
     }
 
     setCheckingVoucher(true);
     try {
-      const res = await vouchersApi.checkVoucher(targetCode, depositAmount, "deposit");
+      const res = await vouchersApi.checkVoucher(
+        targetCode,
+        depositAmount,
+        "deposit",
+      );
       const voucherData = res.data.data;
       if (!voucherData) {
         throw new Error("Mã voucher không hợp lệ hoặc không đúng loại");
       }
       setAppliedVoucher(voucherData);
       setVoucherCode(targetCode.toUpperCase());
-      toast({
+      swalAlert({
         title: "✅ Áp dụng mã thành công!",
-        description: `Bạn sẽ được cộng thêm ${voucherData.discountAmount.toLocaleString("vi-VN")}đ vào tài khoản khi được duyệt!`,
-        variant: "success",
+        text: `Bạn sẽ được cộng thêm ${voucherData.discountAmount.toLocaleString("vi-VN")}đ vào tài khoản khi được duyệt!`,
+        icon: "success",
       });
     } catch (err: any) {
-      toast({
+      swalAlert({
         title: "❌ Lỗi áp dụng mã",
-        description: err.response?.data?.error?.message || "Mã voucher không hợp lệ",
-        variant: "destructive",
+        text:
+          err.response?.data?.error?.message || "Mã voucher không hợp lệ",
+        icon: "error",
       });
       setAppliedVoucher(null);
     } finally {
@@ -152,41 +163,43 @@ export default function MyWalletPage() {
   const handleCopy = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(fieldName);
-    toast({
-      title: "Đã sao chép!",
-      description: `Đã sao chép ${fieldName} vào bộ nhớ tạm.`,
-      variant: "success",
+    swalToast({
+      title: `Đã sao chép ${fieldName} vào bộ nhớ tạm.`,
+      icon: "success",
     });
     setTimeout(() => setCopiedField(null), 2000);
   };
 
   const handleCreateDeposit = async () => {
     if (depositAmount < 1000) {
-      toast({
+      swalAlert({
         title: "Lỗi số tiền",
-        description: "Số tiền nạp tối thiểu là 1,000 VND.",
-        variant: "destructive",
+        text: "Số tiền nạp tối thiểu là 1,000 VND.",
+        icon: "warning",
       });
       return;
     }
     setSubmittingDeposit(true);
     try {
-      await depositRequestsApi.createRequest(depositAmount, voucherCode || undefined);
-      toast({
+      await depositRequestsApi.createRequest(
+        depositAmount,
+        voucherCode || undefined,
+      );
+      swalAlert({
         title: "Thành công!",
-        description: "Đã gửi yêu cầu nạp tiền, vui lòng đợi Admin phê duyệt.",
-        variant: "success",
+        text: "Đã gửi yêu cầu nạp tiền, vui lòng đợi Admin phê duyệt.",
+        icon: "success",
       });
       setDepositAmount(0);
       setVoucherCode("");
       setAppliedVoucher(null);
       queryClient.invalidateQueries({ queryKey: ["myDepositRequests"] });
     } catch (error: any) {
-      toast({
+      swalAlert({
         title: "Lỗi nạp tiền",
-        description:
+        text:
           error.response?.data?.error?.message || "Không thể tạo yêu cầu nạp.",
-        variant: "destructive",
+        icon: "error",
       });
     } finally {
       setSubmittingDeposit(false);
@@ -197,28 +210,28 @@ export default function MyWalletPage() {
     if (coinExchangeTurns <= 0) return;
     const coinsNeeded = coinExchangeTurns * 100000;
     if ((user?.gameCoins || 0) < coinsNeeded) {
-      toast({
+      swalAlert({
         title: "Không đủ xu",
-        description: "Bạn không có đủ xu để thực hiện giao dịch này.",
-        variant: "destructive",
+        text: "Bạn không có đủ xu để thực hiện giao dịch này.",
+        icon: "warning",
       });
       return;
     }
     setSubmittingExchange(true);
     try {
       await gameCoinsApi.exchange(coinExchangeTurns);
-      toast({
+      swalAlert({
         title: "Đổi xu thành công!",
-        description: `Đã đổi ${coinExchangeTurns} lượt, cộng ${formatVND(coinExchangeTurns * 30000)} vào ví!`,
-        variant: "success",
+        text: `Đã đổi ${coinExchangeTurns} lượt, cộng ${formatVND(coinExchangeTurns * 30000)} vào ví!`,
+        icon: "success",
       });
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
     } catch (error: any) {
-      toast({
+      swalAlert({
         title: "Lỗi đổi xu",
-        description:
+        text:
           error.response?.data?.error?.message || "Giao dịch đổi xu thất bại.",
-        variant: "destructive",
+        icon: "error",
       });
     } finally {
       setSubmittingExchange(false);
@@ -418,7 +431,9 @@ export default function MyWalletPage() {
                     <input
                       type="text"
                       value={voucherCode}
-                      onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                      onChange={(e) =>
+                        setVoucherCode(e.target.value.toUpperCase())
+                      }
                       placeholder="Nhập mã voucher (ví dụ: TANG10)"
                       className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
                     />
@@ -428,7 +443,11 @@ export default function MyWalletPage() {
                       disabled={checkingVoucher || !voucherCode}
                       className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-bold h-9 px-4 shrink-0 shadow-sm"
                     >
-                      {checkingVoucher ? <Loader2 size={12} className="animate-spin" /> : "Áp dụng"}
+                      {checkingVoucher ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        "Áp dụng"
+                      )}
                     </Button>
                   </div>
 
@@ -451,11 +470,15 @@ export default function MyWalletPage() {
                               "px-2.5 py-1.5 rounded-lg border text-[10px] font-bold transition-all text-left flex flex-col gap-0.5",
                               voucherCode === v.code
                                 ? "bg-orange-50 border-orange-300 text-orange-700 shadow-sm"
-                                : "bg-white border-gray-200 hover:bg-gray-50 text-gray-600"
+                                : "bg-white border-gray-200 hover:bg-gray-50 text-gray-600",
                             )}
                           >
-                            <span className="font-black uppercase tracking-wide">{v.code}</span>
-                            <span className="text-[9px] text-gray-400 font-medium line-clamp-1">{v.description}</span>
+                            <span className="font-black uppercase tracking-wide">
+                              {v.code}
+                            </span>
+                            <span className="text-[9px] text-gray-400 font-medium line-clamp-1">
+                              {v.description}
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -575,16 +598,23 @@ export default function MyWalletPage() {
                       {appliedVoucher && (
                         <>
                           <div className="flex items-center justify-between p-2.5 bg-emerald-50/50 border border-emerald-100 rounded-lg text-xs">
-                            <span className="text-emerald-700 font-medium font-bold">Khuyến mãi nhận thêm:</span>
+                            <span className="text-emerald-700font-bold">
+                              Khuyến mãi nhận thêm:
+                            </span>
                             <span className="font-black text-emerald-600">
                               +{formatVND(appliedVoucher.discountAmount || 0)}
                             </span>
                           </div>
 
                           <div className="flex items-center justify-between p-2.5 bg-indigo-50/50 border border-indigo-100 rounded-lg text-xs">
-                            <span className="text-indigo-700 font-medium font-bold">Tổng tiền nhận được:</span>
+                            <span className="text-indigo-700 font-bold">
+                              Tổng tiền nhận được:
+                            </span>
                             <span className="font-black text-indigo-600 text-sm">
-                              {formatVND(depositAmount + (appliedVoucher.discountAmount || 0))}
+                              {formatVND(
+                                depositAmount +
+                                  (appliedVoucher.discountAmount || 0),
+                              )}
                             </span>
                           </div>
                         </>
@@ -758,13 +788,15 @@ export default function MyWalletPage() {
                       </span>{" "}
                       {req.voucherCode && (
                         <>
-                          {" "}• Voucher:{" "}
+                          {" "}
+                          • Voucher:{" "}
                           <span className="font-black text-indigo-600 uppercase">
-                            {req.voucherCode} (+{formatVND(req.bonusAmount || 0)})
+                            {req.voucherCode} (+
+                            {formatVND(req.bonusAmount || 0)})
                           </span>
                         </>
-                      )}
-                      {" "}• Trạng thái:{" "}
+                      )}{" "}
+                      • Trạng thái:{" "}
                       <span className="font-semibold text-amber-600">
                         Chờ duyệt
                       </span>
@@ -863,12 +895,23 @@ export default function MyWalletPage() {
                           <div>Nạp tiền vào ví</div>
                           {req.voucherCode && (
                             <div className="text-[10px] text-indigo-500 font-bold uppercase tracking-wide mt-0.5">
-                              Voucher: {req.voucherCode} ({req.status === "approved" ? "đã cộng" : "chờ cộng"} +{formatVND(req.bonusAmount || 0)})
+                              Voucher: {req.voucherCode} (
+                              {req.status === "approved"
+                                ? "đã cộng"
+                                : "chờ cộng"}{" "}
+                              +{formatVND(req.bonusAmount || 0)})
                             </div>
                           )}
                         </td>
                         <td className="px-5 py-3.5 text-right font-black text-emerald-600 text-sm">
-                          <div>+{formatVND(req.status === "approved" ? req.amount + (req.bonusAmount || 0) : req.amount)}</div>
+                          <div>
+                            +
+                            {formatVND(
+                              req.status === "approved"
+                                ? req.amount + (req.bonusAmount || 0)
+                                : req.amount,
+                            )}
+                          </div>
                           {req.bonusAmount && req.status === "approved" && (
                             <div className="text-[10px] text-gray-400 font-medium">
                               (Khuyến mãi: +{formatVND(req.bonusAmount)})

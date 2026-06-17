@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSocket } from "@/contexts/SocketContext";
 import { toast } from "@/hooks/useToast";
+import { swalAlert } from "@/utils/swal";
 import { useShowBalance } from "@/hooks/useShowBalance";
 import { cn, formatVND } from "@/lib/utils";
 import { authApi, vouchersApi } from "@/services/api";
@@ -112,7 +113,7 @@ export default function ProfilePage() {
 
   const handleUpdateProfile = async () => {
     if (!name.trim()) {
-      toast({ title: "⚠️ Vui lòng nhập tên", variant: "destructive" });
+      swalAlert({ title: "⚠️ Vui lòng nhập tên", icon: "warning" });
       return;
     }
     setIsUpdating(true);
@@ -121,16 +122,16 @@ export default function ProfilePage() {
       if (response.data.success) {
         dispatch(setUser(response.data.data!));
         setIsEditing(false);
-        toast({
+        swalAlert({
           title: "✅ Đã cập nhật thông tin cá nhân",
-          variant: "success",
+          icon: "success",
         });
       }
     } catch (error: any) {
-      toast({
+      swalAlert({
         title: "❌ Cập nhật thất bại",
-        description: error.response?.data?.message || "Có lỗi xảy ra",
-        variant: "destructive",
+        text: error.response?.data?.message || "Có lỗi xảy ra",
+        icon: "error",
       });
     } finally {
       setIsUpdating(false);
@@ -139,16 +140,16 @@ export default function ProfilePage() {
 
   const handleChangePassword = async () => {
     if (!oldPassword || !newPassword || !confirmPassword) {
-      toast({
+      swalAlert({
         title: "⚠️ Vui lòng nhập đầy đủ thông tin",
-        variant: "destructive",
+        icon: "warning",
       });
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast({
+      swalAlert({
         title: "❌ Mật khẩu xác nhận không khớp",
-        variant: "destructive",
+        icon: "error",
       });
       return;
     }
@@ -156,16 +157,16 @@ export default function ProfilePage() {
     setIsChangingPass(true);
     try {
       await authApi.changePassword({ oldPassword, newPassword });
-      toast({ title: "✅ Đã đổi mật khẩu thành công!", variant: "success" });
+      swalAlert({ title: "✅ Đã đổi mật khẩu thành công!", icon: "success" });
       setIsDialogOpen(false);
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (error: any) {
-      toast({
+      swalAlert({
         title: "❌ Đổi mật khẩu thất bại",
-        description: error.response?.data?.message || "Có lỗi xảy ra",
-        variant: "destructive",
+        text: error.response?.data?.message || "Có lỗi xảy ra",
+        icon: "error",
       });
     } finally {
       setIsChangingPass(false);

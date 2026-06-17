@@ -12,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { toast } from "@/hooks/useToast";
+import { swalAlert } from "@/utils/swal";
 import { Eye, EyeOff, UserPlus, Mail, Check } from "lucide-react";
 
 export default function RegisterPage() {
@@ -27,18 +27,18 @@ export default function RegisterPage() {
   const registerMutation = useMutation({
     mutationFn: () => authApi.register({ name, email, password }),
     onSuccess: () => {
-      toast({
+      swalAlert({
         title: "📧 Đã gửi mã OTP!",
-        description: `Kiểm tra email ${email} để lấy mã xác thực.`,
-        variant: "success",
+        text: `Kiểm tra email ${email} để lấy mã xác thực.`,
+        icon: "success",
       });
       setStep("verify");
     },
     onError: (error: any) => {
-      toast({
+      swalAlert({
         title: "❌ Đăng ký thất bại",
-        description: error.response?.data?.error?.message || "Có lỗi xảy ra",
-        variant: "destructive",
+        text: error.response?.data?.error?.message || "Có lỗi xảy ra",
+        icon: "error",
       });
     },
   });
@@ -46,19 +46,19 @@ export default function RegisterPage() {
   const verifyMutation = useMutation({
     mutationFn: () => authApi.verifyOTP({ email, otp }),
     onSuccess: () => {
-      toast({
+      swalAlert({
         title: "🎉 Xác thực thành công!",
-        description: "Tài khoản đã được kích hoạt. Hãy đăng nhập!",
-        variant: "success",
+        text: "Tài khoản đã được kích hoạt. Hãy đăng nhập!",
+        icon: "success",
       });
       navigate("/login");
     },
     onError: (error: any) => {
-      toast({
+      swalAlert({
         title: "❌ Mã OTP không đúng",
-        description:
+        text:
           error.response?.data?.error?.message || "Vui lòng kiểm tra lại",
-        variant: "destructive",
+        icon: "error",
       });
     },
   });
@@ -66,17 +66,17 @@ export default function RegisterPage() {
   const resendMutation = useMutation({
     mutationFn: () => authApi.resendOTP(email),
     onSuccess: () => {
-      toast({
+      swalAlert({
         title: "📧 Đã gửi lại mã OTP!",
-        description: "Kiểm tra email của bạn.",
-        variant: "success",
+        text: "Kiểm tra email của bạn.",
+        icon: "success",
       });
     },
     onError: () => {
-      toast({
+      swalAlert({
         title: "❌ Không thể gửi lại",
-        description: "Vui lòng thử lại sau.",
-        variant: "destructive",
+        text: "Vui lòng thử lại sau.",
+        icon: "error",
       });
     },
   });

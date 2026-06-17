@@ -12,6 +12,7 @@ import {
 import { useSocket } from "@/contexts/SocketContext";
 import { useAppSelector } from "@/store/hooks";
 import { useToast } from "@/hooks/useToast";
+import { swalAlert, swalConfirm } from "@/utils/swal";
 
 // ============ TYPES & CONSTANTS ============
 type SymbolId = "nai" | "bau" | "ga" | "ca" | "cua" | "tom";
@@ -268,18 +269,18 @@ export default function MultiBauCuaGame({
     if (!room || room.status !== "BETTING" || isShaking) return;
     const currentUserId = (user?._id || user?.id)?.toString();
     if (room.dealerId === currentUserId) {
-      toast({
-        variant: "destructive",
+      swalAlert({
         title: "Lỗi!",
-        description: "Nhà Cái không thể đặt cược!",
+        text: "Nhà Cái không thể đặt cược!",
+        icon: "error",
       });
       return;
     }
     if (balance < selectedChip) {
-      toast({
-        variant: "destructive",
+      swalAlert({
         title: "Lỗi!",
-        description: "Không đủ xu rồi đại gia ơi!",
+        text: "Không đủ xu rồi đại gia ơi!",
+        icon: "warning",
       });
       return;
     }
@@ -296,14 +297,17 @@ export default function MultiBauCuaGame({
 
   if (!room) return null;
 
-  const handleBackWithCheck = () => {
+  const handleBackWithCheck = async () => {
     const myBets =
       room.bets?.filter((b: any) => b.userId === currentUserId) || [];
     if (myBets.length > 0 && room.status === "BETTING") {
-      const confirmLeave = window.confirm(
-        "Đạo hữu đang có cược trong ván này! Nếu thoát bây giờ sẽ bị mất trắng số xu đã cược. Đạo hữu chắc chắn muốn thoát chứ? 💸",
-      );
-      if (!confirmLeave) return;
+      const result = await swalConfirm({
+        title: "Thoát phòng?",
+        text: "Đạo hữu đang có cược trong ván này! Nếu thoát bây giờ sẽ bị mất trắng số xu đã cược. Đạo hữu chắc chắn muốn thoát chứ? 💸",
+        confirmText: "THOÁT PHÒNG",
+        cancelText: "QUAY LẠI",
+      });
+      if (!result.isConfirmed) return;
     }
     onBack();
   };

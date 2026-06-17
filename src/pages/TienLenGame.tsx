@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowLeft, Coins, RefreshCw, Trophy, Info } from "lucide-react";
+import { swalAlert, swalConfirm } from "@/utils/swal";
 import {
   Card,
   createDeck,
@@ -236,7 +237,7 @@ export default function TienLenGame({
     const evaluated = evaluateHand(cards);
 
     if (evaluated.type === "invalid") {
-      alert("⚠️ Bài không hợp lệ!");
+      swalAlert({ title: "Bài không hợp lệ!", icon: "warning" });
       return;
     }
 
@@ -246,7 +247,7 @@ export default function TienLenGame({
       lastPlayer !== "player"
     ) {
       if (!canBeat(evaluated, currentArea)) {
-        alert("⚠️ Không chặt được bài trên bàn!");
+        swalAlert({ title: "Không chặt được bài trên bàn!", icon: "warning" });
         return;
       }
     }
@@ -275,7 +276,7 @@ export default function TienLenGame({
   const skipTurn = () => {
     if (currentTurn !== "player") return;
     if (lastPlayer === "player" || lastPlayer === null) {
-      alert("⚠️ Đang nắm cái, bạn phải đánh bài!");
+      swalAlert({ title: "Đang nắm cái, bạn phải đánh bài!", icon: "warning" });
       return;
     }
 
@@ -369,12 +370,17 @@ export default function TienLenGame({
       {/* Header */}
       <header className="px-6 py-2 bg-slate-900/80 backdrop-blur-md border-b border-white/10 flex justify-between items-center z-50 shadow-2xl">
         <button
-          onClick={() => {
+          onClick={async () => {
             if (gameState === "playing") {
-              if (
-                window.confirm("Thoát ván chơi sẽ mất tiền cược. Chắc không?")
-              )
+              const result = await swalConfirm({
+                title: "Thoát ván chơi?",
+                text: "Thoát ván chơi bây giờ sẽ mất số tiền đã cược. Đạo hữu chắc chắn chứ?",
+                confirmText: "THOÁT GAME",
+                cancelText: "QUAY LẠI",
+              });
+              if (result.isConfirmed) {
                 onBack();
+              }
             } else onBack();
           }}
           className="p-2 hover:bg-white/10 rounded-full transition-colors text-emerald-400"

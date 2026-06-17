@@ -14,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { toast } from "@/hooks/useToast";
+import { swalAlert } from "@/utils/swal";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 
 export default function LoginPage() {
@@ -29,10 +29,10 @@ export default function LoginPage() {
     onSuccess: (response) => {
       const { token, user } = response.data.data!;
       dispatch(setCredentials({ token, user }));
-      toast({
+      swalAlert({
         title: "🎉 Đăng nhập thành công!",
-        description: `Chào mừng ${user.name} đến với Web Đặt Cơm!`,
-        variant: "success",
+        text: `Chào mừng ${user.name} đến với Web Đặt Cơm!`,
+        icon: "success",
       });
       // Admin redirect tới /admin, user redirect tới /
       if (user.role === "admin") {
@@ -42,12 +42,12 @@ export default function LoginPage() {
       }
     },
     onError: (error: any) => {
-      toast({
+      swalAlert({
         title: "❌ Đăng nhập thất bại",
-        description:
+        text:
           error.response?.data?.error?.message ||
           "Email hoặc mật khẩu không đúng",
-        variant: "destructive",
+        icon: "error",
       });
     },
   });

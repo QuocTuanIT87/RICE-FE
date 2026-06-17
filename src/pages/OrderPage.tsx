@@ -13,6 +13,7 @@ import { useShowBalance } from "@/hooks/useShowBalance";
 import { toast } from "@/hooks/useToast";
 import { cn } from "@/lib/utils";
 import { dailyMenusApi, ordersApi, authApi, vouchersApi } from "@/services/api";
+import { swalAlert, swalConfirm, swalToast } from "@/utils/swal";
 import type { DailyMenu, MenuItem, PackageType } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppSelector } from "@/store/hooks";
@@ -152,19 +153,19 @@ export default function OrderPage() {
       voucherCode?: string;
     }) => ordersApi.createOrder(items, type, menuId, voucherCode),
     onSuccess: (response) => {
-      toast({
+      swalAlert({
         title: "✅ Đặt cơm thành công!",
-        description: response.data.message,
-        variant: "success",
+        text: response.data.message,
+        icon: "success",
       });
       queryClient.invalidateQueries({ queryKey: ["myTodayOrder"] });
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
     },
     onError: (error: any) => {
-      toast({
+      swalAlert({
         title: "❌ Đặt cơm thất bại",
-        description: error.response?.data?.error?.message || "Có lỗi xảy ra",
-        variant: "destructive",
+        text: error.response?.data?.error?.message || "Có lỗi xảy ra",
+        icon: "error",
       });
     },
   });
@@ -172,9 +173,10 @@ export default function OrderPage() {
   const deleteOrderMutation = useMutation({
     mutationFn: (id: string) => ordersApi.deleteOrder(id),
     onSuccess: (response) => {
-      toast({
+      swalAlert({
         title: "🗑️ Đã hủy đơn cơm",
-        description: response.data.message,
+        text: response.data.message,
+        icon: "success",
       });
       queryClient.invalidateQueries({ queryKey: ["myTodayOrder"] });
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
@@ -183,10 +185,10 @@ export default function OrderPage() {
       setItemNotes({});
     },
     onError: (error: any) => {
-      toast({
+      swalAlert({
         title: "❌ Hủy đơn thất bại",
-        description: error.response?.data?.error?.message || "Có lỗi xảy ra",
-        variant: "destructive",
+        text: error.response?.data?.error?.message || "Có lỗi xảy ra",
+        icon: "error",
       });
     },
   });
@@ -267,10 +269,10 @@ export default function OrderPage() {
     const targetCode = codeToApply || voucherCode;
     if (!targetCode) return;
     if (totalPrice <= 0) {
-      toast({
+      swalAlert({
         title: "⚠️ Đơn cơm trống",
-        description: "Vui lòng chọn món trước khi áp dụng mã voucher",
-        variant: "destructive",
+        text: "Vui lòng chọn món trước khi áp dụng mã voucher",
+        icon: "warning",
       });
       return;
     }
@@ -284,16 +286,16 @@ export default function OrderPage() {
       }
       setAppliedVoucher(voucherData);
       setVoucherCode(targetCode.toUpperCase());
-      toast({
+      swalAlert({
         title: "✅ Áp dụng mã thành công!",
-        description: `Đơn đặt cơm của bạn đã được giảm ${voucherData.discountAmount.toLocaleString("vi-VN")}đ!`,
-        variant: "success",
+        text: `Đơn đặt cơm của bạn đã được giảm ${voucherData.discountAmount.toLocaleString("vi-VN")}đ!`,
+        icon: "success",
       });
     } catch (err: any) {
-      toast({
+      swalAlert({
         title: "❌ Lỗi áp dụng mã",
-        description: err.response?.data?.error?.message || "Mã voucher không hợp lệ",
-        variant: "destructive",
+        text: err.response?.data?.error?.message || "Mã voucher không hợp lệ",
+        icon: "error",
       });
       setAppliedVoucher(null);
     } finally {
@@ -303,10 +305,10 @@ export default function OrderPage() {
 
   const handleOpenConfirmModal = () => {
     if (selectedItemIds.length === 0) {
-      toast({
+      swalAlert({
         title: "⚠️ Chưa chọn món",
-        description: "Vui lòng chọn ít nhất 1 món ăn",
-        variant: "destructive",
+        text: "Vui lòng chọn ít nhất 1 món ăn",
+        icon: "warning",
       });
       return;
     }
@@ -817,8 +819,14 @@ export default function OrderPage() {
                       <div className="grid grid-cols-2 gap-2 pt-2">
                         <Button
                           variant="outline"
-                          onClick={() => {
-                            if (window.confirm("Hủy đơn cơm này?")) {
+                          onClick={async () => {
+                            const result = await swalConfirm({
+                              title: "Hủy đơn cơm này?",
+                              text: "Đạo hữu có chắc chắn muốn hủy đơn đặt cơm hôm nay?",
+                              confirmText: "HỦY ĐƠN",
+                              cancelText: "QUAY LẠI",
+                            });
+                            if (result.isConfirmed) {
                               deleteOrderMutation.mutate(order._id);
                             }
                           }}
@@ -830,9 +838,9 @@ export default function OrderPage() {
                           variant="outline"
                           onClick={() => {
                             window.scrollTo({ top: 0, behavior: "smooth" });
-                            toast({
-                              title: "✏️ Đã sẵn sàng",
-                              description: "Mời đạo hữu sửa món ở bên trái",
+                            swalToast({
+                              title: "✏️ Mời đạo hữu sửa món ở bên trái",
+                              icon: "success",
                             });
                           }}
                           className="h-9 rounded-lg border-orange-50 text-orange-600 hover:bg-orange-50 font-black text-[10px]"
