@@ -7,23 +7,73 @@ const iconColorMap = {
   info: "#3b82f6",    // Blue
   question: "#8b5cf6", // Purple
 };
+let transparentRonaldoLeft = "/ronaldo_left.png";
+let transparentRonaldoRight = "/ronaldo_right.png";
+
+if (typeof window !== "undefined") {
+  const processImage = (src: string, callback: (dataUrl: string) => void) => {
+    const img = new Image();
+    img.src = src;
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      ctx.drawImage(img, 0, 0);
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i] > 230 && data[i + 1] > 230 && data[i + 2] > 230) {
+          data[i + 3] = 0;
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+      callback(canvas.toDataURL());
+    };
+  };
+
+  processImage("/ronaldo_left.png", (dataUrl) => {
+    transparentRonaldoLeft = dataUrl;
+  });
+  processImage("/ronaldo_right.png", (dataUrl) => {
+    transparentRonaldoRight = dataUrl;
+  });
+}
 
 export const swalAlert = ({
   title,
   text,
   icon,
   timer = 3000,
+  imageUrl,
+  imageWidth,
+  imageHeight,
+  imageAlt,
 }: {
   title: string;
   text?: string;
-  icon: "success" | "error" | "warning" | "info";
+  icon?: "success" | "error" | "warning" | "info" | null;
   timer?: number;
+  imageUrl?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  imageAlt?: string;
 }) => {
   return Swal.fire({
     title,
     text,
-    icon,
-    iconColor: iconColorMap[icon],
+    icon: icon || undefined,
+    iconColor: icon ? iconColorMap[icon] : undefined,
+    imageUrl: imageUrl === "/ronaldo_left.png" 
+      ? transparentRonaldoLeft 
+      : imageUrl === "/ronaldo_right.png" 
+      ? transparentRonaldoRight 
+      : imageUrl,
+    imageWidth,
+    imageHeight,
+    imageAlt,
     timer: timer || undefined,
     timerProgressBar: true,
     showConfirmButton: true,
@@ -33,6 +83,7 @@ export const swalAlert = ({
       title: "text-base font-black text-slate-800 uppercase tracking-wide",
       htmlContainer: "text-sm font-semibold text-slate-500 mt-1.5 leading-relaxed",
       confirmButton: "px-6 py-3 bg-gradient-to-r from-emerald-400 to-emerald-600 hover:opacity-90 text-white rounded-2xl font-black text-[13px] shadow-md uppercase tracking-wider transition-all focus:outline-none active:scale-95",
+      image: "mx-auto rounded-2xl object-contain mb-3 cr7-sparkle",
     },
     buttonsStyling: false,
   });

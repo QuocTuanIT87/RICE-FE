@@ -123,8 +123,12 @@ export default function ProfilePage() {
         dispatch(setUser(response.data.data!));
         setIsEditing(false);
         swalAlert({
-          title: "✅ Đã cập nhật thông tin cá nhân",
-          icon: "success",
+          title: "✅ Cập nhật thông tin cá nhân SIUUUUUUUUU",
+          text: response.data.message,
+          icon: null,
+          imageUrl: "/ronaldo_left.png",
+          imageWidth: 280,
+          imageAlt: "Ronaldo Siuuu",
         });
       }
     } catch (error: any) {
@@ -157,7 +161,14 @@ export default function ProfilePage() {
     setIsChangingPass(true);
     try {
       await authApi.changePassword({ oldPassword, newPassword });
-      swalAlert({ title: "✅ Đã đổi mật khẩu thành công!", icon: "success" });
+      swalAlert({
+        title: "✅ Đổi mật khẩu thành công! SIUUUUUUUUU",
+        icon: null,
+        imageUrl: "/ronaldo_left.png",
+        imageWidth: 280,
+        imageAlt: "Ronaldo Siuuu",
+      });
+
       setIsDialogOpen(false);
       setOldPassword("");
       setNewPassword("");
@@ -268,7 +279,9 @@ export default function ProfilePage() {
                 <div className="relative z-10 flex items-center justify-between">
                   <div>
                     <h1 className="text-3xl font-black text-white italic">
-                      Chào {freshUser?.name ? freshUser.name.split(" ").pop() : ""}! 👋
+                      Chào{" "}
+                      {freshUser?.name ? freshUser.name.split(" ").pop() : ""}!
+                      👋
                     </h1>
                     <p className="text-orange-100 font-medium mt-1">
                       Hôm nay bạn muốn thưởng thức món gì?

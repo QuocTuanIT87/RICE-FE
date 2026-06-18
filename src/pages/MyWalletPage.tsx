@@ -88,8 +88,7 @@ export default function MyWalletPage() {
     } catch (err: any) {
       swalAlert({
         title: "❌ Lỗi áp dụng mã",
-        text:
-          err.response?.data?.error?.message || "Mã voucher không hợp lệ",
+        text: err.response?.data?.error?.message || "Mã voucher không hợp lệ",
         icon: "error",
       });
       setAppliedVoucher(null);
@@ -186,9 +185,12 @@ export default function MyWalletPage() {
         voucherCode || undefined,
       );
       swalAlert({
-        title: "Thành công!",
+        title: "⚽ Yêu cầu nạp tiền thành công! SIUUUUU!",
         text: "Đã gửi yêu cầu nạp tiền, vui lòng đợi Admin phê duyệt.",
-        icon: "success",
+        icon: null,
+        imageUrl: "/ronaldo_left.png",
+        imageWidth: 280,
+        imageAlt: "Ronaldo Siuuu",
       });
       setDepositAmount(0);
       setVoucherCode("");

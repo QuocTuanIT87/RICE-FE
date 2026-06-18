@@ -30,9 +30,12 @@ export default function LoginPage() {
       const { token, user } = response.data.data!;
       dispatch(setCredentials({ token, user }));
       swalAlert({
-        title: "🎉 Đăng nhập thành công!",
+        title: "🎉 Đăng nhập thành công! SIUUUUUUUUU",
         text: `Chào mừng ${user.name} đến với Web Đặt Cơm!`,
-        icon: "success",
+        icon: null,
+        imageUrl: "/ronaldo_left.png",
+        imageWidth: 280,
+        imageAlt: "Ronaldo Siuuu",
       });
       // Admin redirect tới /admin, user redirect tới /
       if (user.role === "admin") {

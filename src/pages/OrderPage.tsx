@@ -181,9 +181,12 @@ export default function OrderPage() {
     }) => ordersApi.createOrder(items, type, menuId, voucherCode),
     onSuccess: (response) => {
       swalAlert({
-        title: "✅ Đặt cơm thành công!",
+        title: "⚽ Đặt cơm thành công! SIUUUUU!",
         text: response.data.message,
-        icon: "success",
+        icon: null,
+        imageUrl: "/ronaldo_left.png",
+        imageWidth: 280,
+        imageAlt: "Ronaldo Siuuu",
       });
       queryClient.invalidateQueries({ queryKey: ["myTodayOrder"] });
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
