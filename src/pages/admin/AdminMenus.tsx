@@ -53,8 +53,8 @@ export default function AdminMenus() {
   // Form states
   const [rawContent, setRawContent] = useState("");
   const [previewItems, setPreviewItems] = useState<MenuItem[]>([]);
-  const [beginAt, setBeginAt] = useState("09:00");
-  const [endAt, setEndAt] = useState("10:36");
+  const [beginAt, setBeginAt] = useState("08:00");
+  const [endAt, setEndAt] = useState("10:10");
 
   // Edit states
   const [editingMenu, setEditingMenu] = useState<DailyMenu | null>(null);
