@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { TransparentImage } from "@/components/TransparentImage";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +14,7 @@ import { toast } from "@/hooks/useToast";
 import { cn } from "@/lib/utils";
 import { dailyMenusApi, ordersApi, authApi, vouchersApi } from "@/services/api";
 import { swalAlert, swalConfirm, swalToast } from "@/utils/swal";
+import { getMascotCardConfig } from "@/components/VipMascots";
 import type { DailyMenu, MenuItem, PackageType } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppSelector } from "@/store/hooks";
@@ -59,23 +59,7 @@ export default function OrderPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const playSiuuu = () => {
-    swalAlert({
-      title: "🔥 SIUUUUUUUUUUUUUUUUUUUUUU!!! 🐐",
-      text: "Anh Bảy ăn mừng SIUUU cuồng nhiệt!",
-      icon: "success",
-      timer: 5000,
-    });
-  };
 
-  const playWorldCup = () => {
-    swalAlert({
-      title: "🏆 WORLD CUP ĐÃ VỀ VỚI ANH BẢY!!! 🇵🇹",
-      text: "Chiếc cúp vô địch thế giới vĩ đại trong tay nhà vua Cristiano Ronaldo!",
-      icon: "success",
-      timer: 5000,
-    });
-  };
 
   const { data: todayMenus, isLoading: menuLoading } = useQuery({
     queryKey: ["todayMenu"],
@@ -132,6 +116,9 @@ export default function OrderPage() {
   const user = profileData?.data.data;
   const balance = user?.balance || 0;
   const vipDiscountRate = user?.vipDiscountRate || 0;
+  const vipMascot = user?.vipMascot || "ronaldo";
+
+  const mascotCard = getMascotCardConfig(vipMascot);
 
   // Tự động điền dữ liệu từ đơn hàng cũ nếu có
   useEffect(() => {
@@ -184,13 +171,26 @@ export default function OrderPage() {
       voucherCode?: string;
     }) => ordersApi.createOrder(items, type, menuId, voucherCode),
     onSuccess: (response) => {
+      let successImage = "/ronaldo_left.png";
+      let successAlt = "Ronaldo Siuuu";
+      let successTitle = "⚽ Đặt cơm thành công! SIUUUUU!";
+      if (vipMascot === "messi") {
+        successImage = "/messi_left.png";
+        successAlt = "Ankara Messi";
+        successTitle = "⚽ Đặt cơm thành công! ANKARA MESSI! 🐐";
+      } else if (vipMascot === "neymar") {
+        successImage = "/neymar_left.png";
+        successAlt = "Neymar Samba";
+        successTitle = "⚽ Đặt cơm thành công! SAMBA SHAKA! 🤙";
+      }
+
       swalAlert({
-        title: "⚽ Đặt cơm thành công! SIUUUUU!",
+        title: successTitle,
         text: response.data.message,
         icon: null,
-        imageUrl: "/ronaldo_left.png",
+        imageUrl: successImage,
         imageWidth: 280,
-        imageAlt: "Ronaldo Siuuu",
+        imageAlt: successAlt,
       });
       queryClient.invalidateQueries({ queryKey: ["myTodayOrder"] });
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
@@ -1054,13 +1054,12 @@ export default function OrderPage() {
               </div>
 
               {/* Compact Help Card */}
-              <div className="p-5 bg-emerald-50 border border-emerald-100 rounded-3xl shadow-sm">
-                <h4 className="font-black text-xs mb-1 italic text-emerald-800">
-                  Lời Khuyên của anh Bảy
+              <div className={cn("p-5 border rounded-3xl shadow-sm transition-all duration-300", mascotCard.containerClass)}>
+                <h4 className={cn("font-black text-xs mb-1 italic", mascotCard.titleClass)}>
+                  {mascotCard.title}
                 </h4>
-                <p className="text-emerald-600 text-[9px] font-bold leading-relaxed">
-                  "Có thực mới vực được đạo". Ăn đúng giờ để tu vi tinh tiến nhé
-                  đạo hữu!
+                <p className={cn("text-[9px] font-bold leading-relaxed", mascotCard.textClass)}>
+                  {mascotCard.message}
                 </p>
               </div>
             </div>
@@ -1303,31 +1302,6 @@ export default function OrderPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-
-      {/* Ronaldo Mascot Easter Eggs */}
-      <div
-        className="hidden xl:block fixed left-[-30px] 2xl:left-[-60px] bottom-0 z-0 h-[340px] 2xl:h-[460px] transition-all duration-500 hover:scale-110 active:scale-95 cursor-pointer select-none"
-        onClick={playSiuuu}
-        title="Bấm để cùng anh Bảy SIUUUUUUU!"
-      >
-        <TransparentImage
-          src="/ronaldo_left.png"
-          alt="Cristiano Ronaldo Portugal Left"
-          className="h-full w-auto pointer-events-none filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.4)]"
-        />
-      </div>
-
-      <div
-        className="hidden xl:block fixed right-[-30px] 2xl:right-[-60px] bottom-0 z-0 h-[340px] 2xl:h-[510px] transition-all duration-500 hover:scale-110 active:scale-95 cursor-pointer select-none"
-        onClick={playWorldCup}
-        title="Bấm để cùng anh Bảy ăn mừng World Cup!"
-      >
-        <TransparentImage
-          src="/ronaldo_right.png"
-          alt="Cristiano Ronaldo Portugal World Cup"
-          className="h-full w-auto pointer-events-none filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.4)]"
-        />
       </div>
 
       {/* GLOBAL STYLES */}

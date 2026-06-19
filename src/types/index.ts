@@ -20,6 +20,7 @@ export interface User {
   vipTheme?: string;
   vipAvatarFrame?: string;
   vipCoverImage?: string;
+  vipMascot?: string;
   hasMembership?: boolean;
   membershipName?: string;
   membershipExpiresAt?: string | null;

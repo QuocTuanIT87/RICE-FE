@@ -81,6 +81,7 @@ export default function ProfilePage() {
   const [vipTheme, setVipTheme] = useState("default");
   const [vipAvatarFrame, setVipAvatarFrame] = useState("none");
   const [vipCoverImage, setVipCoverImage] = useState("");
+  const [vipMascot, setVipMascot] = useState("ronaldo");
 
   const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -189,6 +190,7 @@ export default function ProfilePage() {
       setVipTheme(freshUser.vipTheme || "default");
       setVipAvatarFrame(freshUser.vipAvatarFrame || "none");
       setVipCoverImage(freshUser.vipCoverImage || "");
+      setVipMascot(freshUser.vipMascot || "ronaldo");
     }
   }, [freshUser]);
 
@@ -920,13 +922,51 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
+                {/* 4. Mascot Selector */}
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
+                    Thần tượng đồng hành (VIP Mascot)
+                  </Label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { id: "ronaldo", name: "Cristiano Ronaldo (CR7)", desc: "Lời khuyên của anh Bảy SIUUUU! 🇵🇹", icon: "👑" },
+                      { id: "messi", name: "Lionel Messi (M10)", desc: "Lời khuyên của anh Mười 🐐 🇦🇷", icon: "🐐" },
+                      { id: "neymar", name: "Neymar Jr (NJ10)", desc: "Samba dance của tiểu Neymar 🇧🇷 🤙", icon: "🤙" },
+                    ].map((mascotOpt) => (
+                      <div
+                        key={mascotOpt.id}
+                        onClick={() => setVipMascot(mascotOpt.id)}
+                        className={cn(
+                          "cursor-pointer p-4 rounded-2xl border transition-all flex flex-col gap-3 justify-between hover:shadow-md",
+                          vipMascot === mascotOpt.id
+                            ? "border-amber-500 bg-amber-50/20 shadow-sm"
+                            : "border-gray-100 bg-white"
+                        )}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-2xl shrink-0">{mascotOpt.icon}</span>
+                          {vipMascot === mascotOpt.id && (
+                            <div className="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center text-[10px] text-white font-bold">
+                              ✓
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{mascotOpt.name}</p>
+                          <p className="text-[10px] text-gray-400 mt-0.5 leading-none">{mascotOpt.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Save button */}
                 <Button
                   className="w-full h-12 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-2xl font-black shadow-lg shadow-amber-500/10 gap-2 border-none"
                   onClick={async () => {
                     setIsUpdating(true);
                     try {
-                      const response = await authApi.updateProfile({ vipTheme, vipAvatarFrame, vipCoverImage });
+                      const response = await authApi.updateProfile({ vipTheme, vipAvatarFrame, vipCoverImage, vipMascot });
                       if (response.data.success) {
                         dispatch(setUser(response.data.data!));
                         queryClient.invalidateQueries({ queryKey: ["userProfile"] });

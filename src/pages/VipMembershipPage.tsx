@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatVND, formatDate, cn } from "@/lib/utils";
 import { useAppSelector } from "@/store/hooks";
 import { swalAlert, swalToast } from "@/utils/swal";
+import { VipMascotInline } from "@/components/VipMascots";
 import { Link } from "react-router-dom";
 import { Crown, Award, Sparkles, Palette, Coins, ArrowLeft, Copy, Check, Loader2, RefreshCw, Clock, History, Search } from "lucide-react";
 import Swal from "sweetalert2";
@@ -361,6 +362,9 @@ export default function VipMembershipPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Dynamic Mascot Inline Advisor */}
+              <VipMascotInline className="max-w-2xl mx-auto" />
 
               {/* List of packages */}
               <div className="space-y-6">

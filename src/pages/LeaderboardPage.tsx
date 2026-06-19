@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { usersApi } from "@/services/api";
 import { Trophy, Medal, ShoppingBag, Crown } from "lucide-react";
 import { formatVND } from "@/lib/utils";
+import { VipMascotInline } from "@/components/VipMascots";
 
 type TabType = "turns" | "orders";
 
@@ -231,6 +232,9 @@ export default function LeaderboardPage() {
           })}
         </div>
       )}
+
+      {/* Dynamic Mascot Inline Advisor */}
+      <VipMascotInline className="max-w-2xl mx-auto mt-8" />
     </div>
   );
 }

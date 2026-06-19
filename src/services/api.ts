@@ -92,7 +92,7 @@ export const authApi = {
 
   getMe: () => api.get<ApiResponse<User>>("/auth/me"),
 
-  updateProfile: (data: { name?: string; phone?: string; vipTheme?: string; vipAvatarFrame?: string; vipCoverImage?: string }) =>
+  updateProfile: (data: { name?: string; phone?: string; vipTheme?: string; vipAvatarFrame?: string; vipCoverImage?: string; vipMascot?: string }) =>
     api.patch<ApiResponse<User>>("/auth/profile", data),
 
   updateAvatar: (formData: FormData) =>

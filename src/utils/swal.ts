@@ -7,11 +7,17 @@ const iconColorMap = {
   info: "#3b82f6",    // Blue
   question: "#8b5cf6", // Purple
 };
-let transparentRonaldoLeft = "/ronaldo_left.png";
-let transparentRonaldoRight = "/ronaldo_right.png";
+const transparentImages: Record<string, string> = {
+  "/ronaldo_left.png": "/ronaldo_left.png",
+  "/ronaldo_right.png": "/ronaldo_right.png",
+  "/messi_left.png": "/messi_left.png",
+  "/messi_right.png": "/messi_right.png",
+  "/neymar_left.png": "/neymar_left.png",
+  "/neymar_right.png": "/neymar_right.png",
+};
 
 if (typeof window !== "undefined") {
-  const processImage = (src: string, callback: (dataUrl: string) => void) => {
+  const processImage = (src: string) => {
     const img = new Image();
     img.src = src;
     img.crossOrigin = "anonymous";
@@ -30,16 +36,19 @@ if (typeof window !== "undefined") {
         }
       }
       ctx.putImageData(imgData, 0, 0);
-      callback(canvas.toDataURL());
+      transparentImages[src] = canvas.toDataURL();
     };
   };
 
-  processImage("/ronaldo_left.png", (dataUrl) => {
-    transparentRonaldoLeft = dataUrl;
-  });
-  processImage("/ronaldo_right.png", (dataUrl) => {
-    transparentRonaldoRight = dataUrl;
-  });
+  const imagesToProcess = [
+    "/ronaldo_left.png",
+    "/ronaldo_right.png",
+    "/messi_left.png",
+    "/messi_right.png",
+    "/neymar_left.png",
+    "/neymar_right.png",
+  ];
+  imagesToProcess.forEach(processImage);
 }
 
 export const swalAlert = ({
@@ -66,11 +75,7 @@ export const swalAlert = ({
     text,
     icon: icon || undefined,
     iconColor: icon ? iconColorMap[icon] : undefined,
-    imageUrl: imageUrl === "/ronaldo_left.png" 
-      ? transparentRonaldoLeft 
-      : imageUrl === "/ronaldo_right.png" 
-      ? transparentRonaldoRight 
-      : imageUrl,
+    imageUrl: imageUrl && transparentImages[imageUrl] ? transparentImages[imageUrl] : imageUrl,
     imageWidth,
     imageHeight,
     imageAlt,

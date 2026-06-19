@@ -13,6 +13,7 @@ import { formatVND, formatDate, cn } from "@/lib/utils";
 import { toast } from "@/hooks/useToast";
 import { useAppSelector } from "@/store/hooks";
 import { swalAlert, swalToast } from "@/utils/swal";
+import { VipMascotInline } from "@/components/VipMascots";
 import {
   Clock,
   History,
@@ -404,6 +405,9 @@ export default function MyWalletPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Dynamic Mascot Inline Advisor */}
+      <VipMascotInline className="max-w-2xl mx-auto" />
 
       {/* Main Operations Block */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">

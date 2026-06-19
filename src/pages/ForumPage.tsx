@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from "@/hooks/useToast";
 import { useAppSelector } from "@/store/hooks";
 import VipAvatar from "@/components/VipAvatar";
+import { VipMascotInline } from "@/components/VipMascots";
 import { useSocket } from "@/contexts/SocketContext";
 import {
   MessageSquare,
@@ -842,6 +843,9 @@ export default function ForumPage() {
               </Link>
             </div>
           </Card>
+
+          {/* Dynamic Mascot Inline Advisor */}
+          <VipMascotInline />
         </div>
       </div>
 

@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import PriceNoticeBanner from "@/components/PriceNoticeBanner";
+import VipMascots from "@/components/VipMascots";
 import { formatVND, cn } from "@/lib/utils";
 import { useSocket } from "@/contexts/SocketContext";
 import { swalToast } from "@/utils/swal";
@@ -726,6 +727,9 @@ export default function MainLayout() {
 
       {/* Banner */}
       {isAuthenticated && !isAdmin && <PriceNoticeBanner />}
+
+      {/* Floating Mascots for VIPs */}
+      {isAuthenticated && !isAdmin && <VipMascots />}
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 flex-1 flex flex-col">
