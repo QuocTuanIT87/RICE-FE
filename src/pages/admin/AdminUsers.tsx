@@ -16,6 +16,8 @@ import {
   Filter,
   RefreshCw,
   Wallet,
+  Crown,
+  TrendingUp,
 } from "lucide-react";
 import type { User } from "@/types";
 import { useState, useMemo } from "react";
@@ -44,7 +46,11 @@ export default function AdminUsers() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
-  const [balanceUser, setBalanceUser] = useState<{ id: string; name: string; balance: number } | null>(null);
+  const [balanceUser, setBalanceUser] = useState<{
+    id: string;
+    name: string;
+    balance: number;
+  } | null>(null);
   const [newBalance, setNewBalance] = useState<number>(0);
 
   const updateBalanceMutation = useMutation({
@@ -53,7 +59,9 @@ export default function AdminUsers() {
     onSuccess: (response: any) => {
       toast({
         title: "Cập nhật số dư thành công",
-        description: response.data.message || "Đã điều chỉnh số dư tài khoản của thành viên.",
+        description:
+          response.data.message ||
+          "Đã điều chỉnh số dư tài khoản của thành viên.",
         variant: "success",
       });
       setIsBalanceModalOpen(false);
@@ -343,7 +351,11 @@ export default function AdminUsers() {
                     >
                       <DropdownMenuItem
                         onClick={() => {
-                          setBalanceUser({ id: user._id, name: user.name, balance: user.balance || 0 });
+                          setBalanceUser({
+                            id: user._id,
+                            name: user.name,
+                            balance: user.balance || 0,
+                          });
                           setNewBalance(user.balance || 0);
                           setIsBalanceModalOpen(true);
                         }}
@@ -444,6 +456,23 @@ export default function AdminUsers() {
                           Administrator
                         </Badge>
                       )}
+                      {userDetail?.user?.vipLevelName && (
+                        <Badge
+                          className={`border-none rounded-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1 ${
+                            userDetail?.user?.vipLevelCode === "crystal"
+                              ? "bg-purple-600 text-white"
+                              : userDetail?.user?.vipLevelCode === "diamond"
+                                ? "bg-sky-500 text-white"
+                                : userDetail?.user?.vipLevelCode === "gold"
+                                  ? "bg-amber-500 text-white"
+                                  : userDetail?.user?.vipLevelCode === "silver"
+                                    ? "bg-slate-400 text-white"
+                                    : "bg-gray-400 text-white"
+                          }`}
+                        >
+                          👑 {userDetail.user.vipLevelName}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -468,7 +497,7 @@ export default function AdminUsers() {
                       value="orders"
                       className="rounded-md px-6 text-[10px] font-bold uppercase tracking-widest"
                     >
-                      Lịch sử ({userDetail?.orders?.length || 0})
+                      Lịch sử đặt cơm({userDetail?.orders?.length || 0})
                     </TabsTrigger>
                   </TabsList>
 
@@ -503,6 +532,18 @@ export default function AdminUsers() {
                             value: formatVND(userDetail?.user?.balance || 0),
                             icon: Wallet,
                           },
+                          {
+                            label: "Hạng VIP",
+                            value:
+                              userDetail?.user?.vipLevelName ||
+                              "Thành viên thường",
+                            icon: Crown,
+                          },
+                          {
+                            label: "Tích lũy nạp năm nay",
+                            value: formatVND(userDetail?.user?.totalSpent || 0),
+                            icon: TrendingUp,
+                          },
                         ].map((item, id) => (
                           <div
                             key={id}
@@ -532,13 +573,14 @@ export default function AdminUsers() {
                         userDetail?.packages?.map((req: any) => {
                           const credit = req.amount;
 
-                          const statusColors = req.status === "approved"
-                            ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                            : req.status === "rejected"
-                              ? "bg-rose-50 text-rose-600 border border-rose-200"
-                              : req.status === "pending"
-                                ? "bg-amber-50 text-amber-600 border border-amber-200"
-                                : "bg-gray-100 text-gray-600 border border-gray-200";
+                          const statusColors =
+                            req.status === "approved"
+                              ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                              : req.status === "rejected"
+                                ? "bg-rose-50 text-rose-600 border border-rose-200"
+                                : req.status === "pending"
+                                  ? "bg-amber-50 text-amber-600 border border-amber-200"
+                                  : "bg-gray-100 text-gray-600 border border-gray-200";
 
                           return (
                             <div
@@ -550,11 +592,11 @@ export default function AdminUsers() {
                                   Nạp tiền ví
                                 </h4>
                                 <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-400 font-bold uppercase">
-                                  <span>
-                                    Chuyển khoản
-                                  </span>
+                                  <span>Chuyển khoản</span>
                                   <span>•</span>
-                                  <span>Yêu cầu: {formatDate(req.requestedAt)}</span>
+                                  <span>
+                                    Yêu cầu: {formatDate(req.requestedAt)}
+                                  </span>
                                 </div>
                               </div>
                               <div className="flex items-center gap-6">
@@ -569,7 +611,11 @@ export default function AdminUsers() {
                                 <Badge
                                   className={`rounded-md text-[9px] font-bold uppercase ${statusColors} border-none`}
                                 >
-                                  {req.status === "approved" ? "Đã duyệt" : req.status === "rejected" ? "Từ chối" : "Đang chờ"}
+                                  {req.status === "approved"
+                                    ? "Đã duyệt"
+                                    : req.status === "rejected"
+                                      ? "Từ chối"
+                                      : "Đang chờ"}
                                 </Badge>
                               </div>
                             </div>
@@ -649,13 +695,21 @@ export default function AdminUsers() {
       <Dialog open={isBalanceModalOpen} onOpenChange={setIsBalanceModalOpen}>
         <DialogContent className="max-w-md rounded-xl border-none shadow-2xl p-0 overflow-hidden bg-white">
           <div className="p-6 bg-gradient-to-r from-orange-500 to-red-500 text-white">
-            <h2 className="text-lg font-black uppercase tracking-tight">Điều chỉnh số dư ví</h2>
-            <p className="text-xs text-white/80 mt-1">Thay đổi số dư ví tài khoản của thành viên.</p>
+            <h2 className="text-lg font-black uppercase tracking-tight">
+              Điều chỉnh số dư ví
+            </h2>
+            <p className="text-xs text-white/80 mt-1">
+              Thay đổi số dư ví tài khoản của thành viên.
+            </p>
           </div>
           <div className="p-6 space-y-6">
             <div className="space-y-1">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Thành viên</p>
-              <p className="font-bold text-gray-800 text-sm uppercase">{balanceUser?.name}</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                Thành viên
+              </p>
+              <p className="font-bold text-gray-800 text-sm uppercase">
+                {balanceUser?.name}
+              </p>
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">
@@ -702,7 +756,9 @@ export default function AdminUsers() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setNewBalance((prev) => Math.max(0, prev - 50000))}
+                onClick={() =>
+                  setNewBalance((prev) => Math.max(0, prev - 50000))
+                }
                 className="flex-1 rounded-lg text-xs font-bold text-rose-600 border-rose-100 hover:bg-rose-50"
               >
                 -50k
@@ -720,7 +776,10 @@ export default function AdminUsers() {
             <Button
               onClick={() => {
                 if (balanceUser) {
-                  updateBalanceMutation.mutate({ id: balanceUser.id, balance: newBalance });
+                  updateBalanceMutation.mutate({
+                    id: balanceUser.id,
+                    balance: newBalance,
+                  });
                 }
               }}
               disabled={updateBalanceMutation.isPending}

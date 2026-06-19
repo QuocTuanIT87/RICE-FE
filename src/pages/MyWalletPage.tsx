@@ -210,10 +210,10 @@ export default function MyWalletPage() {
   };
 
   const handleCreateDeposit = async () => {
-    if (depositAmount < 1000) {
+    if (depositAmount < 10000) {
       swalAlert({
-        title: "Lỗi số tiền",
-        text: "Số tiền nạp tối thiểu là 1,000 VND.",
+        title: "Lỗi nạp tiền",
+        text: "Đạo hữu vui lòng nạp tối thiểu 10,000 linh thạch.",
         icon: "warning",
       });
       return;
@@ -668,7 +668,7 @@ export default function MyWalletPage() {
                   {/* Completed transfer button */}
                   <Button
                     onClick={handleCreateDeposit}
-                    disabled={submittingDeposit}
+                    disabled={submittingDeposit || !depositAmount || depositAmount <= 0}
                     className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold shadow-md shadow-orange-100 transition-all text-sm gap-2"
                   >
                     {submittingDeposit ? (
