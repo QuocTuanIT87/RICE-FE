@@ -128,6 +128,7 @@ export default function OrderPage() {
   const order = myOrder?.data.data;
   const user = profileData?.data.data;
   const balance = user?.balance || 0;
+  const vipDiscountRate = user?.vipDiscountRate || 0;
 
   // Tự động điền dữ liệu từ đơn hàng cũ nếu có
   useEffect(() => {
@@ -239,9 +240,9 @@ export default function OrderPage() {
   );
 
   const totalPrice = totalQuantity * currentPrice;
+  const vipDiscountAmount = Math.round(totalPrice * (vipDiscountRate / 100));
   const oldOrderPrice = order ? order.totalPrice || 0 : 0;
   const effectiveBalance = balance + oldOrderPrice;
-  const isBalanceEnough = effectiveBalance >= totalPrice;
 
   const currentMenu =
     menus.find((m: DailyMenu) => m._id === activeMenuId) ||
@@ -867,14 +868,26 @@ export default function OrderPage() {
                     </div>
 
                     <div className="pt-4 border-t border-gray-50 space-y-3">
-                      <div className="flex justify-between items-center text-xs font-bold text-gray-700 px-1">
-                        <span>Tổng tiền:</span>
+                      <div className="flex justify-between items-center text-xs font-bold text-gray-500 px-1">
+                        <span>Tạm tính:</span>
+                        <span>{totalPrice.toLocaleString("vi-VN")} VND</span>
+                      </div>
+                      
+                      {vipDiscountRate > 0 && (
+                        <div className="flex justify-between items-center text-xs font-bold text-amber-600 px-1">
+                          <span>Giảm VIP ({user?.vipLevelName} -{vipDiscountRate}%):</span>
+                          <span>-{vipDiscountAmount.toLocaleString("vi-VN")} VND</span>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between items-center text-xs font-bold text-gray-700 px-1 pt-1.5 border-t border-dashed border-gray-100">
+                        <span>Tổng thanh toán:</span>
                         <span className="text-base font-black text-orange-600">
-                          {totalPrice.toLocaleString("vi-VN")} VND
+                          {Math.max(0, totalPrice - vipDiscountAmount).toLocaleString("vi-VN")} VND
                         </span>
                       </div>
 
-                      {!isBalanceEnough && (
+                      {!(effectiveBalance >= (totalPrice - vipDiscountAmount)) && (
                         <p className="text-[10px] font-bold text-red-500 text-center animate-pulse">
                           ⚠️ Số dư ví không đủ để đặt đơn này!
                         </p>
@@ -883,7 +896,7 @@ export default function OrderPage() {
                       <Button
                         onClick={handleOpenConfirmModal}
                         disabled={
-                          createOrderMutation.isPending || !isBalanceEnough
+                          createOrderMutation.isPending || !(effectiveBalance >= (totalPrice - vipDiscountAmount))
                         }
                         className="w-full h-12 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-sm shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 disabled:bg-gray-300 disabled:scale-100 disabled:cursor-not-allowed"
                       >
@@ -1181,6 +1194,14 @@ export default function OrderPage() {
                     {totalPrice.toLocaleString("vi-VN")} VND
                   </span>
                 </div>
+                {vipDiscountRate > 0 && (
+                  <div className="flex justify-between text-amber-600">
+                    <span>Giảm VIP ({user?.vipLevelName} -{vipDiscountRate}%):</span>
+                    <span>
+                      -{vipDiscountAmount.toLocaleString("vi-VN")} VND
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between text-emerald-600">
                   <span>Giảm giá voucher:</span>
                   <span>
@@ -1194,10 +1215,7 @@ export default function OrderPage() {
                 <div className="flex justify-between text-sm font-black pt-1 border-t border-dashed border-gray-100">
                   <span className="text-gray-900">Tổng thanh toán:</span>
                   <span className="text-orange-600">
-                    {(appliedVoucher
-                      ? appliedVoucher.finalPrice
-                      : totalPrice
-                    ).toLocaleString("vi-VN")}{" "}
+                    {Math.max(0, totalPrice - vipDiscountAmount - (appliedVoucher ? appliedVoucher.discountAmount : 0)).toLocaleString("vi-VN")}{" "}
                     VND
                   </span>
                 </div>
@@ -1210,9 +1228,7 @@ export default function OrderPage() {
                   className={cn(
                     "font-black",
                     effectiveBalance -
-                      (appliedVoucher
-                        ? appliedVoucher.finalPrice
-                        : totalPrice) >=
+                      Math.max(0, totalPrice - vipDiscountAmount - (appliedVoucher ? appliedVoucher.discountAmount : 0)) >=
                       0
                       ? "text-emerald-600"
                       : "text-red-500",
@@ -1220,7 +1236,7 @@ export default function OrderPage() {
                 >
                   {(
                     effectiveBalance -
-                    (appliedVoucher ? appliedVoucher.finalPrice : totalPrice)
+                    Math.max(0, totalPrice - vipDiscountAmount - (appliedVoucher ? appliedVoucher.discountAmount : 0))
                   ).toLocaleString("vi-VN")}{" "}
                   VND
                 </span>
@@ -1242,7 +1258,7 @@ export default function OrderPage() {
                 disabled={
                   createOrderMutation.isPending ||
                   effectiveBalance <
-                    (appliedVoucher ? appliedVoucher.finalPrice : totalPrice)
+                    Math.max(0, totalPrice - vipDiscountAmount - (appliedVoucher ? appliedVoucher.discountAmount : 0))
                 }
               >
                 {createOrderMutation.isPending ? (

@@ -23,7 +23,6 @@ import OrderPage from "@/pages/OrderPage";
 import MyWalletPage from "@/pages/MyWalletPage";
 import ProfilePage from "@/pages/ProfilePage";
 import OrderHistoryPage from "@/pages/OrderHistoryPage";
-import EntertainmentPage from "@/pages/EntertainmentPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 
 // Admin Pages
@@ -35,6 +34,7 @@ import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminStatistics from "@/pages/admin/AdminStatistics";
 import AdminVouchers from "@/pages/admin/AdminVouchers";
 import AdminSystem from "@/pages/admin/AdminSystem";
+import AdminVipLevels from "@/pages/admin/AdminVipLevels";
 import MaintenancePage from "@/components/MaintenancePage";
 import SystemInitializer from "@/components/SystemInitializer";
 
@@ -192,8 +192,6 @@ function AppRoutes() {
   const isStarted = !maintenanceStart || now >= new Date(maintenanceStart);
   const isExpired = maintenanceEnd && now > new Date(maintenanceEnd);
 
-
-
   if (isMaintenance && user?.role !== "admin" && isStarted && !isExpired) {
     return <MaintenancePage />;
   }
@@ -210,18 +208,8 @@ function AppRoutes() {
             </PublicRoute>
           }
         />
-        <Route
-          path="/packages"
-          element={<Navigate to="/wallet" replace />}
-        />
-        <Route
-          path="/giai-tri"
-          element={
-            <PublicRoute>
-              <EntertainmentPage />
-            </PublicRoute>
-          }
-        />
+        <Route path="/packages" element={<Navigate to="/wallet" replace />} />
+
         <Route
           path="/leaderboard"
           element={
@@ -293,6 +281,7 @@ function AppRoutes() {
         <Route path="orders" element={<AdminOrders />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="vouchers" element={<AdminVouchers />} />
+        <Route path="vips" element={<AdminVipLevels />} />
         <Route path="statistics" element={<AdminStatistics />} />
         <Route path="system" element={<AdminSystem />} />
       </Route>

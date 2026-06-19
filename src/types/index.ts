@@ -2,7 +2,6 @@
 
 // User types
 export type UserRole = "admin" | "user";
-
 export interface User {
   _id: string;
   id: string;
@@ -12,10 +11,21 @@ export interface User {
   role: UserRole;
   isVerified: boolean;
   isBlocked?: boolean;
-  gameCoins?: number; // Xu chơi game giải trí
   balance?: number; // Số dư tiền ví VND (mới)
+  totalSpent?: number; // Tổng chi tiêu tích lũy
+  vipLevelCode?: string; // normal, silver, gold, diamond
+  vipLevelName?: string; // Tên hạng VIP
+  vipDiscountRate?: number; // Phần trăm giảm giá VIP
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface VipLevel {
+  _id: string;
+  levelCode: string;
+  name: string;
+  threshold: number;
+  discountRate: number;
 }
 
 // Auth types
@@ -108,6 +118,8 @@ export interface Order {
   totalPrice?: number; // Tổng tiền đơn hàng (mới)
   voucherCode?: string;
   discountAmount?: number;
+  vipDiscountAmount?: number; // Số tiền được giảm từ đặc quyền VIP
+  vipLevelAtOrder?: string; // Tên cấp độ VIP lúc đặt đơn
   orderedAt: string;
   orderItems?: OrderItem[];
   createdAt?: string;

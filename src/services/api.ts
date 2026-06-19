@@ -13,6 +13,7 @@ import type {
   PackageType,
   PaginatedData,
   DepositRequest,
+  VipLevel,
 } from "@/types";
 
 // API Base URL - lấy từ biến môi trường, chỉ cần thay đổi ở file .env
@@ -98,7 +99,7 @@ export const authApi = {
 // =============================================
 export const usersApi = {
   getLeaderboard: () => api.get<ApiResponse<any[]>>("/users/leaderboard"),
-  getTopCoins: () => api.get<ApiResponse<any[]>>("/users/leaderboard/coins"),
+  getTopVip: () => api.get<ApiResponse<any[]>>("/users/leaderboard/vip"),
   getTopOrders: () => api.get<ApiResponse<any[]>>("/users/leaderboard/orders"),
 
   getUsers: (params?: {
@@ -257,21 +258,14 @@ export const statisticsApi = {
 };
 
 // =============================================
-// GAME COINS API
+// VIP LEVELS API
 // =============================================
-export const gameCoinsApi = {
-  getBalance: () =>
-    api.get<ApiResponse<{ gameCoins: number }>>("/game-coins/balance"),
-
-  updateCoins: (delta: number) =>
-    api.post<ApiResponse<{ gameCoins: number }>>("/game-coins/update", {
-      delta,
-    }),
-
-  exchange: (turns: number) =>
-    api.post<ApiResponse<{ gameCoins: number; balance: number }>>("/game-coins/exchange", {
-      turns,
-    }),
+export const vipLevelsApi = {
+  getLevels: () => api.get<ApiResponse<VipLevel[]>>("/vip-levels"),
+  createLevel: (data: any) => api.post<ApiResponse<VipLevel>>("/vip-levels", data),
+  updateLevel: (id: string, data: any) =>
+    api.put<ApiResponse<VipLevel>>(`/vip-levels/${id}`, data),
+  deleteLevel: (id: string) => api.delete<ApiResponse>(`/vip-levels/${id}`),
 };
 
 // =============================================

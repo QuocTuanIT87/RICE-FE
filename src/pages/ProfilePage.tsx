@@ -14,7 +14,7 @@ import { toast } from "@/hooks/useToast";
 import { swalAlert } from "@/utils/swal";
 import { useShowBalance } from "@/hooks/useShowBalance";
 import { cn, formatVND } from "@/lib/utils";
-import { authApi, vouchersApi } from "@/services/api";
+import { authApi, vouchersApi, vipLevelsApi } from "@/services/api";
 import { setUser } from "@/store/authSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -24,7 +24,6 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock,
-  Coins,
   KeyRound,
   LayoutDashboard,
   Loader2,
@@ -35,13 +34,13 @@ import {
   RefreshCw,
   Save,
   Shield,
-  Sparkles,
   Ticket,
   User as UserIcon,
   UtensilsCrossed,
   Zap,
   Eye,
   EyeOff,
+  Crown,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -108,6 +107,34 @@ export default function ProfilePage() {
     queryFn: () => vouchersApi.getMyVouchers(),
     enabled: !!freshUser,
   });
+
+  const { data: vipLevelsData } = useQuery({
+    queryKey: ["vipLevels"],
+    queryFn: () => vipLevelsApi.getLevels(),
+  });
+
+  const vipLevels = vipLevelsData?.data.data || [];
+  const sortedVipLevels = [...vipLevels].sort((a, b) => a.threshold - b.threshold);
+  const currentSpent = freshUser?.totalSpent || 0;
+  const nextLevelObj = sortedVipLevels.find((level) => level.threshold > currentSpent);
+  
+  // Find current level info in sorted list
+  const currentLevelIndex = sortedVipLevels.findIndex((level) => level.levelCode === freshUser?.vipLevelCode);
+  const currentLevelObj = currentLevelIndex !== -1 ? sortedVipLevels[currentLevelIndex] : null;
+
+  let progressPercent = 0;
+  let remainingSpent = 0;
+
+  if (nextLevelObj) {
+    const prevThreshold = currentLevelObj ? currentLevelObj.threshold : 0;
+    const range = nextLevelObj.threshold - prevThreshold;
+    const progressInRange = currentSpent - prevThreshold;
+    progressPercent = range > 0 ? Math.min(100, Math.max(0, (progressInRange / range) * 100)) : 0;
+    remainingSpent = nextLevelObj.threshold - currentSpent;
+  } else {
+    progressPercent = 100;
+    remainingSpent = 0;
+  }
 
   const myVouchers = vouchersData?.data.data || [];
 
@@ -213,9 +240,13 @@ export default function ProfilePage() {
               <p className="text-[11px] text-gray-400 truncate">
                 {freshUser?.email}
               </p>
-              <Badge className="mt-1 bg-amber-50 text-amber-600 border-amber-100 text-[9px] font-black h-4.5">
-                <Coins size={10} className="mr-1" />
-                {(freshUser?.gameCoins || 0).toLocaleString()} Xu
+              <Badge className={cn("mt-1 font-black text-[9px] h-4.5 border-none",
+                freshUser?.vipLevelCode === "diamond" ? "bg-cyan-50 text-cyan-600 border border-cyan-150" :
+                freshUser?.vipLevelCode === "gold" ? "bg-amber-50 text-amber-600 border border-amber-150" :
+                freshUser?.vipLevelCode === "silver" ? "bg-slate-100 text-slate-600 border border-slate-200" :
+                "bg-orange-50 text-orange-600 border border-orange-150"
+              )}>
+                👑 {freshUser?.vipLevelName || "Thành viên"} ({(freshUser?.vipDiscountRate || 0)}%)
               </Badge>
             </div>
           </div>
@@ -362,33 +393,71 @@ export default function ProfilePage() {
                   </div>
                 </Link>
 
-                <Link
-                  to="/giai-tri"
-                  className="md:col-span-2 group p-6 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-700 text-white shadow-lg shadow-indigo-100 hover:shadow-2xl transition-all"
+                <div
+                  className="md:col-span-2 p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 border border-amber-500/20 text-white shadow-xl hover:shadow-2xl transition-all relative overflow-hidden"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center group-hover:rotate-12 transition-transform">
-                      <Sparkles size={24} className="text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-black uppercase tracking-widest">
-                        Khu giải trí
-                      </p>
-                      <p className="text-xs text-violet-100 mt-0.5">
-                        Chơi game cá cược tích xu đổi quà cực đỉnh
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="px-3 py-1 bg-white/10 rounded-lg text-xs font-black">
-                        {(freshUser?.gameCoins || 0).toLocaleString()} Xu
+                  <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-10">
+                    <Crown size={200} />
+                  </div>
+                  <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex-1 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-amber-500/10 rounded-2xl border border-amber-500/20 flex items-center justify-center">
+                          <Crown size={24} className="text-amber-400" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">
+                            Cấp độ hội viên
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-xl font-black italic tracking-wide text-white uppercase">
+                              {freshUser?.vipLevelName || "Thành viên"}
+                            </h3>
+                            {(freshUser?.vipDiscountRate || 0) > 0 && (
+                              <Badge className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black border-none text-[10px]">
+                                Giảm {freshUser?.vipDiscountRate || 0}% đơn hàng
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <ArrowRight
-                        size={18}
-                        className="text-white/60 group-hover:translate-x-1 transition-transform"
-                      />
+
+                      {/* Progress bar */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs font-bold">
+                          <span className="text-slate-400">Tích lũy nạp năm nay: <span className="text-white font-black">{formatVND(currentSpent)}</span></span>
+                          {nextLevelObj && (
+                            <span className="text-amber-400">Hạng tiếp theo: {nextLevelObj.name} ({formatVND(nextLevelObj.threshold)})</span>
+                          )}
+                        </div>
+                        <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700/50">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full transition-all duration-500"
+                            style={{ width: `${progressPercent}%` }}
+                          />
+                        </div>
+                        {nextLevelObj && remainingSpent > 0 ? (
+                          <p className="text-[11px] text-slate-400">
+                            Nạp thêm <span className="text-amber-400 font-bold">{formatVND(remainingSpent)}</span> để lên hạng <span className="text-white font-bold">{nextLevelObj.name}</span> nhận ngay ưu đãi <span className="text-amber-400 font-bold">-{nextLevelObj.discountRate}%</span> mỗi đơn đặt cơm!
+                          </p>
+                        ) : (
+                          <p className="text-[11px] text-amber-400 font-bold">
+                            🎉 Bạn đã đạt cấp độ VIP cao nhất! Tận hưởng đặc quyền giảm giá tối đa.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+                      <Link to="/wallet">
+                        <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl h-10 px-5 text-xs shadow-lg shadow-amber-500/10 border-none">
+                          XEM ĐẶC QUYỀN VIP
+                          <ArrowRight size={14} className="ml-1" />
+                        </Button>
+                      </Link>
                     </div>
                   </div>
-                </Link>
+                </div>
               </div>
             </div>
           )}

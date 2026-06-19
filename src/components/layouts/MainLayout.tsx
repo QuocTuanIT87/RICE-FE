@@ -17,7 +17,6 @@ import {
   ChevronDown,
   Menu,
   X,
-  Gamepad2,
   Coins,
   Trophy,
   Wallet,
@@ -31,9 +30,8 @@ import { formatVND } from "@/lib/utils";
 const customerNavItems = [
   { path: "/", label: "Trang chủ", icon: Home },
   { path: "/order", label: "Đặt cơm", icon: UtensilsCrossed },
-  { path: "/wallet", label: "Nạp tiền", icon: Coins },
+  { path: "/wallet", label: "Ví tiền", icon: Coins },
   { path: "/leaderboard", label: "Bảng xếp hạng", icon: Trophy },
-  { path: "/giai-tri", label: "Giải trí", icon: Gamepad2 },
 ];
 
 const adminNavItems = [
@@ -68,9 +66,9 @@ export default function MainLayout() {
   const contactPhone = systemConfig?.contactPhone || "0123.456.789";
 
   // Fetch top leaderboards for marquee
-  const { data: topCoinsData } = useQuery({
-    queryKey: ["topCoins"],
-    queryFn: () => usersApi.getTopCoins(),
+  const { data: topVipData } = useQuery({
+    queryKey: ["topVip"],
+    queryFn: () => usersApi.getTopVip(),
     enabled: !isAdmin,
   });
 
@@ -80,7 +78,7 @@ export default function MainLayout() {
     enabled: !isAdmin,
   });
 
-  const topCoins = topCoinsData?.data.data || [];
+  const topVip = topVipData?.data.data || [];
   const topOrders = topOrdersData?.data.data || [];
 
   // Close dropdown on outside click
@@ -136,7 +134,11 @@ export default function MainLayout() {
             >
               <div className="w-9 h-9 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl flex items-center justify-center shadow-md shadow-orange-200 group-hover:shadow-lg group-hover:shadow-orange-300 transition-shadow overflow-hidden">
                 {websiteLogo ? (
-                  <img src={websiteLogo} alt="Logo" className="w-full h-full object-cover" />
+                  <img
+                    src={websiteLogo}
+                    alt="Logo"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <span className="text-white text-lg">🍚</span>
                 )}
@@ -425,7 +427,7 @@ export default function MainLayout() {
       </header>
 
       {/* Marquee Ticker for Customers */}
-      {!isAdmin && (topCoins.length > 0 || topOrders.length > 0) && (
+      {!isAdmin && (topVip.length > 0 || topOrders.length > 0) && (
         <div className="bg-orange-50/70 overflow-hidden py-3 border-b border-orange-100/50 backdrop-blur-sm shadow-sm flex items-center">
           {/* We render the content twice side-by-side to create a seamless infinite loop */}
           {[1, 2].map((setIndex) => (
@@ -449,18 +451,18 @@ export default function MainLayout() {
                   </strong>
                 </span>
               ))}
-              {topCoins.slice(0, 3).map((u: any, idx: number) => (
-                <span key={`coin-${setIndex}-${idx}`} className="mx-8">
-                  💰{" "}
+              {topVip.slice(0, 3).map((u: any, idx: number) => (
+                <span key={`vip-${setIndex}-${idx}`} className="mx-8">
+                  👑{" "}
                   <span className="font-bold text-amber-600">
-                    Top {idx + 1} Đại Gia:
+                    Top {idx + 1} Phú Hào:
                   </span>{" "}
                   <span className="font-bold text-gray-900">
                     Đạo hữu <span className="text-amber-500">{u.name}</span>
                   </span>{" "}
-                  sở hữu{" "}
+                  đạt cấp{" "}
                   <strong className="text-amber-600">
-                    {u.gameCoins?.toLocaleString() || 0} xu
+                    {u.vipLevelName || "Thành viên thường"}
                   </strong>
                 </span>
               ))}
@@ -473,16 +475,12 @@ export default function MainLayout() {
       {isAuthenticated && !isAdmin && <PriceNoticeBanner />}
 
       {/* Main Content */}
-      <main
-        className={`${location.pathname.startsWith("/giai-tri") ? "w-full" : "container mx-auto px-4 py-8"} flex-1 flex flex-col`}
-      >
+      <main className="container mx-auto px-4 py-8 flex-1 flex flex-col">
         <Outlet />
       </main>
 
       {/* Footer */}
-      <footer
-        className={`${location.pathname.startsWith("/giai-tri") ? "bg-[#0a2e1f]/90 border-t border-white/5" : "bg-gray-900"} text-white py-8 mt-auto`}
-      >
+      <footer className="bg-gray-900 text-white py-8 mt-auto">
         <div className="container mx-auto px-4 text-center space-y-2">
           <p className="text-gray-400 text-sm italic">
             © 2026 {websiteName}. Chúc các đạo hữu ăn cơm ngon miệng! 🍚

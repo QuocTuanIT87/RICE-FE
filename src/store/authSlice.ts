@@ -27,11 +27,6 @@ const authSlice = createSlice({
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
     },
-    updateGameCoins: (state, action: PayloadAction<number>) => {
-      if (state.user) {
-        state.user.gameCoins = action.payload;
-      }
-    },
     logout: (state) => {
       state.user = null;
       state.token = null;
@@ -40,6 +35,6 @@ const authSlice = createSlice({
   },
 });
 
-export const { setCredentials, setUser, setLoading, updateGameCoins, logout } =
+export const { setCredentials, setUser, setLoading, logout } =
   authSlice.actions;
 export default authSlice.reducer;

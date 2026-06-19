@@ -6,9 +6,8 @@ import {
   ReactNode,
 } from "react";
 import { io, Socket } from "socket.io-client";
-import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { useAppSelector } from "@/store/hooks";
 import { RootState } from "@/store";
-import { updateGameCoins } from "@/store/authSlice";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface SocketContextType {
@@ -29,7 +28,6 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const { user, token, isAuthenticated } = useAppSelector(
     (state: RootState) => state.auth,
   );
-  const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -138,25 +136,19 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       queryClient.invalidateQueries({ queryKey: ["mealPackages"] });
     });
 
-    socket.on("purchase_request_approved", (data) => {
+    socket.on("purchase_request_approved", () => {
       queryClient.invalidateQueries({ queryKey: ["myPackages"] });
       queryClient.invalidateQueries({ queryKey: ["myActivePackages"] });
       queryClient.invalidateQueries({ queryKey: ["myPurchaseRequests"] });
-
-      // Cập nhật xu ngay lập tức nếu có thông tin
-      if (data?.gameCoins !== undefined) {
-        dispatch(updateGameCoins(data.gameCoins));
-      }
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
     });
 
     socket.on("purchase_request_rejected", () => {
       queryClient.invalidateQueries({ queryKey: ["myPurchaseRequests"] });
     });
 
-    socket.on("coins_updated", (data) => {
-      if (data?.gameCoins !== undefined) {
-        dispatch(updateGameCoins(data.gameCoins));
-      }
+    socket.on("coins_updated", () => {
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
     });
 
     socket.on("order_confirmed", () => {
