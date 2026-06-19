@@ -301,7 +301,7 @@ export default function AdminUsers() {
                 <div className="flex items-center gap-4 min-w-0">
                   <Avatar className="w-11 h-11 border border-gray-100 rounded-lg shrink-0">
                     <AvatarImage
-                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`}
+                      src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`}
                     />
                     <AvatarFallback className="bg-gray-100 text-gray-500 font-bold">
                       {user.name.charAt(0)}
@@ -422,7 +422,7 @@ export default function AdminUsers() {
                 <div className="flex flex-col md:flex-row items-center gap-6">
                   <Avatar className="w-20 h-20 border-2 border-white shadow-md rounded-xl">
                     <AvatarImage
-                      src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${userDetail?.user?.name}`}
+                      src={userDetail?.user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userDetail?.user?.name}`}
                     />
                     <AvatarFallback className="bg-gray-200 text-gray-500 text-xl font-bold">
                       {userDetail?.user?.name?.charAt(0)}

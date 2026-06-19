@@ -291,12 +291,20 @@ export default function AdminOrders() {
                         <CardContent className="p-0">
                           <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100 group-hover:bg-orange-50 transition-colors">
-                                <UserIcon
-                                  className="text-gray-300 group-hover:text-orange-500"
-                                  size={20}
+                              {user.avatar ? (
+                                <img
+                                  src={user.avatar}
+                                  alt={user.name}
+                                  className="w-12 h-12 rounded-2xl object-cover shrink-0 border border-gray-100"
                                 />
-                              </div>
+                              ) : (
+                                <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100 group-hover:bg-orange-50 transition-colors">
+                                  <UserIcon
+                                    className="text-gray-300 group-hover:text-orange-500"
+                                    size={20}
+                                  />
+                                </div>
+                              )}
                               <div className="min-w-0">
                                 <p className="font-bold text-gray-900 uppercase tracking-tight truncate">
                                   {user.name}

@@ -41,9 +41,12 @@ import {
   Eye,
   EyeOff,
   Crown,
+  Camera,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import Cropper from "react-easy-crop";
+import { getCroppedImg } from "@/utils/cropImage";
 
 type ActiveTab = "overview" | "profile" | "vouchers" | "security";
 
@@ -66,6 +69,75 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isChangingPass, setIsChangingPass] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // States cho Cắt ảnh đại diện
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarImageSrc, setAvatarImageSrc] = useState<string | null>(null);
+  const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      swalAlert({
+        title: "⚠️ File quá lớn",
+        text: "Kích thước ảnh tối đa là 5MB.",
+        icon: "warning",
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      setAvatarImageSrc(reader.result as string);
+      setIsCropDialogOpen(true);
+      e.target.value = "";
+    });
+    reader.readAsDataURL(file);
+  };
+
+  const onCropComplete = (_croppedArea: any, croppedAreaPixelsData: any) => {
+    setCroppedAreaPixels(croppedAreaPixelsData);
+  };
+
+  const handleUploadCroppedAvatar = async () => {
+    if (!avatarImageSrc || !croppedAreaPixels) return;
+
+    setIsUploadingAvatar(true);
+    try {
+      const croppedImageBlob = await getCroppedImg(avatarImageSrc, croppedAreaPixels);
+      const croppedImageFile = new File([croppedImageBlob], "avatar.jpg", {
+        type: "image/jpeg",
+      });
+
+      const formData = new FormData();
+      formData.append("avatar", croppedImageFile);
+
+      const response = await authApi.updateAvatar(formData);
+      if (response.data.success) {
+        dispatch(setUser(response.data.data!));
+        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+        setIsCropDialogOpen(false);
+        setAvatarImageSrc(null);
+        toast({
+          title: "✅ Cập nhật ảnh đại diện thành công!",
+          variant: "success",
+        });
+      }
+    } catch (error: any) {
+      swalAlert({
+        title: "❌ Cập nhật thất bại",
+        text: error.response?.data?.error?.message || "Không thể tải ảnh lên.",
+        icon: "error",
+      });
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
 
   useEffect(() => {
     if (!socket) return;
@@ -230,10 +302,36 @@ export default function ProfilePage() {
         <div className="col-span-1 lg:col-span-3 space-y-6">
           {/* User Mini Card */}
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-orange-500 flex items-center justify-center text-xl font-black text-white shadow-lg shadow-orange-100">
-              {userInitial}
+            <div className="relative w-14 h-14 rounded-xl overflow-hidden group shrink-0 shadow-lg shadow-orange-100">
+              {freshUser?.avatar ? (
+                <img
+                  src={freshUser.avatar}
+                  alt={freshUser.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-orange-500 flex items-center justify-center text-xl font-black text-white">
+                  {userInitial}
+                </div>
+              )}
+              
+              {/* Overlay hover to change avatar */}
+              <label
+                htmlFor="avatar-upload-input"
+                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+              >
+                <Camera className="w-5 h-5 text-white" />
+              </label>
+              
+              <input
+                id="avatar-upload-input"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarFileChange}
+              />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h2 className="font-bold text-gray-900 truncate uppercase tracking-tight">
                 {freshUser?.name}
               </h2>
@@ -807,6 +905,87 @@ export default function ProfilePage() {
                 <Loader2 className="animate-spin" />
               ) : (
                 "XÁC NHẬN ĐỔI"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Cắt ảnh đại diện */}
+      <Dialog open={isCropDialogOpen} onOpenChange={(open) => {
+        if (!open && !isUploadingAvatar) {
+          setIsCropDialogOpen(false);
+          setAvatarImageSrc(null);
+        }
+      }}>
+        <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border-none shadow-2xl bg-white">
+          <DialogHeader className="p-6 bg-gradient-to-r from-orange-500 to-red-500 text-white">
+            <DialogTitle className="text-lg font-black uppercase tracking-tight text-white">
+              Cắt ảnh đại diện
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="p-6">
+            <p className="text-xs text-gray-500 mb-4 font-semibold">
+              Kéo thả hoặc sử dụng thanh trượt để phóng to/thu nhỏ vùng cắt (Tỷ lệ vuông 1:1).
+            </p>
+            
+            {/* Vùng Cropper */}
+            <div className="relative w-full h-[300px] rounded-xl overflow-hidden bg-gray-200 border border-gray-150">
+              {avatarImageSrc && (
+                <Cropper
+                  image={avatarImageSrc}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={onCropComplete}
+                />
+              )}
+            </div>
+
+            {/* Thanh thu phóng zoom */}
+            <div className="mt-5 space-y-2">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-0.5">
+                Thu phóng
+              </label>
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.1}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-orange-500"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="p-6 bg-gray-50 flex gap-3 justify-end border-t border-gray-100">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setIsCropDialogOpen(false);
+                setAvatarImageSrc(null);
+              }}
+              disabled={isUploadingAvatar}
+              className="rounded-xl font-bold text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={handleUploadCroppedAvatar}
+              disabled={isUploadingAvatar}
+              className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold h-11 px-6 shadow-md shadow-orange-100"
+            >
+              {isUploadingAvatar ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Đang tải lên...
+                </>
+              ) : (
+                "Cắt & Tải lên"
               )}
             </Button>
           </DialogFooter>

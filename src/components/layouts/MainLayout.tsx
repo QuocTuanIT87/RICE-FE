@@ -216,13 +216,17 @@ export default function MainLayout() {
                     }`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black text-white ${
-                        isAdmin
+                      className={`w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center text-sm font-black text-white ${
+                        user?.avatar ? "" : isAdmin
                           ? "bg-gradient-to-br from-red-500 to-rose-600"
                           : "bg-gradient-to-br from-orange-400 to-red-500"
                       } shadow-sm`}
                     >
-                      {userInitial}
+                      {user?.avatar ? (
+                        <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                      ) : (
+                        userInitial
+                      )}
                     </div>
                     <div className="hidden md:flex flex-col items-start">
                       <span className="text-sm font-bold text-gray-900 leading-tight">
@@ -251,13 +255,17 @@ export default function MainLayout() {
                       <div className="px-4 py-4 bg-gray-50 border-b border-gray-100">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black text-white ${
-                              isAdmin
+                            className={`w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center text-sm font-black text-white ${
+                              user?.avatar ? "" : isAdmin
                                 ? "bg-gradient-to-br from-red-500 to-rose-600"
                                 : "bg-gradient-to-br from-orange-400 to-red-500"
                             }`}
                           >
-                            {userInitial}
+                            {user?.avatar ? (
+                              <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                            ) : (
+                              userInitial
+                            )}
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-bold text-gray-900 truncate">

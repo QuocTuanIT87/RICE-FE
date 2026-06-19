@@ -97,8 +97,12 @@ export default function AdminLayout() {
             onClick={() => setShowDropdown(!showDropdown)}
             className="flex items-center gap-3 w-full p-4 hover:bg-gray-800 transition-colors"
           >
-            <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-lg font-bold">
-              {user?.name?.charAt(0).toUpperCase() || "A"}
+            <div className="w-10 h-10 bg-orange-500 rounded-full overflow-hidden flex items-center justify-center text-lg font-bold">
+              {user?.avatar ? (
+                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+              ) : (
+                user?.name?.charAt(0).toUpperCase() || "A"
+              )}
             </div>
             <div className="flex-1 text-left">
               <p className="font-semibold text-sm truncate">
@@ -120,8 +124,12 @@ export default function AdminLayout() {
               {/* Thông tin cá nhân */}
               <div className="p-4 border-b border-gray-700">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-xl font-bold">
-                    {user?.name?.charAt(0).toUpperCase() || "A"}
+                  <div className="w-12 h-12 bg-orange-500 rounded-full overflow-hidden flex items-center justify-center text-xl font-bold">
+                    {user?.avatar ? (
+                      <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                    ) : (
+                      user?.name?.charAt(0).toUpperCase() || "A"
+                    )}
                   </div>
                   <div>
                     <p className="font-semibold">{user?.name}</p>

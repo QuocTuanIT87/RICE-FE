@@ -90,6 +90,13 @@ export const authApi = {
   updateProfile: (data: { name?: string; phone?: string }) =>
     api.patch<ApiResponse<User>>("/auth/profile", data),
 
+  updateAvatar: (formData: FormData) =>
+    api.patch<ApiResponse<User>>("/auth/avatar", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
+
   changePassword: (data: { oldPassword: string; newPassword: string }) =>
     api.patch<ApiResponse>("/auth/change-password", data),
 };
