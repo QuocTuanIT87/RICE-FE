@@ -292,6 +292,8 @@ export const userMembershipsApi = {
     api.post<ApiResponse<UserMembership>>("/user-memberships/buy-with-wallet", { vipPackageId }),
   giftMembership: (receiverId: string, vipPackageId: string) =>
     api.post<ApiResponse<any>>("/user-memberships/gift", { receiverId, vipPackageId }),
+  adminGiftMembership: (vipPackageId: string, receiverId?: string, giftAll?: boolean) =>
+    api.post<ApiResponse<any>>("/user-memberships/admin-gift", { vipPackageId, receiverId, giftAll }),
 };
 
 // =============================================

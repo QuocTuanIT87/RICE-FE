@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { vipPackagesApi, depositRequestsApi } from "@/services/api";
+import { vipPackagesApi, depositRequestsApi, usersApi, userMembershipsApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { formatVND, formatDate, cn } from "@/lib/utils";
 import { Crown, Edit2, Plus, Trash2, CheckCircle2, XCircle, Loader2, History } from "lucide-react";
 import { VipPackage } from "@/types";
 import Swal from "sweetalert2";
+import { swalAlert, swalConfirm } from "@/utils/swal";
 
 export default function AdminVipPackages() {
   const { toast } = useToast();
@@ -40,6 +41,13 @@ export default function AdminVipPackages() {
   const [approvalPage, setApprovalPage] = useState<number>(1);
   const approvalLimit = 10;
 
+  // Gifting tab states
+  const [giftPackageId, setGiftPackageId] = useState("");
+  const [giftAll, setGiftAll] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+  const [receiverId, setReceiverId] = useState("");
+  const [isGifting, setIsGifting] = useState(false);
+
   // Fetch all packages
   const { data: packagesResponse, isLoading: packagesLoading } = useQuery({
     queryKey: ["adminVipPackages"],
@@ -61,6 +69,67 @@ export default function AdminVipPackages() {
   const vipRequestsResponse = vipRequestsData?.data.data;
   const vipRequests = vipRequestsResponse?.docs || [];
   const totalApprovalPages = vipRequestsResponse?.pages || 1;
+
+  // Query users for autocomplete search
+  const { data: usersListResponse } = useQuery({
+    queryKey: ["giftAllUsersSearch", userSearch],
+    queryFn: () => usersApi.searchUsers({ search: userSearch, limit: 10 }),
+    enabled: userSearch.length > 0 && !giftAll,
+  });
+  const searchedUsers = usersListResponse?.data.data?.docs || [];
+
+  const handleGiftSubmit = async () => {
+    if (!giftPackageId) return;
+
+    const targetPkg = packages.find((p: any) => p._id === giftPackageId);
+    if (!targetPkg) return;
+
+    const confirmTitle = giftAll
+      ? `Tặng VIP cho toàn hệ thống?`
+      : `Tặng VIP cho thành viên?`;
+    const confirmText = giftAll
+      ? `Hệ thống sẽ tặng gói VIP "${targetPkg.name}" (${targetPkg.validDays} ngày) cho toàn bộ người dùng chưa có VIP hoạt động. Thao tác này không thể hoàn tác!`
+      : `Hệ thống sẽ tặng gói VIP "${targetPkg.name}" (${targetPkg.validDays} ngày) cho thành viên đã chọn.`;
+
+    const result = await swalConfirm({
+      title: confirmTitle,
+      text: confirmText,
+      confirmText: "ĐỒNG Ý TẶNG",
+      cancelText: "HỦY BỎ",
+    });
+
+    if (!result.isConfirmed) return;
+
+    setIsGifting(true);
+    try {
+      const res = await userMembershipsApi.adminGiftMembership(
+        giftPackageId,
+        giftAll ? undefined : receiverId,
+        giftAll
+      );
+
+      if (res.data.success) {
+        swalAlert({
+          title: "🎁 Tặng VIP thành công!",
+          text: res.data.message || "Đã gửi tặng gói Hội Viên VIP thành công.",
+          icon: "success",
+        });
+        // Reset state
+        setReceiverId("");
+        setUserSearch("");
+        setGiftPackageId("");
+        queryClient.invalidateQueries({ queryKey: ["adminVipRequests"] });
+      }
+    } catch (err: any) {
+      swalAlert({
+        title: "❌ Tặng VIP thất bại",
+        text: err.response?.data?.error?.message || "Đã có lỗi xảy ra",
+        icon: "error",
+      });
+    } finally {
+      setIsGifting(false);
+    }
+  };
 
   // Reset form
   const resetForm = () => {
@@ -267,12 +336,15 @@ export default function AdminVipPackages() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
-        <TabsList className="grid w-full grid-cols-2 bg-gray-100/80 p-1 rounded-2xl h-11 max-w-[400px]">
+        <TabsList className="grid w-full grid-cols-3 bg-gray-100/80 p-1 rounded-2xl h-11 max-w-[550px]">
           <TabsTrigger value="approval" className="rounded-xl font-bold text-xs md:text-sm py-2">
             DUYỆT YÊU CẦU MUA
           </TabsTrigger>
           <TabsTrigger value="packages" className="rounded-xl font-bold text-xs md:text-sm py-2">
             DANH SÁCH GÓI
+          </TabsTrigger>
+          <TabsTrigger value="gift" className="rounded-xl font-bold text-xs md:text-sm py-2">
+            TẶNG VIP 🎁
           </TabsTrigger>
         </TabsList>
 
@@ -514,6 +586,184 @@ export default function AdminVipPackages() {
                 </Table>
               </div>
             )}
+          </Card>
+        </TabsContent>
+
+        {/* Tab 3: TẶNG VIP */}
+        <TabsContent value="gift" className="space-y-6 mt-0">
+          <Card className="p-6 border border-gray-200 shadow-sm rounded-2xl bg-white space-y-6">
+            <div>
+              <h3 className="text-lg font-black text-gray-900 mb-1 flex items-center gap-1.5">
+                <span>🎁</span> Tặng Gói Hội Viên VIP
+              </h3>
+              <p className="text-xs text-gray-500">
+                Gửi tặng gói hội viên VIP trực tiếp cho một thành viên hoặc phát hành đồng loạt tới toàn bộ người dùng chưa kích hoạt VIP trên hệ thống.
+              </p>
+            </div>
+
+            <div className="space-y-5">
+              {/* 1. Chọn Đối Tượng Nhận */}
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
+                  Chọn Đối Tượng Nhận
+                </Label>
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGiftAll(false);
+                      setReceiverId("");
+                      setUserSearch("");
+                    }}
+                    className={cn(
+                      "flex-1 p-4 rounded-2xl border text-center font-bold text-xs transition-all",
+                      !giftAll
+                        ? "border-orange-500 bg-orange-50/20 text-orange-700 shadow-sm"
+                        : "border-gray-150 bg-white text-gray-600 hover:bg-gray-50"
+                    )}
+                  >
+                    👤 Một người dùng cụ thể
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGiftAll(true);
+                      setReceiverId("");
+                      setUserSearch("");
+                    }}
+                    className={cn(
+                      "flex-1 p-4 rounded-2xl border text-center font-bold text-xs transition-all",
+                      giftAll
+                        ? "border-orange-500 bg-orange-50/20 text-orange-700 shadow-sm"
+                        : "border-gray-150 bg-white text-gray-600 hover:bg-gray-50"
+                    )}
+                  >
+                    👥 Toàn bộ thành viên chưa có VIP
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Tìm kiếm User cụ thể nếu chọn giftAll === false */}
+              {!giftAll && (
+                <div className="space-y-2 relative">
+                  <Label htmlFor="search-user" className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
+                    Tìm kiếm thành viên nhận
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="search-user"
+                      type="text"
+                      placeholder="Nhập tên hoặc email đồng nghiệp để tìm kiếm..."
+                      value={userSearch}
+                      onChange={(e) => {
+                        setUserSearch(e.target.value);
+                        if (receiverId) setReceiverId(""); // Reset nếu sửa đổi
+                      }}
+                      className="pl-4 h-11 rounded-xl border-gray-250 text-xs font-semibold focus:ring-orange-500"
+                    />
+                  </div>
+
+                  {/* Autocomplete Results */}
+                  {userSearch && !receiverId && searchedUsers.length > 0 && (
+                    <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-150 rounded-2xl shadow-xl max-h-[220px] overflow-y-auto pr-1 divide-y divide-gray-55">
+                      {searchedUsers.map((u: any) => (
+                        <button
+                          key={u._id}
+                          type="button"
+                          disabled={u.hasMembership}
+                          onClick={() => {
+                            setReceiverId(u._id);
+                            setUserSearch(`${u.name} (${u.email})`);
+                          }}
+                          className={cn(
+                            "w-full text-left px-4 py-3 hover:bg-orange-50/30 transition-colors flex items-center justify-between text-xs",
+                            u.hasMembership && "opacity-60 cursor-not-allowed hover:bg-white"
+                          )}
+                        >
+                          <div>
+                            <p className="font-bold text-gray-900">{u.name}</p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">{u.email}</p>
+                          </div>
+                          {u.hasMembership && (
+                            <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[9px]">
+                              👑 Đã có VIP
+                            </Badge>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {userSearch && !receiverId && searchedUsers.length === 0 && (
+                    <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-150 rounded-2xl p-4 text-center shadow-lg text-xs text-gray-400 font-bold">
+                      😞 Không tìm thấy người dùng này
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 3. Chọn Gói VIP để tặng */}
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
+                  Chọn Gói Hội Viên VIP muốn tặng
+                </Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {packages.map((pkg: any) => (
+                    <div
+                      key={pkg._id}
+                      onClick={() => setGiftPackageId(pkg._id)}
+                      className={cn(
+                        "cursor-pointer p-4 rounded-2xl border transition-all flex flex-col gap-3 justify-between hover:shadow-md",
+                        giftPackageId === pkg._id
+                          ? "border-orange-500 bg-orange-50/20 shadow-sm animate-pulse"
+                          : "border-gray-150 bg-white"
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-black text-gray-900 group-hover:text-orange-600">
+                          {pkg.name}
+                        </span>
+                        {giftPackageId === pkg._id && (
+                          <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center text-white text-[11px] font-bold">
+                            ✓
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="text-xs text-orange-600 font-black">
+                          {pkg.price.toLocaleString("vi-VN")} VND
+                        </p>
+                        <p className="text-[10px] text-gray-400 font-bold">
+                          Thời hạn: {pkg.validDays} ngày • Giảm {pkg.discountAmount.toLocaleString("vi-VN")}đ/suất
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <div className="pt-4">
+                <Button
+                  onClick={handleGiftSubmit}
+                  disabled={isGifting || !giftPackageId || (!giftAll && !receiverId)}
+                  className="w-full h-12 bg-orange-600 hover:bg-orange-700 text-white rounded-2xl font-black shadow-xl shadow-orange-100 gap-2 disabled:bg-gray-200 disabled:cursor-not-allowed"
+                >
+                  {isGifting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      ĐANG XỬ LÝ...
+                    </>
+                  ) : (
+                    <>
+                      <span>🎁</span>
+                      {giftAll ? "TẶNG CHO TOÀN BỘ USER HỆ THỐNG" : "GỬI TẶNG HỘI VIÊN VIP"}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </Card>
         </TabsContent>
       </Tabs>
