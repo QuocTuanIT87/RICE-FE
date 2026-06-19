@@ -109,7 +109,10 @@ export default function ProfilePage() {
 
     setIsUploadingAvatar(true);
     try {
-      const croppedImageBlob = await getCroppedImg(avatarImageSrc, croppedAreaPixels);
+      const croppedImageBlob = await getCroppedImg(
+        avatarImageSrc,
+        croppedAreaPixels,
+      );
       const croppedImageFile = new File([croppedImageBlob], "avatar.jpg", {
         type: "image/jpeg",
       });
@@ -123,9 +126,13 @@ export default function ProfilePage() {
         queryClient.invalidateQueries({ queryKey: ["userProfile"] });
         setIsCropDialogOpen(false);
         setAvatarImageSrc(null);
-        toast({
-          title: "✅ Cập nhật ảnh đại diện thành công!",
-          variant: "success",
+        swalAlert({
+          title: "✅ Cập nhật ảnh đại diện SIUUUUUUUUU",
+          text: response.data.message,
+          icon: null,
+          imageUrl: "/ronaldo_left.png",
+          imageWidth: 280,
+          imageAlt: "Ronaldo Siuuu",
         });
       }
     } catch (error: any) {
@@ -186,13 +193,20 @@ export default function ProfilePage() {
   });
 
   const vipLevels = vipLevelsData?.data.data || [];
-  const sortedVipLevels = [...vipLevels].sort((a, b) => a.threshold - b.threshold);
+  const sortedVipLevels = [...vipLevels].sort(
+    (a, b) => a.threshold - b.threshold,
+  );
   const currentSpent = freshUser?.totalSpent || 0;
-  const nextLevelObj = sortedVipLevels.find((level) => level.threshold > currentSpent);
-  
+  const nextLevelObj = sortedVipLevels.find(
+    (level) => level.threshold > currentSpent,
+  );
+
   // Find current level info in sorted list
-  const currentLevelIndex = sortedVipLevels.findIndex((level) => level.levelCode === freshUser?.vipLevelCode);
-  const currentLevelObj = currentLevelIndex !== -1 ? sortedVipLevels[currentLevelIndex] : null;
+  const currentLevelIndex = sortedVipLevels.findIndex(
+    (level) => level.levelCode === freshUser?.vipLevelCode,
+  );
+  const currentLevelObj =
+    currentLevelIndex !== -1 ? sortedVipLevels[currentLevelIndex] : null;
 
   let progressPercent = 0;
   let remainingSpent = 0;
@@ -201,7 +215,10 @@ export default function ProfilePage() {
     const prevThreshold = currentLevelObj ? currentLevelObj.threshold : 0;
     const range = nextLevelObj.threshold - prevThreshold;
     const progressInRange = currentSpent - prevThreshold;
-    progressPercent = range > 0 ? Math.min(100, Math.max(0, (progressInRange / range) * 100)) : 0;
+    progressPercent =
+      range > 0
+        ? Math.min(100, Math.max(0, (progressInRange / range) * 100))
+        : 0;
     remainingSpent = nextLevelObj.threshold - currentSpent;
   } else {
     progressPercent = 100;
@@ -314,7 +331,7 @@ export default function ProfilePage() {
                   {userInitial}
                 </div>
               )}
-              
+
               {/* Overlay hover to change avatar */}
               <label
                 htmlFor="avatar-upload-input"
@@ -322,7 +339,7 @@ export default function ProfilePage() {
               >
                 <Camera className="w-5 h-5 text-white" />
               </label>
-              
+
               <input
                 id="avatar-upload-input"
                 type="file"
@@ -338,13 +355,20 @@ export default function ProfilePage() {
               <p className="text-[11px] text-gray-400 truncate">
                 {freshUser?.email}
               </p>
-              <Badge className={cn("mt-1 font-black text-[9px] h-4.5 border-none",
-                freshUser?.vipLevelCode === "diamond" ? "bg-cyan-50 text-cyan-600 border border-cyan-150" :
-                freshUser?.vipLevelCode === "gold" ? "bg-amber-50 text-amber-600 border border-amber-150" :
-                freshUser?.vipLevelCode === "silver" ? "bg-slate-100 text-slate-600 border border-slate-200" :
-                "bg-orange-50 text-orange-600 border border-orange-150"
-              )}>
-                👑 {freshUser?.vipLevelName || "Thành viên"} ({(freshUser?.vipDiscountRate || 0)}%)
+              <Badge
+                className={cn(
+                  "mt-1 font-black text-[9px] h-4.5 border-none",
+                  freshUser?.vipLevelCode === "diamond"
+                    ? "bg-cyan-50 text-cyan-600 border border-cyan-150"
+                    : freshUser?.vipLevelCode === "gold"
+                      ? "bg-amber-50 text-amber-600 border border-amber-150"
+                      : freshUser?.vipLevelCode === "silver"
+                        ? "bg-slate-100 text-slate-600 border border-slate-200"
+                        : "bg-orange-50 text-orange-600 border border-orange-150",
+                )}
+              >
+                👑 {freshUser?.vipLevelName || "Thành viên"} (
+                {freshUser?.vipDiscountRate || 0}%)
               </Badge>
             </div>
           </div>
@@ -491,9 +515,7 @@ export default function ProfilePage() {
                   </div>
                 </Link>
 
-                <div
-                  className="md:col-span-2 p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 border border-amber-500/20 text-white shadow-xl hover:shadow-2xl transition-all relative overflow-hidden"
-                >
+                <div className="md:col-span-2 p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 border border-amber-500/20 text-white shadow-xl hover:shadow-2xl transition-all relative overflow-hidden">
                   <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-10">
                     <Crown size={200} />
                   </div>
@@ -523,9 +545,17 @@ export default function ProfilePage() {
                       {/* Progress bar */}
                       <div className="space-y-2">
                         <div className="flex justify-between text-xs font-bold">
-                          <span className="text-slate-400">Tích lũy nạp năm nay: <span className="text-white font-black">{formatVND(currentSpent)}</span></span>
+                          <span className="text-slate-400">
+                            Tích lũy nạp năm nay:{" "}
+                            <span className="text-white font-black">
+                              {formatVND(currentSpent)}
+                            </span>
+                          </span>
                           {nextLevelObj && (
-                            <span className="text-amber-400">Hạng tiếp theo: {nextLevelObj.name} ({formatVND(nextLevelObj.threshold)})</span>
+                            <span className="text-amber-400">
+                              Hạng tiếp theo: {nextLevelObj.name} (
+                              {formatVND(nextLevelObj.threshold)})
+                            </span>
                           )}
                         </div>
                         <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700/50">
@@ -536,11 +566,24 @@ export default function ProfilePage() {
                         </div>
                         {nextLevelObj && remainingSpent > 0 ? (
                           <p className="text-[11px] text-slate-400">
-                            Nạp thêm <span className="text-amber-400 font-bold">{formatVND(remainingSpent)}</span> để lên hạng <span className="text-white font-bold">{nextLevelObj.name}</span> nhận ngay ưu đãi <span className="text-amber-400 font-bold">-{nextLevelObj.discountRate}%</span> mỗi đơn đặt cơm!
+                            Nạp thêm{" "}
+                            <span className="text-amber-400 font-bold">
+                              {formatVND(remainingSpent)}
+                            </span>{" "}
+                            để lên hạng{" "}
+                            <span className="text-white font-bold">
+                              {nextLevelObj.name}
+                            </span>{" "}
+                            nhận ngay ưu đãi{" "}
+                            <span className="text-amber-400 font-bold">
+                              -{nextLevelObj.discountRate}%
+                            </span>{" "}
+                            mỗi đơn đặt cơm!
                           </p>
                         ) : (
                           <p className="text-[11px] text-amber-400 font-bold">
-                            🎉 Bạn đã đạt cấp độ VIP cao nhất! Tận hưởng đặc quyền giảm giá tối đa.
+                            🎉 Bạn đã đạt cấp độ VIP cao nhất! Tận hưởng đặc
+                            quyền giảm giá tối đa.
                           </p>
                         )}
                       </div>
@@ -912,12 +955,15 @@ export default function ProfilePage() {
       </Dialog>
 
       {/* Dialog Cắt ảnh đại diện */}
-      <Dialog open={isCropDialogOpen} onOpenChange={(open) => {
-        if (!open && !isUploadingAvatar) {
-          setIsCropDialogOpen(false);
-          setAvatarImageSrc(null);
-        }
-      }}>
+      <Dialog
+        open={isCropDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !isUploadingAvatar) {
+            setIsCropDialogOpen(false);
+            setAvatarImageSrc(null);
+          }
+        }}
+      >
         <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border-none shadow-2xl bg-white">
           <DialogHeader className="p-6 bg-gradient-to-r from-orange-500 to-red-500 text-white">
             <DialogTitle className="text-lg font-black uppercase tracking-tight text-white">
@@ -927,9 +973,10 @@ export default function ProfilePage() {
 
           <div className="p-6">
             <p className="text-xs text-gray-500 mb-4 font-semibold">
-              Kéo thả hoặc sử dụng thanh trượt để phóng to/thu nhỏ vùng cắt (Tỷ lệ vuông 1:1).
+              Kéo thả hoặc sử dụng thanh trượt để phóng to/thu nhỏ vùng cắt (Tỷ
+              lệ vuông 1:1).
             </p>
-            
+
             {/* Vùng Cropper */}
             <div className="relative w-full h-[300px] rounded-xl overflow-hidden bg-gray-200 border border-gray-150">
               {avatarImageSrc && (
