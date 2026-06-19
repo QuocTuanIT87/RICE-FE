@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { vipPackagesApi, userMembershipsApi, authApi, depositRequestsApi } from "@/services/api";
+import { vipPackagesApi, userMembershipsApi, authApi, depositRequestsApi, usersApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -9,7 +9,7 @@ import { formatVND, formatDate, cn } from "@/lib/utils";
 import { useAppSelector } from "@/store/hooks";
 import { swalAlert, swalToast } from "@/utils/swal";
 import { Link } from "react-router-dom";
-import { Crown, Award, Sparkles, Palette, Coins, ArrowLeft, Copy, Check, Loader2, RefreshCw, Clock, History } from "lucide-react";
+import { Crown, Award, Sparkles, Palette, Coins, ArrowLeft, Copy, Check, Loader2, RefreshCw, Clock, History, Search } from "lucide-react";
 import Swal from "sweetalert2";
 
 export default function VipMembershipPage() {
@@ -26,6 +26,12 @@ export default function VipMembershipPage() {
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<any | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Gifting modal states
+  const [isGiftOpen, setIsGiftOpen] = useState(false);
+  const [giftReceiverId, setGiftReceiverId] = useState<string>("");
+  const [giftPackageId, setGiftPackageId] = useState<string>("");
+  const [userSearch, setUserSearch] = useState("");
 
   // Fetch active VIP packages
   const { data: vipPackagesData, isLoading: packagesLoading } = useQuery({
@@ -109,6 +115,45 @@ export default function VipMembershipPage() {
       swalAlert({
         title: "❌ Lỗi gửi yêu cầu",
         text: err.response?.data?.error?.message || "Không thể tạo yêu cầu chuyển khoản, vui lòng thử lại.",
+        icon: "error",
+      });
+    },
+  });
+
+  // Query users for colleague search
+  const { data: usersResponse, isLoading: usersLoading } = useQuery({
+    queryKey: ["giftUsersList", userSearch],
+    queryFn: () => usersApi.searchUsers({ search: userSearch, limit: 10 }),
+    enabled: isGiftOpen && userSearch.length > 0,
+  });
+
+  const usersList = (usersResponse?.data?.data?.docs || []).filter(
+    (u: any) => u._id !== user?._id && u.id !== user?.id && u.role !== "admin"
+  );
+
+  // Mutation for gifting VIP packages
+  const giftMembershipMutation = useMutation({
+    mutationFn: (data: { receiverId: string; vipPackageId: string }) =>
+      userMembershipsApi.giftMembership(data.receiverId, data.vipPackageId),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+      swalAlert({
+        title: "🎁 SIUUUUU!",
+        text: res.data.message || "Đã gửi tặng Gói VIP thành công cho đồng nghiệp!",
+        icon: null,
+        imageUrl: "/ronaldo_left.png",
+        imageWidth: 280,
+        imageAlt: "Ronaldo Siuuu",
+      });
+      setIsGiftOpen(false);
+      setGiftReceiverId("");
+      setGiftPackageId("");
+      setUserSearch("");
+    },
+    onError: (err: any) => {
+      swalAlert({
+        title: "❌ Lỗi tặng gói",
+        text: err.response?.data?.error?.message || "Không thể thực hiện tặng gói, vui lòng thử lại.",
         icon: "error",
       });
     },
@@ -232,13 +277,21 @@ export default function VipMembershipPage() {
                 </p>
               </div>
             </div>
-            {freshUser?.hasMembership && (
-              <Link to="/profile">
-                <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-200/50 whitespace-nowrap h-12 px-6 border-none">
-                  Cá nhân hóa giao diện →
-                </Button>
-              </Link>
-            )}
+            <div className="flex flex-col sm:flex-row gap-3 shrink-0 w-full md:w-auto">
+              <Button
+                onClick={() => setIsGiftOpen(true)}
+                className="bg-orange-500 hover:bg-orange-600 text-white font-black rounded-xl shadow-lg shadow-orange-200/50 whitespace-nowrap h-12 px-6 border-none flex items-center justify-center gap-1.5"
+              >
+                Tặng VIP Cho Đồng Nghiệp 🎁
+              </Button>
+              {freshUser?.hasMembership && (
+                <Link to="/profile" className="w-full sm:w-auto">
+                  <Button className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-200/50 whitespace-nowrap h-12 px-6 border-none">
+                    Cá nhân hóa giao diện →
+                  </Button>
+                </Link>
+              )}
+            </div>
           </Card>
 
           {/* Main Operations Block with Tabs */}
@@ -809,6 +862,159 @@ export default function VipMembershipPage() {
                 </>
               ) : (
                 "Tôi đã hoàn tất chuyển khoản"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Gift VIP Modal */}
+      <Dialog open={isGiftOpen} onOpenChange={setIsGiftOpen}>
+        <DialogContent className="sm:max-w-[480px] rounded-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="p-6 bg-gradient-to-r from-orange-500 to-red-600 text-white">
+            <DialogTitle className="text-lg font-black flex items-center gap-2">
+              🎁 Tặng Gói Hội Viên VIP
+            </DialogTitle>
+            <DialogDescription className="text-orange-100 text-xs font-bold uppercase tracking-wider mt-1">
+              Gửi tặng đặc quyền VIP cho đồng nghiệp của bạn
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="p-6 space-y-4">
+            {/* Step 1: Search and select recipient */}
+            <div className="space-y-2">
+              <label className="text-xs font-extrabold text-gray-700">1. Chọn đồng nghiệp nhận</label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Tìm theo tên hoặc email đồng nghiệp..."
+                  value={userSearch}
+                  onChange={(e) => {
+                    setUserSearch(e.target.value);
+                    if (giftReceiverId) setGiftReceiverId(""); // Reset if user changes search
+                  }}
+                  className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              {usersLoading ? (
+                <div className="flex items-center gap-2 justify-center py-3 text-xs text-gray-400 font-medium">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Đang tìm kiếm...
+                </div>
+              ) : usersList.length > 0 ? (
+                <div className="space-y-1.5 max-h-36 overflow-y-auto mt-2 pr-1">
+                  {usersList.map((u: any) => (
+                    <div
+                      key={u._id}
+                      onClick={() => {
+                        setGiftReceiverId(u._id);
+                        setUserSearch(`${u.name} (${u.email})`);
+                      }}
+                      className={cn(
+                        "flex items-center justify-between p-2 rounded-lg cursor-pointer text-xs transition-colors border",
+                        giftReceiverId === u._id
+                          ? "bg-orange-500 text-white font-bold border-orange-500"
+                          : "bg-white border-gray-150 text-gray-750 hover:bg-orange-50/50"
+                      )}
+                    >
+                      <div className="truncate">
+                        <p className="font-extrabold">{u.name}</p>
+                        <p className={cn("text-[10px]", giftReceiverId === u._id ? "text-orange-100" : "text-gray-400")}>
+                          {u.email}
+                        </p>
+                      </div>
+                      {giftReceiverId === u._id && <Check size={14} />}
+                    </div>
+                  ))}
+                </div>
+              ) : userSearch && !giftReceiverId ? (
+                <p className="text-center py-2 text-[10px] text-gray-400 font-bold">Không tìm thấy đồng nghiệp này</p>
+              ) : !giftReceiverId ? (
+                <p className="text-[10px] text-gray-400 font-bold italic">Nhập tên hoặc email đồng nghiệp để tìm kiếm...</p>
+              ) : null}
+            </div>
+
+            {/* Step 2: Choose package */}
+            <div className="space-y-2">
+              <label className="text-xs font-extrabold text-gray-700">2. Chọn Gói VIP tặng</label>
+              <select
+                value={giftPackageId}
+                onChange={(e) => setGiftPackageId(e.target.value)}
+                className="w-full h-10 px-3 text-xs bg-white border border-gray-200 rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              >
+                <option value="">-- Chọn Gói VIP --</option>
+                {vipPackages.map((pkg: any) => (
+                  <option key={pkg._id} value={pkg._id}>
+                    {pkg.name} ({pkg.validDays} ngày - {formatVND(pkg.price)})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Step 3: Transaction Summary */}
+            {giftPackageId && (
+              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 font-semibold">Giá gói:</span>
+                  <span className="font-black text-orange-600">
+                    {formatVND(vipPackages.find((p: any) => p._id === giftPackageId)?.price || 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 font-semibold">Số dư ví của bạn:</span>
+                  <span className="font-bold text-gray-800">
+                    {formatVND(freshUser?.balance || 0)}
+                  </span>
+                </div>
+                {(freshUser?.balance || 0) < (vipPackages.find((p: any) => p._id === giftPackageId)?.price || 0) && (
+                  <p className="text-[10px] text-red-500 font-bold mt-1 text-center bg-red-50 p-1.5 rounded-lg">
+                    ⚠️ Số dư ví của bạn không đủ để tặng gói này!
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="p-6 bg-gray-50 gap-3 border-t border-gray-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsGiftOpen(false);
+                setGiftReceiverId("");
+                setGiftPackageId("");
+                setUserSearch("");
+              }}
+              className="rounded-xl border-gray-200 text-gray-500 font-bold text-xs"
+            >
+              Hủy bỏ
+            </Button>
+            <Button
+              onClick={() => {
+                if (giftReceiverId && giftPackageId) {
+                  giftMembershipMutation.mutate({
+                    receiverId: giftReceiverId,
+                    vipPackageId: giftPackageId,
+                  });
+                }
+              }}
+              disabled={
+                giftMembershipMutation.isPending ||
+                !giftReceiverId ||
+                !giftPackageId ||
+                (freshUser?.balance || 0) < (vipPackages.find((p: any) => p._id === giftPackageId)?.price || 0)
+              }
+              className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl gap-1.5 text-xs flex-1"
+            >
+              {giftMembershipMutation.isPending ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  Đang xử lý...
+                </>
+              ) : (
+                "Xác nhận tặng VIP 🎁"
               )}
             </Button>
           </DialogFooter>

@@ -18,6 +18,7 @@ import type {
   ForumPost,
   ForumComment,
   ForumReaction,
+  Notification,
 } from "@/types";
 
 // API Base URL - lấy từ biến môi trường, chỉ cần thay đổi ở file .env
@@ -120,6 +121,9 @@ export const usersApi = {
     page?: number;
     limit?: number;
   }) => api.get<ApiResponse<PaginatedData<User>>>("/users", { params }),
+
+  searchUsers: (params?: { search?: string; limit?: number }) =>
+    api.get<ApiResponse<PaginatedData<User>>>("/users/search", { params }),
 
   getUserById: (id: string) =>
     api.get<
@@ -286,6 +290,8 @@ export const vipPackagesApi = {
 export const userMembershipsApi = {
   buyWithWallet: (vipPackageId: string) =>
     api.post<ApiResponse<UserMembership>>("/user-memberships/buy-with-wallet", { vipPackageId }),
+  giftMembership: (receiverId: string, vipPackageId: string) =>
+    api.post<ApiResponse<any>>("/user-memberships/gift", { receiverId, vipPackageId }),
 };
 
 // =============================================
@@ -333,6 +339,27 @@ export const vouchersApi = {
     >("/vouchers/check", { code, amount, voucherType }),
   getMyVouchers: (voucherType?: "deposit" | "order") =>
     api.get<ApiResponse<any[]>>("/vouchers/my", { params: voucherType ? { voucherType } : {} }),
+};
+
+// =============================================
+// NOTIFICATIONS API
+// =============================================
+export const notificationsApi = {
+  getNotifications: () =>
+    api.get<ApiResponse<Notification[]>>("/notifications"),
+  getAdminNotifications: () =>
+    api.get<ApiResponse<any[]>>("/notifications/admin"),
+  markAsRead: (id: string) =>
+    api.patch<ApiResponse>(`/notifications/${id}/read`),
+  markAllAsRead: () =>
+    api.patch<ApiResponse>("/notifications/read-all"),
+  createNotification: (data: {
+    userId?: string | null;
+    title: string;
+    content: string;
+    type?: "system" | "gift" | "alert";
+  }) =>
+    api.post<ApiResponse<Notification>>("/notifications", data),
 };
 
 // =============================================

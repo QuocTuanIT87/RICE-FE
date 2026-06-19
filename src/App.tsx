@@ -38,6 +38,8 @@ import AdminSystem from "@/pages/admin/AdminSystem";
 import AdminVipPackages from "@/pages/admin/AdminVipPackages";
 import ForumPage from "@/pages/ForumPage";
 import PostDetailPage from "@/pages/PostDetailPage";
+import NotificationsPage from "@/pages/NotificationsPage";
+import AdminNotifications from "@/pages/admin/AdminNotifications";
 import MaintenancePage from "@/components/MaintenancePage";
 import SystemInitializer from "@/components/SystemInitializer";
 
@@ -287,6 +289,14 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <NotificationsPage />
+            </ProtectedRoute>
+          }
+        />
       </Route>
 
       {/* Auth routes (no layout) */}
@@ -311,6 +321,7 @@ function AppRoutes() {
         <Route path="vip-packages" element={<AdminVipPackages />} />
         <Route path="statistics" element={<AdminStatistics />} />
         <Route path="system" element={<AdminSystem />} />
+        <Route path="notifications" element={<AdminNotifications />} />
       </Route>
 
       {/* 404 */}

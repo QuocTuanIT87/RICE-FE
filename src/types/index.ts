@@ -252,3 +252,14 @@ export interface Voucher {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export interface Notification {
+  _id: string;
+  userId: string | null; // null means public broadcast
+  title: string;
+  content: string;
+  type: "system" | "gift" | "alert";
+  isRead: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

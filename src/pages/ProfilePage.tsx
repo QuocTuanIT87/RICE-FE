@@ -664,6 +664,146 @@ export default function ProfilePage() {
               </div>
 
               <div className="p-8 space-y-8">
+                {/* BẢN XEM TRƯỚC THỜI GIAN THỰC */}
+                <div className="space-y-4 bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
+                  <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
+                    Bản xem trước thời gian thực (Live Preview)
+                  </Label>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Mock Profile Card */}
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden flex flex-col">
+                      {/* Cover Background */}
+                      <div className={cn(
+                        "h-24 w-full transition-all duration-500 relative flex items-end justify-center",
+                        vipCoverImage || "bg-gradient-to-r from-orange-500 via-orange-500 to-red-600"
+                      )}>
+                        <div className="absolute top-3 left-3 bg-black/30 backdrop-blur-md px-2.5 py-0.5 rounded-lg text-[8px] font-black text-white uppercase tracking-wider">
+                          Trang cá nhân
+                        </div>
+                      </div>
+                      
+                      {/* Avatar & Info */}
+                      <div className="px-6 pb-6 pt-12 text-center relative flex-grow flex flex-col items-center">
+                        <div className="absolute -top-10 left-1/2 -translate-x-1/2">
+                          <VipAvatar
+                            avatarUrl={freshUser?.avatar}
+                            name={freshUser?.name}
+                            vipAvatarFrame={vipAvatarFrame}
+                            hasMembership={true}
+                            size="lg"
+                            className="ring-4 ring-white shadow-md bg-white rounded-2xl"
+                          />
+                        </div>
+                        
+                        <div className="space-y-1 mt-1 flex-grow">
+                          <h4 className={cn(
+                            "text-sm font-black flex items-center justify-center gap-1.5",
+                            vipTheme === "gold" && "bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 bg-clip-text text-transparent drop-shadow-sm font-extrabold",
+                            vipTheme === "sakura" && "bg-gradient-to-r from-pink-500 via-rose-400 to-pink-600 bg-clip-text text-transparent font-extrabold",
+                            vipTheme === "dark" && "bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent font-extrabold",
+                            vipTheme === "default" && "text-gray-900"
+                          )}>
+                            {freshUser?.name}
+                            {vipTheme === "gold" && <Crown size={14} className="text-amber-500 shrink-0 fill-amber-400" />}
+                          </h4>
+                          <p className="text-[10px] text-gray-400 font-bold">{freshUser?.email}</p>
+                          
+                          <div className="pt-2 flex justify-center">
+                            <span className={cn(
+                              "px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider",
+                              vipTheme === "gold" && "bg-amber-100 text-amber-800 border border-amber-200",
+                              vipTheme === "sakura" && "bg-pink-100 text-pink-800 border border-pink-200",
+                              vipTheme === "dark" && "bg-slate-900 text-slate-100 border border-slate-700",
+                              vipTheme === "default" && "bg-orange-100 text-orange-800 border border-orange-200"
+                            )}>
+                              {freshUser?.membershipName || "Hội Viên VIP"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mock Forum Post Card */}
+                    <div className={cn(
+                      "p-5 rounded-2xl border transition-all duration-500 shadow-lg flex flex-col justify-between min-h-[160px]",
+                      vipTheme === "gold" && "bg-amber-50/10 border-amber-200/50 shadow-amber-500/5",
+                      vipTheme === "sakura" && "bg-pink-50/10 border-pink-200/50 shadow-pink-500/5",
+                      vipTheme === "dark" && "bg-slate-950 border-slate-800 text-white shadow-slate-900/10",
+                      vipTheme === "default" && "bg-white border-gray-100"
+                    )}>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between border-b pb-2 border-dashed border-gray-100/50">
+                          <span className="text-[8px] font-black text-gray-400 uppercase tracking-wider">
+                            Hiển thị trên Diễn đàn
+                          </span>
+                          <span className={cn(
+                            "w-1.5 h-1.5 rounded-full",
+                            vipTheme === "gold" && "bg-amber-500 animate-pulse",
+                            vipTheme === "sakura" && "bg-pink-400 animate-pulse",
+                            vipTheme === "dark" && "bg-cyan-400 animate-pulse",
+                            vipTheme === "default" && "bg-orange-500"
+                          )} />
+                        </div>
+                        
+                        <div className="flex gap-2.5">
+                          <VipAvatar
+                            avatarUrl={freshUser?.avatar}
+                            name={freshUser?.name}
+                            vipAvatarFrame={vipAvatarFrame}
+                            hasMembership={true}
+                            size="md"
+                            className="shrink-0"
+                          />
+                          <div className="min-w-0 flex-1 space-y-0.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className={cn(
+                                "text-xs font-black truncate",
+                                vipTheme === "gold" && "bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 bg-clip-text text-transparent font-extrabold",
+                                vipTheme === "sakura" && "bg-gradient-to-r from-pink-500 via-rose-400 to-pink-600 bg-clip-text text-transparent font-extrabold",
+                                vipTheme === "dark" && "bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent font-extrabold",
+                                vipTheme === "default" && "text-gray-900"
+                              )}>
+                                {freshUser?.name}
+                              </span>
+                              <span className={cn(
+                                "px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-wide",
+                                vipTheme === "gold" && "bg-amber-500 text-slate-950",
+                                vipTheme === "sakura" && "bg-pink-400 text-white",
+                                vipTheme === "dark" && "bg-slate-800 text-cyan-400 border border-slate-700",
+                                vipTheme === "default" && "bg-orange-500 text-white"
+                              )}>
+                                VIP
+                              </span>
+                            </div>
+                            <p className={cn("text-[8px] font-bold text-gray-400", vipTheme === "dark" && "text-slate-500")}>
+                              Vừa xong • 🏢 Công sở
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <p className={cn(
+                          "text-xs leading-relaxed font-semibold text-gray-600 mt-1",
+                          vipTheme === "dark" && "text-slate-300",
+                          vipTheme === "gold" && "text-amber-950/80"
+                        )}>
+                          "Chào mọi người! Mình vừa trang trí giao diện VIP mới nhìn cực kỳ SIUUUUU đúng không nào? 😎👑"
+                        </p>
+                      </div>
+
+                      {/* Mock reactions */}
+                      <div className="flex items-center justify-between pt-2 border-t border-dashed border-gray-100/50 mt-3 text-[8px] font-bold text-gray-400">
+                        <span className="flex items-center gap-1">
+                          👍❤️ 12 lượt thích
+                        </span>
+                        <span>
+                          2 bình luận
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* 1. Theme Selector */}
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
@@ -671,10 +811,10 @@ export default function ProfilePage() {
                   </Label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
-                      { id: "default", name: "Mặc định", desc: "Màu cam truyền thống", color: "bg-orange-500" },
-                      { id: "gold", name: "Hoàng Kim", desc: "Sắc vàng quý phái", color: "bg-amber-500" },
-                      { id: "dark", name: "Đêm Huyền Bí", desc: "Giao diện tối huyền bí", color: "bg-slate-900" },
-                      { id: "sakura", name: "Hoa Anh Đào", desc: "Sắc hồng pastel ngọt ngào", color: "bg-pink-400" },
+                      { id: "default", name: "Mặc định", desc: "Màu cam truyền thống", color: "#f97316", activeBorder: "border-orange-500", activeBg: "bg-orange-50/30" },
+                      { id: "gold", name: "Hoàng Kim", desc: "Sắc vàng quý phái", color: "#fbbf24", activeBorder: "border-amber-500", activeBg: "bg-amber-50/20" },
+                      { id: "dark", name: "Đêm Huyền Bí", desc: "Giao diện tối huyền bí", color: "#8b5cf6", activeBorder: "border-violet-500", activeBg: "bg-violet-950/20" },
+                      { id: "sakura", name: "Hoa Anh Đào", desc: "Sắc hồng pastel ngọt ngào", color: "#ec4899", activeBorder: "border-pink-400", activeBg: "bg-pink-50/20" },
                     ].map((themeOpt) => (
                       <div
                         key={themeOpt.id}
@@ -682,14 +822,20 @@ export default function ProfilePage() {
                         className={cn(
                           "cursor-pointer p-4 rounded-2xl border transition-all flex flex-col gap-3 justify-between hover:shadow-md",
                           vipTheme === themeOpt.id
-                            ? "border-amber-500 bg-amber-50/20 shadow-sm"
+                            ? cn("border-2 shadow-sm", themeOpt.activeBorder, themeOpt.activeBg)
                             : "border-gray-100 bg-white"
                         )}
                       >
                         <div className="flex items-center justify-between">
-                          <div className={cn("w-6 h-6 rounded-full shrink-0", themeOpt.color)} />
+                          <div
+                            className="w-6 h-6 rounded-full shrink-0"
+                            style={{ backgroundColor: themeOpt.color }}
+                          />
                           {vipTheme === themeOpt.id && (
-                            <div className="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center text-[10px] text-white font-bold">
+                            <div
+                              className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] text-white font-bold"
+                              style={{ backgroundColor: themeOpt.color }}
+                            >
                               ✓
                             </div>
                           )}

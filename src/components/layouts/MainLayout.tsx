@@ -1,8 +1,8 @@
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/authSlice";
-import { useQuery } from "@tanstack/react-query";
-import { authApi, usersApi } from "@/services/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { authApi, usersApi, notificationsApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { useShowBalance } from "@/hooks/useShowBalance";
 import {
@@ -24,10 +24,17 @@ import {
   EyeOff,
   MessageSquare,
   Crown,
+  Bell,
+  Gift,
+  AlertCircle,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import PriceNoticeBanner from "@/components/PriceNoticeBanner";
 import { formatVND, cn } from "@/lib/utils";
+import { useSocket } from "@/contexts/SocketContext";
+import { swalToast } from "@/utils/swal";
+import { formatDistanceToNow } from "date-fns";
+import { vi } from "date-fns/locale";
 
 const customerNavItems = [
   { path: "/", label: "Trang chủ", icon: Home },
@@ -70,6 +77,10 @@ export default function MainLayout() {
   const websiteLogo = systemConfig?.websiteLogo || "";
   const contactPhone = systemConfig?.contactPhone || "0123.456.789";
 
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifDropdownRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+
   // Fetch top leaderboards for marquee
   const { data: topVipData } = useQuery({
     queryKey: ["topVip"],
@@ -86,6 +97,51 @@ export default function MainLayout() {
   const topVip = topVipData?.data.data || [];
   const topOrders = topOrdersData?.data.data || [];
 
+  // Fetch notifications
+  const { data: notifResponse } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => notificationsApi.getNotifications(),
+    enabled: isAuthenticated,
+  });
+
+  const notifications = notifResponse?.data.data || [];
+  const unreadCount = notifications.filter((n: any) => !n.isRead).length;
+
+  const markReadMutation = useMutation({
+    mutationFn: (id: string) => notificationsApi.markAsRead(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: () => notificationsApi.markAllAsRead(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      swalToast({ title: "Đã đọc tất cả thông báo!", icon: "success" });
+    },
+  });
+
+  // Socket setup for notifications
+  const { socket } = useSocket();
+  useEffect(() => {
+    if (!socket || !isAuthenticated) return;
+
+    const handleNotificationReceived = (newNotif: any) => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      swalToast({
+        title: `🔔 Thông báo mới: ${newNotif.title}`,
+        icon: newNotif.type === "alert" ? "warning" : "info",
+      });
+    };
+
+    socket.on("notification_received", handleNotificationReceived);
+
+    return () => {
+      socket.off("notification_received", handleNotificationReceived);
+    };
+  }, [socket, isAuthenticated, queryClient]);
+
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -94,6 +150,12 @@ export default function MainLayout() {
         !dropdownRef.current.contains(e.target as Node)
       ) {
         setMenuOpen(false);
+      }
+      if (
+        notifDropdownRef.current &&
+        !notifDropdownRef.current.contains(e.target as Node)
+      ) {
+        setNotifOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -104,6 +166,7 @@ export default function MainLayout() {
   useEffect(() => {
     setMobileOpen(false);
     setMenuOpen(false);
+    setNotifOpen(false);
   }, [location.pathname]);
 
   const handleLogout = async () => {
@@ -127,7 +190,15 @@ export default function MainLayout() {
   const userInitial = user?.name?.charAt(0)?.toUpperCase() || "U";
 
   return (
-    <div className={cn("min-h-screen flex flex-col transition-all duration-300", user?.hasMembership && user?.vipTheme && user.vipTheme !== "default" && `theme-${user.vipTheme}`)}>
+    <div
+      className={cn(
+        "min-h-screen flex flex-col transition-all duration-300",
+        user?.hasMembership &&
+          user?.vipTheme &&
+          user.vipTheme !== "default" &&
+          `theme-${user.vipTheme}`,
+      )}
+    >
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm">
         <div className="container mx-auto px-4">
@@ -209,6 +280,163 @@ export default function MainLayout() {
                 </div>
               )}
 
+              {isAuthenticated && (
+                <div className="relative" ref={notifDropdownRef}>
+                  {/* Bell Icon Trigger */}
+                  <button
+                    onClick={() => setNotifOpen(!notifOpen)}
+                    className={cn(
+                      "relative w-9 h-9 flex items-center justify-center rounded-xl transition-all border",
+                      notifOpen
+                        ? "bg-gray-50 border-gray-200 shadow-sm"
+                        : "border-transparent hover:bg-gray-50 hover:border-gray-100",
+                    )}
+                  >
+                    <Bell
+                      size={18}
+                      className={cn(
+                        "text-gray-500",
+                        unreadCount > 0 && "text-orange-500 animate-pulse",
+                      )}
+                    />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-orange-500 text-white font-black text-[9px] px-1 rounded-full flex items-center justify-center border border-white shadow-sm">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Bell Dropdown */}
+                  {notifOpen && (
+                    <div className="absolute right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden animate-fade-in z-50">
+                      {/* Dropdown Header */}
+                      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
+                        <span className="text-sm font-black text-gray-900 flex items-center gap-1.5">
+                          🔔 Thông báo
+                          {unreadCount > 0 && (
+                            <span className="text-[10px] font-bold bg-orange-500/10 text-orange-600 px-1.5 py-0.5 rounded-full">
+                              {unreadCount} mới
+                            </span>
+                          )}
+                        </span>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={() => markAllReadMutation.mutate()}
+                            className="text-xs text-orange-500 hover:text-orange-600 font-black transition-colors"
+                          >
+                            Đọc tất cả
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Dropdown Content */}
+                      <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
+                        {notifications.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-8 text-center text-gray-400">
+                            <span className="text-2xl mb-1">📭</span>
+                            <p className="text-xs font-bold">Hộp thư trống</p>
+                          </div>
+                        ) : (
+                          notifications.slice(0, 5).map((notif: any) => {
+                            const iconMap: Record<string, React.ReactNode> = {
+                              gift: (
+                                <Gift size={14} className="text-amber-500" />
+                              ),
+                              alert: (
+                                <AlertCircle
+                                  size={14}
+                                  className="text-red-500"
+                                />
+                              ),
+                              system: (
+                                <Bell size={14} className="text-sky-500" />
+                              ),
+                            };
+                            const bgMap: Record<string, string> = {
+                              gift: "bg-amber-500/10",
+                              alert: "bg-red-500/10",
+                              system: "bg-sky-500/10",
+                            };
+                            return (
+                              <div
+                                key={notif._id}
+                                onClick={() => {
+                                  if (!notif.isRead) {
+                                    markReadMutation.mutate(notif._id);
+                                  }
+                                  setNotifOpen(false);
+                                  navigate("/notifications");
+                                }}
+                                className={cn(
+                                  "flex gap-3 p-3.5 hover:bg-gray-50/80 transition-colors cursor-pointer select-none",
+                                  !notif.isRead && "bg-orange-500/[0.015]",
+                                )}
+                              >
+                                <div
+                                  className={cn(
+                                    "w-7 h-7 rounded-full flex items-center justify-center shrink-0",
+                                    bgMap[notif.type] || "bg-sky-500/10",
+                                  )}
+                                >
+                                  {iconMap[notif.type] || <Bell size={14} />}
+                                </div>
+                                <div className="flex-1 min-w-0 space-y-0.5">
+                                  <div className="flex justify-between items-start gap-1">
+                                    <h4
+                                      className={cn(
+                                        "text-xs font-extrabold truncate text-gray-800 leading-tight",
+                                        !notif.isRead &&
+                                          "text-gray-900 font-black",
+                                      )}
+                                    >
+                                      {notif.title}
+                                    </h4>
+                                    <span className="text-[9px] text-gray-400 shrink-0 font-semibold">
+                                      {notif.createdAt
+                                        ? formatDistanceToNow(
+                                            new Date(notif.createdAt),
+                                            {
+                                              addSuffix: true,
+                                              locale: vi,
+                                            },
+                                          )
+                                        : "Vừa xong"}
+                                    </span>
+                                  </div>
+                                  <p
+                                    className={cn(
+                                      "text-[11px] text-gray-500 line-clamp-2 leading-normal",
+                                      !notif.isRead &&
+                                        "text-gray-700 font-medium",
+                                    )}
+                                  >
+                                    {notif.content}
+                                  </p>
+                                </div>
+                                {!notif.isRead && (
+                                  <div className="flex items-center shrink-0">
+                                    <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+
+                      {/* Dropdown Footer */}
+                      <Link
+                        to="/notifications"
+                        onClick={() => setNotifOpen(false)}
+                        className="block text-center py-2.5 text-xs font-black text-orange-500 hover:text-orange-600 hover:bg-orange-50/50 border-t border-gray-100 transition-colors"
+                      >
+                        Xem tất cả thông báo
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {isAuthenticated ? (
                 <div className="relative" ref={dropdownRef}>
                   {/* User Button */}
@@ -222,13 +450,19 @@ export default function MainLayout() {
                   >
                     <div
                       className={`w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center text-sm font-black text-white ${
-                        user?.avatar ? "" : isAdmin
-                          ? "bg-gradient-to-br from-red-500 to-rose-600"
-                          : "bg-gradient-to-br from-orange-400 to-red-500"
+                        user?.avatar
+                          ? ""
+                          : isAdmin
+                            ? "bg-gradient-to-br from-red-500 to-rose-600"
+                            : "bg-gradient-to-br from-orange-400 to-red-500"
                       } shadow-sm`}
                     >
                       {user?.avatar ? (
-                        <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                        <img
+                          src={user.avatar}
+                          alt={user.name}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         userInitial
                       )}
@@ -261,13 +495,19 @@ export default function MainLayout() {
                         <div className="flex items-center gap-3">
                           <div
                             className={`w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center text-sm font-black text-white ${
-                              user?.avatar ? "" : isAdmin
-                                ? "bg-gradient-to-br from-red-500 to-rose-600"
-                                : "bg-gradient-to-br from-orange-400 to-red-500"
+                              user?.avatar
+                                ? ""
+                                : isAdmin
+                                  ? "bg-gradient-to-br from-red-500 to-rose-600"
+                                  : "bg-gradient-to-br from-orange-400 to-red-500"
                             }`}
                           >
                             {user?.avatar ? (
-                              <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                              <img
+                                src={user.avatar}
+                                alt={user.name}
+                                className="w-full h-full object-cover"
+                              />
                             ) : (
                               userInitial
                             )}

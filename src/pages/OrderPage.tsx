@@ -34,8 +34,10 @@ import {
   Ticket,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function OrderPage() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const hasPrefilled = useRef<string | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -48,6 +50,7 @@ export default function OrderPage() {
 
   const [showBalance, setShowBalance] = useShowBalance();
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [hasAlerted, setHasAlerted] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -240,13 +243,37 @@ export default function OrderPage() {
   );
 
   const totalPrice = totalQuantity * currentPrice;
-  const vipDiscountAmount = Math.round(totalPrice * (vipDiscountRate / 100));
+  const vipDiscountAmount = totalQuantity * vipDiscountRate;
   const oldOrderPrice = order ? order.totalPrice || 0 : 0;
   const effectiveBalance = balance + oldOrderPrice;
 
   const currentMenu =
     menus.find((m: DailyMenu) => m._id === activeMenuId) ||
     (menus as DailyMenu[])[0];
+
+  // Cảnh báo số dư ví không đủ khi vào trang
+  useEffect(() => {
+    if (user && systemConfig && myOrder !== undefined && !hasAlerted) {
+      const order = myOrder?.data.data;
+      if (!order) {
+        const minMealPrice = Math.max(0, Math.min(priceNormal, priceNoRice) - vipDiscountRate);
+        if (balance < minMealPrice) {
+          setHasAlerted(true);
+          swalConfirm({
+            title: "⚠️ Số dư ví không đủ!",
+            text: `Số dư hiện tại của đạo hữu là ${balance.toLocaleString("vi-VN")} VND, không đủ để đặt 1 suất ăn tối thiểu (${minMealPrice.toLocaleString("vi-VN")} VND). Vui lòng nạp thêm tiền!`,
+            icon: "warning",
+            confirmText: "NẠP TIỀN NGAY 💸",
+            cancelText: "ĐỂ SAU",
+          }).then((result) => {
+            if (result.isConfirmed) {
+              navigate("/wallet");
+            }
+          });
+        }
+      }
+    }
+  }, [user, systemConfig, myOrder, balance, priceNormal, priceNoRice, vipDiscountRate, hasAlerted, navigate]);
 
   const handleIncrement = (itemId: string) => {
     setItemQuantities((prev) => ({
@@ -730,7 +757,7 @@ export default function OrderPage() {
                         const isDisabled =
                           !canOrder ||
                           (qty === 0 &&
-                            (totalQuantity + 1) * currentPrice >
+                            (totalQuantity + 1) * Math.max(0, currentPrice - vipDiscountRate) >
                               effectiveBalance);
                         const accentColor =
                           orderType === "normal" ? "orange" : "blue";
@@ -875,7 +902,7 @@ export default function OrderPage() {
                       
                       {vipDiscountRate > 0 && (
                         <div className="flex justify-between items-center text-xs font-bold text-amber-600 px-1">
-                          <span>Giảm VIP ({user?.vipLevelName} -{vipDiscountRate}%):</span>
+                          <span>Giảm VIP ({user?.membershipName || "Hội Viên"} -{vipDiscountRate.toLocaleString("vi-VN")}đ/suất):</span>
                           <span>-{vipDiscountAmount.toLocaleString("vi-VN")} VND</span>
                         </div>
                       )}
@@ -1196,7 +1223,7 @@ export default function OrderPage() {
                 </div>
                 {vipDiscountRate > 0 && (
                   <div className="flex justify-between text-amber-600">
-                    <span>Giảm VIP ({user?.vipLevelName} -{vipDiscountRate}%):</span>
+                    <span>Giảm VIP ({user?.membershipName || "Hội Viên"} -{vipDiscountRate.toLocaleString("vi-VN")}đ/suất):</span>
                     <span>
                       -{vipDiscountAmount.toLocaleString("vi-VN")} VND
                     </span>
