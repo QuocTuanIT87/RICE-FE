@@ -24,6 +24,7 @@ import MyWalletPage from "@/pages/MyWalletPage";
 import ProfilePage from "@/pages/ProfilePage";
 import OrderHistoryPage from "@/pages/OrderHistoryPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
+import VipMembershipPage from "@/pages/VipMembershipPage";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -34,7 +35,9 @@ import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminStatistics from "@/pages/admin/AdminStatistics";
 import AdminVouchers from "@/pages/admin/AdminVouchers";
 import AdminSystem from "@/pages/admin/AdminSystem";
-import AdminVipLevels from "@/pages/admin/AdminVipLevels";
+import AdminVipPackages from "@/pages/admin/AdminVipPackages";
+import ForumPage from "@/pages/ForumPage";
+import PostDetailPage from "@/pages/PostDetailPage";
 import MaintenancePage from "@/components/MaintenancePage";
 import SystemInitializer from "@/components/SystemInitializer";
 
@@ -253,10 +256,34 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/vip"
+          element={
+            <ProtectedRoute>
+              <VipMembershipPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/order-history"
           element={
             <ProtectedRoute>
               <OrderHistoryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/forum"
+          element={
+            <ProtectedRoute>
+              <ForumPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/forum/:id"
+          element={
+            <ProtectedRoute>
+              <PostDetailPage />
             </ProtectedRoute>
           }
         />
@@ -281,7 +308,7 @@ function AppRoutes() {
         <Route path="orders" element={<AdminOrders />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="vouchers" element={<AdminVouchers />} />
-        <Route path="vips" element={<AdminVipLevels />} />
+        <Route path="vip-packages" element={<AdminVipPackages />} />
         <Route path="statistics" element={<AdminStatistics />} />
         <Route path="system" element={<AdminSystem />} />
       </Route>

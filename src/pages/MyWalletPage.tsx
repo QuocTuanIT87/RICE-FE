@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   depositRequestsApi,
-  vipLevelsApi,
   authApi,
   vouchersApi,
 } from "@/services/api";
@@ -33,9 +33,11 @@ import { useSocket } from "@/contexts/SocketContext";
 export default function MyWalletPage() {
   const queryClient = useQueryClient();
   const { socket } = useSocket();
+  const [searchParams] = useSearchParams();
 
   const [showBalance, setShowBalance] = useShowBalance();
 
+  const [activeTab, setActiveTab] = useState("deposit");
   const [depositAmount, setDepositAmount] = useState<number>(0);
   const [voucherCode, setVoucherCode] = useState("");
   const [appliedVoucher, setAppliedVoucher] = useState<any | null>(null);
@@ -44,6 +46,8 @@ export default function MyWalletPage() {
   const [submittingDeposit, setSubmittingDeposit] = useState(false);
   const [pendingPage, setPendingPage] = useState(1);
   const [historyPage, setHistoryPage] = useState(1);
+  const [depositRequestType, setDepositRequestType] = useState("normal");
+  const [depositVipPackageId, setDepositVipPackageId] = useState("");
 
   const { data: myDepositVouchersData } = useQuery({
     queryKey: ["myDepositVouchers"],
@@ -51,18 +55,35 @@ export default function MyWalletPage() {
   });
   const depositVouchers = myDepositVouchersData?.data.data || [];
 
-  const { data: vipLevelsData } = useQuery({
-    queryKey: ["vipLevels"],
-    queryFn: () => vipLevelsApi.getLevels(),
-  });
-  const vipLevels = vipLevelsData?.data.data || [];
-  const sortedVipLevels = [...vipLevels].sort(
-    (a, b) => a.threshold - b.threshold,
-  );
+  // Read search parameters for automatic tab switcher/depositing for VIP packages
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    const amount = searchParams.get("amount");
+    const type = searchParams.get("type");
+    const pkgId = searchParams.get("pkgId");
+
+    if (tab && ["deposit", "pending", "history"].includes(tab)) {
+      setActiveTab(tab);
+    }
+    if (amount) {
+      setDepositAmount(Number(amount));
+    }
+    if (type === "buy_membership" && pkgId) {
+      setDepositRequestType("buy_membership");
+      setDepositVipPackageId(pkgId);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     setAppliedVoucher(null);
     setVoucherCode("");
+
+    // Check if depositAmount changed from the programmatically set package price
+    const searchAmount = Number(searchParams.get("amount"));
+    if (depositRequestType === "buy_membership" && depositAmount !== searchAmount) {
+      setDepositRequestType("normal");
+      setDepositVipPackageId("");
+    }
   }, [depositAmount]);
 
   const handleApplyVoucher = async (codeToApply?: string) => {
@@ -223,6 +244,8 @@ export default function MyWalletPage() {
       await depositRequestsApi.createRequest(
         depositAmount,
         voucherCode || undefined,
+        depositRequestType,
+        depositVipPackageId || undefined,
       );
       swalAlert({
         title: "⚽ Yêu cầu nạp tiền thành công! SIUUUUU!",
@@ -267,12 +290,19 @@ export default function MyWalletPage() {
   const bankAccountName = systemConfig?.bankAccountName || "NGUYEN VAN A";
   const transferContent =
     depositAmount > 0
-      ? `${user?.name || ""} NAP ${depositAmount} VND VAO WEB`
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/đ/g, "d")
-          .replace(/Đ/g, "D")
-          .toUpperCase()
+      ? depositRequestType === "buy_membership"
+        ? `${user?.name || ""} MUA GOI VIP ${depositVipPackageId.slice(-6)}`
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/đ/g, "d")
+            .replace(/Đ/g, "D")
+            .toUpperCase()
+        : `${user?.name || ""} NAP ${depositAmount} VND VAO WEB`
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/đ/g, "d")
+            .replace(/Đ/g, "D")
+            .toUpperCase()
       : "";
 
   const qrCodeUrl =
@@ -347,10 +377,10 @@ export default function MyWalletPage() {
             <div className="flex items-start justify-between">
               <div className="space-y-1">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                  Cấp độ hội viên VIP
+                  Trạng thái hội viên VIP
                 </p>
-                <h2 className="text-3xl font-black text-amber-600 uppercase tracking-wide italic">
-                  {user?.vipLevelName || "Thành viên"}
+                <h2 className="text-xl font-black text-amber-600 uppercase tracking-wide italic">
+                  {user?.hasMembership ? user.membershipName : "Thành viên thường"}
                 </h2>
               </div>
               <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500">
@@ -359,21 +389,24 @@ export default function MyWalletPage() {
             </div>
             <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between text-xs">
               <span className="text-gray-500 font-medium">
-                Tích lũy nạp năm nay:{" "}
-                <span className="font-bold text-gray-900">
-                  {formatVND(user?.totalSpent || 0)}
-                </span>
+                {user?.hasMembership ? (
+                  <>
+                    Hạn dùng: <span className="font-bold text-gray-900">{formatDate(user.membershipExpiresAt!)}</span>
+                  </>
+                ) : (
+                  "Đăng ký gói VIP để hưởng ưu đãi"
+                )}
               </span>
-              <span className="text-amber-500 font-bold">
-                Ưu đãi giảm: -{user?.vipDiscountRate || 0}%
-              </span>
+              <Link to="/vip" className="text-amber-500 hover:text-amber-600 font-black flex items-center gap-0.5">
+                {user?.hasMembership ? "Quản lý VIP →" : "Đăng ký ngay →"}
+              </Link>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Main Operations Block */}
-      <Tabs defaultValue="deposit" className="w-full space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
         <TabsList className="grid w-full grid-cols-3 bg-gray-100/80 p-1 rounded-2xl h-11 mb-2">
           <TabsTrigger
             value="deposit"
@@ -694,78 +727,60 @@ export default function MyWalletPage() {
                     </div>
                     <div>
                       <h3 className="text-base font-black text-gray-900">
-                        Bảng đặc quyền VIP
+                        Đặc quyền Hội Viên VIP
                       </h3>
                       <p className="text-[11px] text-gray-500 font-medium">
-                        Tích lũy nạp tiền trong năm tăng cấp nhận ưu đãi
+                        Khi kích hoạt gói hội viên, bạn sẽ nhận được
                       </p>
                     </div>
                   </div>
 
-                  {/* Tiers List */}
-                  <div className="space-y-2 pt-2">
-                    {sortedVipLevels.map((lvl) => {
-                      const isCurrent = user?.vipLevelCode === lvl.levelCode;
-                      return (
-                        <div
-                          key={lvl._id}
-                          className={cn(
-                            "p-3 rounded-xl border flex items-center justify-between transition-all",
-                            isCurrent
-                              ? "bg-gradient-to-r from-amber-500/10 to-yellow-500/5 border-amber-500/30 shadow-sm"
-                              : "bg-white/50 border-gray-100",
-                          )}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={cn(
-                                "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black",
-                                lvl.levelCode === "diamond"
-                                  ? "bg-cyan-50 text-cyan-600"
-                                  : lvl.levelCode === "gold"
-                                    ? "bg-amber-50 text-amber-600"
-                                    : lvl.levelCode === "silver"
-                                      ? "bg-slate-100 text-slate-600"
-                                      : "bg-gray-100 text-gray-600",
-                              )}
-                            >
-                              {lvl.name.charAt(0)}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-xs text-gray-900 font-bold">
-                                  {lvl.name}
-                                </span>
-                                {isCurrent && (
-                                  <span className="text-[9px] font-black uppercase text-amber-600 bg-amber-100/80 px-1.5 py-0.2 rounded-full">
-                                    Hiện tại
-                                  </span>
-                                )}
-                              </div>
-                              <span className="text-[10px] text-gray-400 font-bold">
-                                Mốc nạp: {formatVND(lvl.threshold)}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-xs text-amber-600 bg-amber-50 border border-amber-100 px-2 py-1 rounded-lg font-bold">
-                              -{lvl.discountRate}%
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div className="space-y-3 pt-2">
+                    <div className="p-3 rounded-xl bg-white border border-gray-100 flex items-start gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-black shrink-0">
+                        $
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-900 font-bold block animate-fade-in">
+                          Tiết kiệm chi phí ăn trưa
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-medium">
+                          Khấu trừ trực tiếp tiền mặt (ví dụ: 2,000đ) trên mỗi phần cơm đặt trong thời hạn gói.
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-white border border-gray-100 flex items-start gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs font-black shrink-0">
+                        🎨
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-900 font-bold block">
+                          Cá nhân hóa giao diện VIP
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-medium">
+                          Tùy chọn chủ đề ứng dụng Hoàng Kim, Đêm Huyền Bí, Hoa Anh Đào trong trang cá nhân.
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-white border border-gray-100 flex items-start gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-black shrink-0">
+                        👑
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-900 font-bold block">
+                          Khung Viền & Tên Nổi Bật
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-medium">
+                          Trang bị khung Avatar VIP (Vương miện, Neon, Kim cương) và hiển thị tên lấp lánh khi tương tác trên Diễn đàn công ty.
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="text-[10px] text-gray-400 leading-relaxed pt-2 border-t border-dashed border-gray-200">
-                    💡{" "}
-                    <span className="font-bold text-gray-500">
-                      Quy tắc tích lũy:
-                    </span>{" "}
-                    Tổng tiền nạp được tính bằng tổng số tiền của toàn bộ yêu
-                    cầu nạp tiền đã được duyệt của đạo hữu trong năm dương lịch
-                    hiện tại. Hệ thống sẽ tự động reset về mặc định vào ngày
-                    01/01 hàng năm.
+                    💡 <span className="font-bold text-gray-500">Lưu ý:</span> Phí dịch vụ mua gói hội viên VIP là phí mua đứt dịch vụ và không được hoàn lại vào ví sau khi đã kích hoạt thành công.
                   </div>
                 </CardContent>
               </Card>
@@ -808,7 +823,7 @@ export default function MyWalletPage() {
                         </div>
                         <div>
                           <p className="font-bold text-gray-900 text-sm">
-                            Yêu cầu nạp tiền ví
+                            {req.requestType === "buy_membership" ? "Yêu cầu mua gói VIP" : "Yêu cầu nạp tiền ví"}
                           </p>
                           <p className="text-xs text-gray-500 mt-0.5">
                             Chuyển khoản:{" "}
@@ -978,7 +993,7 @@ export default function MyWalletPage() {
                               {formatDate(req.requestedAt)}
                             </td>
                             <td className="px-5 py-3.5 font-bold text-gray-900 text-sm">
-                              <div>Nạp tiền vào ví</div>
+                              <div>{req.requestType === "buy_membership" ? "Mua gói Hội Viên VIP" : "Nạp tiền vào ví"}</div>
                               {req.voucherCode && (
                                 <div className="text-[10px] text-indigo-500 font-bold uppercase tracking-wide mt-0.5">
                                   Voucher: {req.voucherCode} (

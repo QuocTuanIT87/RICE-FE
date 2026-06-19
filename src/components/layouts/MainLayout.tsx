@@ -22,15 +22,19 @@ import {
   Wallet,
   Eye,
   EyeOff,
+  MessageSquare,
+  Crown,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import PriceNoticeBanner from "@/components/PriceNoticeBanner";
-import { formatVND } from "@/lib/utils";
+import { formatVND, cn } from "@/lib/utils";
 
 const customerNavItems = [
   { path: "/", label: "Trang chủ", icon: Home },
   { path: "/order", label: "Đặt cơm", icon: UtensilsCrossed },
   { path: "/wallet", label: "Ví tiền", icon: Coins },
+  { path: "/vip", label: "Hội Viên VIP", icon: Crown },
+  { path: "/forum", label: "Diễn đàn", icon: MessageSquare },
   { path: "/leaderboard", label: "Bảng xếp hạng", icon: Trophy },
 ];
 
@@ -44,6 +48,7 @@ const adminNavItems = [
 const customerDropdownItems = [
   { path: "/profile", label: "Trang cá nhân", icon: User },
   { path: "/wallet", label: "Ví của tôi", icon: Coins },
+  { path: "/vip", label: "Hội Viên VIP", icon: Crown },
   { path: "/order-history", label: "Lịch sử đặt cơm", icon: History },
 ];
 
@@ -122,7 +127,7 @@ export default function MainLayout() {
   const userInitial = user?.name?.charAt(0)?.toUpperCase() || "U";
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className={cn("min-h-screen flex flex-col transition-all duration-300", user?.hasMembership && user?.vipTheme && user.vipTheme !== "default" && `theme-${user.vipTheme}`)}>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 shadow-sm">
         <div className="container mx-auto px-4">

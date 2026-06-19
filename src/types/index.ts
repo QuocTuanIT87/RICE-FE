@@ -16,7 +16,13 @@ export interface User {
   totalSpent?: number; // Tổng chi tiêu tích lũy
   vipLevelCode?: string; // normal, silver, gold, diamond
   vipLevelName?: string; // Tên hạng VIP
-  vipDiscountRate?: number; // Phần trăm giảm giá VIP
+  vipDiscountRate?: number; // Phần trăm giảm giá VIP / Số tiền giảm cứng của gói VIP
+  vipTheme?: string;
+  vipAvatarFrame?: string;
+  vipCoverImage?: string;
+  hasMembership?: boolean;
+  membershipName?: string;
+  membershipExpiresAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -27,6 +33,55 @@ export interface VipLevel {
   name: string;
   threshold: number;
   discountRate: number;
+}
+
+export interface VipPackage {
+  _id: string;
+  name: string;
+  price: number;
+  discountAmount: number;
+  validDays: number;
+  isActive: boolean;
+  features: string[];
+}
+
+export interface UserMembership {
+  _id: string;
+  userId: string;
+  vipPackageId: VipPackage | string;
+  activatedAt: string;
+  expiresAt: string;
+  isActive: boolean;
+}
+
+export interface ForumReaction {
+  userId: string;
+  type: "like" | "love" | "haha" | "wow" | "sad" | "angry";
+}
+
+export interface ForumPost {
+  _id: string;
+  title: string;
+  content: string;
+  category: string;
+  userId: User;
+  likes: string[];
+  reactions?: ForumReaction[];
+  commentsCount?: number;
+  imageUrl?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ForumComment {
+  _id: string;
+  postId: string;
+  userId: User;
+  content: string;
+  parentId?: string | null;
+  reactions?: ForumReaction[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Auth types
@@ -59,6 +114,8 @@ export interface DepositRequest {
   status: PurchaseStatus;
   voucherCode?: string;
   bonusAmount?: number;
+  requestType?: string;
+  vipPackageId?: string | any;
   requestedAt: string;
   processedAt?: string;
   createdAt?: string;

@@ -25,7 +25,7 @@ const sidebarItems = [
   { icon: UtensilsCrossed, label: "Menu hôm nay", path: "/admin/menus" },
   { icon: ClipboardList, label: "Đơn đặt cơm", path: "/admin/orders" },
   { icon: Ticket, label: "Mã giảm giá", path: "/admin/vouchers" },
-  { icon: Crown, label: "Cấp độ VIP", path: "/admin/vips" },
+  { icon: Crown, label: "Gói Hội Viên VIP", path: "/admin/vip-packages" },
   { icon: BarChart3, label: "Thống kê", path: "/admin/statistics" },
   { icon: Settings, label: "Cấu hình", path: "/admin/system" },
 ];

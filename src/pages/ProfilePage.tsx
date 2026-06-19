@@ -14,10 +14,11 @@ import { toast } from "@/hooks/useToast";
 import { swalAlert } from "@/utils/swal";
 import { useShowBalance } from "@/hooks/useShowBalance";
 import { cn, formatVND } from "@/lib/utils";
-import { authApi, vouchersApi, vipLevelsApi } from "@/services/api";
+import { authApi, vouchersApi } from "@/services/api";
 import { setUser } from "@/store/authSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import VipAvatar from "@/components/VipAvatar";
 import { format } from "date-fns";
 import {
   ArrowRight,
@@ -48,7 +49,7 @@ import { Link } from "react-router-dom";
 import Cropper from "react-easy-crop";
 import { getCroppedImg } from "@/utils/cropImage";
 
-type ActiveTab = "overview" | "profile" | "vouchers" | "security";
+type ActiveTab = "overview" | "profile" | "vip_cosmetics" | "vouchers" | "security";
 
 export default function ProfilePage() {
   const { user } = useAppSelector((state) => state.auth);
@@ -77,6 +78,9 @@ export default function ProfilePage() {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [vipTheme, setVipTheme] = useState("default");
+  const [vipAvatarFrame, setVipAvatarFrame] = useState("none");
+  const [vipCoverImage, setVipCoverImage] = useState("");
 
   const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -179,7 +183,14 @@ export default function ProfilePage() {
   });
 
   const freshUser = profileData?.data.data || user;
-  const userInitial = freshUser?.name?.charAt(0)?.toUpperCase() || "U";
+
+  useEffect(() => {
+    if (freshUser) {
+      setVipTheme(freshUser.vipTheme || "default");
+      setVipAvatarFrame(freshUser.vipAvatarFrame || "none");
+      setVipCoverImage(freshUser.vipCoverImage || "");
+    }
+  }, [freshUser]);
 
   const { data: vouchersData, isLoading: vouchersLoading } = useQuery({
     queryKey: ["myVouchers"],
@@ -187,43 +198,7 @@ export default function ProfilePage() {
     enabled: !!freshUser,
   });
 
-  const { data: vipLevelsData } = useQuery({
-    queryKey: ["vipLevels"],
-    queryFn: () => vipLevelsApi.getLevels(),
-  });
-
-  const vipLevels = vipLevelsData?.data.data || [];
-  const sortedVipLevels = [...vipLevels].sort(
-    (a, b) => a.threshold - b.threshold,
-  );
-  const currentSpent = freshUser?.totalSpent || 0;
-  const nextLevelObj = sortedVipLevels.find(
-    (level) => level.threshold > currentSpent,
-  );
-
-  // Find current level info in sorted list
-  const currentLevelIndex = sortedVipLevels.findIndex(
-    (level) => level.levelCode === freshUser?.vipLevelCode,
-  );
-  const currentLevelObj =
-    currentLevelIndex !== -1 ? sortedVipLevels[currentLevelIndex] : null;
-
-  let progressPercent = 0;
-  let remainingSpent = 0;
-
-  if (nextLevelObj) {
-    const prevThreshold = currentLevelObj ? currentLevelObj.threshold : 0;
-    const range = nextLevelObj.threshold - prevThreshold;
-    const progressInRange = currentSpent - prevThreshold;
-    progressPercent =
-      range > 0
-        ? Math.min(100, Math.max(0, (progressInRange / range) * 100))
-        : 0;
-    remainingSpent = nextLevelObj.threshold - currentSpent;
-  } else {
-    progressPercent = 100;
-    remainingSpent = 0;
-  }
+  // Removed old VIP levels queries
 
   const myVouchers = vouchersData?.data.data || [];
 
@@ -303,6 +278,7 @@ export default function ProfilePage() {
   const menuItems = [
     { id: "overview", label: "Tổng quan", icon: LayoutDashboard },
     { id: "profile", label: "Cá nhân", icon: UserIcon },
+    ...(freshUser?.hasMembership ? [{ id: "vip_cosmetics", label: "Giao diện VIP 🎨", icon: Crown }] : []),
     {
       id: "vouchers",
       label: "Ví Voucher",
@@ -319,23 +295,18 @@ export default function ProfilePage() {
         <div className="col-span-1 lg:col-span-3 space-y-6">
           {/* User Mini Card */}
           <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="relative w-14 h-14 rounded-xl overflow-hidden group shrink-0 shadow-lg shadow-orange-100">
-              {freshUser?.avatar ? (
-                <img
-                  src={freshUser.avatar}
-                  alt={freshUser.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-orange-500 flex items-center justify-center text-xl font-black text-white">
-                  {userInitial}
-                </div>
-              )}
-
+            <div className="relative shrink-0">
+              <VipAvatar
+                avatarUrl={freshUser?.avatar}
+                name={freshUser?.name}
+                hasMembership={freshUser?.hasMembership}
+                vipAvatarFrame={freshUser?.vipAvatarFrame}
+                size="lg"
+              />
               {/* Overlay hover to change avatar */}
               <label
                 htmlFor="avatar-upload-input"
-                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-2xl z-20"
               >
                 <Camera className="w-5 h-5 text-white" />
               </label>
@@ -357,18 +328,10 @@ export default function ProfilePage() {
               </p>
               <Badge
                 className={cn(
-                  "mt-1 font-black text-[9px] h-4.5 border-none",
-                  freshUser?.vipLevelCode === "diamond"
-                    ? "bg-cyan-50 text-cyan-600 border border-cyan-150"
-                    : freshUser?.vipLevelCode === "gold"
-                      ? "bg-amber-50 text-amber-600 border border-amber-150"
-                      : freshUser?.vipLevelCode === "silver"
-                        ? "bg-slate-100 text-slate-600 border border-slate-200"
-                        : "bg-orange-50 text-orange-600 border border-orange-150",
+                  "mt-1 font-black text-[9px] h-4.5 border-none bg-amber-50 text-amber-600 border border-amber-150"
                 )}
               >
-                👑 {freshUser?.vipLevelName || "Thành viên"} (
-                {freshUser?.vipDiscountRate || 0}%)
+                👑 {freshUser?.hasMembership ? freshUser.membershipName : "Thành viên thường"}
               </Badge>
             </div>
           </div>
@@ -426,7 +389,7 @@ export default function ProfilePage() {
           {activeTab === "overview" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* Header Banner */}
-              <div className="rounded-3xl bg-gradient-to-br from-orange-500 via-orange-500 to-red-600 p-8 relative overflow-hidden shadow-2xl shadow-orange-200">
+              <div className={cn("rounded-3xl p-8 relative overflow-hidden shadow-2xl transition-all duration-300", freshUser?.hasMembership && freshUser?.vipCoverImage ? freshUser.vipCoverImage : "bg-gradient-to-br from-orange-500 via-orange-500 to-red-600 shadow-orange-200")}>
                 <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full" />
                 <div className="absolute -left-5 -bottom-5 w-24 h-24 bg-white/5 rounded-full" />
                 <div className="relative z-10 flex items-center justify-between">
@@ -520,79 +483,48 @@ export default function ProfilePage() {
                     <Crown size={200} />
                   </div>
                   <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex-1 space-y-4">
+                    <div className="flex-1 space-y-3">
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-amber-500/10 rounded-2xl border border-amber-500/20 flex items-center justify-center">
                           <Crown size={24} className="text-amber-400" />
                         </div>
                         <div>
                           <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">
-                            Cấp độ hội viên
+                            Trạng thái hội viên VIP
                           </p>
                           <div className="flex items-center gap-2">
                             <h3 className="text-xl font-black italic tracking-wide text-white uppercase">
-                              {freshUser?.vipLevelName || "Thành viên"}
+                              {freshUser?.hasMembership ? freshUser.membershipName : "Thành viên thường"}
                             </h3>
-                            {(freshUser?.vipDiscountRate || 0) > 0 && (
+                            {freshUser?.hasMembership && (
                               <Badge className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black border-none text-[10px]">
-                                Giảm {freshUser?.vipDiscountRate || 0}% đơn hàng
+                                Giảm {formatVND(freshUser.vipDiscountRate || 0)}/phần
                               </Badge>
                             )}
                           </div>
                         </div>
                       </div>
 
-                      {/* Progress bar */}
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs font-bold">
-                          <span className="text-slate-400">
-                            Tích lũy nạp năm nay:{" "}
-                            <span className="text-white font-black">
-                              {formatVND(currentSpent)}
-                            </span>
-                          </span>
-                          {nextLevelObj && (
-                            <span className="text-amber-400">
-                              Hạng tiếp theo: {nextLevelObj.name} (
-                              {formatVND(nextLevelObj.threshold)})
-                            </span>
+                      <div className="space-y-1">
+                        <p className="text-xs text-slate-400 font-bold">
+                          {freshUser?.hasMembership ? (
+                            <>
+                              Đặc quyền VIP đang hoạt động. Hạn sử dụng đến ngày:{" "}
+                              <span className="text-white font-black">
+                                {freshUser.membershipExpiresAt ? format(new Date(freshUser.membershipExpiresAt), "dd/MM/yyyy") : ""}
+                              </span>
+                            </>
+                          ) : (
+                            "Kích hoạt hội viên VIP để nhận ưu đãi giảm giá đặt cơm và trang trí cá nhân."
                           )}
-                        </div>
-                        <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700/50">
-                          <div
-                            className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full transition-all duration-500"
-                            style={{ width: `${progressPercent}%` }}
-                          />
-                        </div>
-                        {nextLevelObj && remainingSpent > 0 ? (
-                          <p className="text-[11px] text-slate-400">
-                            Nạp thêm{" "}
-                            <span className="text-amber-400 font-bold">
-                              {formatVND(remainingSpent)}
-                            </span>{" "}
-                            để lên hạng{" "}
-                            <span className="text-white font-bold">
-                              {nextLevelObj.name}
-                            </span>{" "}
-                            nhận ngay ưu đãi{" "}
-                            <span className="text-amber-400 font-bold">
-                              -{nextLevelObj.discountRate}%
-                            </span>{" "}
-                            mỗi đơn đặt cơm!
-                          </p>
-                        ) : (
-                          <p className="text-[11px] text-amber-400 font-bold">
-                            🎉 Bạn đã đạt cấp độ VIP cao nhất! Tận hưởng đặc
-                            quyền giảm giá tối đa.
-                          </p>
-                        )}
+                        </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
                       <Link to="/wallet">
                         <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl h-10 px-5 text-xs shadow-lg shadow-amber-500/10 border-none">
-                          XEM ĐẶC QUYỀN VIP
+                          {freshUser?.hasMembership ? "GIA HẠN HỘI VIÊN" : "MUA GÓI VIP NGAY"}
                           <ArrowRight size={14} className="ml-1" />
                         </Button>
                       </Link>
@@ -709,6 +641,174 @@ export default function ProfilePage() {
                     LƯU THÔNG TIN MỚI
                   </Button>
                 )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "vip_cosmetics" && freshUser?.hasMembership && (
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="p-8 border-b border-gray-50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+                    <Crown size={20} className="text-amber-500 animate-bounce" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900">
+                      Cá nhân hóa giao diện VIP
+                    </h2>
+                    <p className="text-xs text-gray-400 font-medium">
+                      Thay đổi chủ đề ứng dụng, khung viền avatar và ảnh bìa
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-8 space-y-8">
+                {/* 1. Theme Selector */}
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
+                    Chủ đề ứng dụng (App Themes)
+                  </Label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { id: "default", name: "Mặc định", desc: "Màu cam truyền thống", color: "bg-orange-500" },
+                      { id: "gold", name: "Hoàng Kim", desc: "Sắc vàng quý phái", color: "bg-amber-500" },
+                      { id: "dark", name: "Đêm Huyền Bí", desc: "Giao diện tối huyền bí", color: "bg-slate-900" },
+                      { id: "sakura", name: "Hoa Anh Đào", desc: "Sắc hồng pastel ngọt ngào", color: "bg-pink-400" },
+                    ].map((themeOpt) => (
+                      <div
+                        key={themeOpt.id}
+                        onClick={() => setVipTheme(themeOpt.id)}
+                        className={cn(
+                          "cursor-pointer p-4 rounded-2xl border transition-all flex flex-col gap-3 justify-between hover:shadow-md",
+                          vipTheme === themeOpt.id
+                            ? "border-amber-500 bg-amber-50/20 shadow-sm"
+                            : "border-gray-100 bg-white"
+                        )}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className={cn("w-6 h-6 rounded-full shrink-0", themeOpt.color)} />
+                          {vipTheme === themeOpt.id && (
+                            <div className="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center text-[10px] text-white font-bold">
+                              ✓
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{themeOpt.name}</p>
+                          <p className="text-[10px] text-gray-400 mt-0.5 leading-none">{themeOpt.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. Avatar Frame Selector */}
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
+                    Khung viền ảnh đại diện
+                  </Label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { id: "none", name: "Mặc định", desc: "Không dùng khung", icon: "👤" },
+                      { id: "gold-crown", name: "Vương Miện Vàng", desc: "Vương miện lấp lánh", icon: "👑" },
+                      { id: "neon-ring", name: "Vòng Tròn Neon", desc: "Viền sáng chuyển động", icon: "💫" },
+                      { id: "diamond", name: "Kim Cương", desc: "Huy hiệu đá quý lấp lánh", icon: "💎" },
+                    ].map((frameOpt) => (
+                      <div
+                        key={frameOpt.id}
+                        onClick={() => setVipAvatarFrame(frameOpt.id)}
+                        className={cn(
+                          "cursor-pointer p-4 rounded-2xl border transition-all flex flex-col gap-3 justify-between hover:shadow-md",
+                          vipAvatarFrame === frameOpt.id
+                            ? "border-amber-500 bg-amber-50/20 shadow-sm"
+                            : "border-gray-100 bg-white"
+                        )}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-2xl shrink-0">{frameOpt.icon}</span>
+                          {vipAvatarFrame === frameOpt.id && (
+                            <div className="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center text-[10px] text-white font-bold">
+                              ✓
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{frameOpt.name}</p>
+                          <p className="text-[10px] text-gray-400 mt-0.5 leading-none">{frameOpt.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. Cover Image Selector */}
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
+                    Hình nền Cover trang cá nhân
+                  </Label>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    {[
+                      { id: "", name: "Mặc định", color: "bg-gradient-to-br from-orange-500 via-orange-500 to-red-600" },
+                      { id: "bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500", name: "Hoàng Kim", color: "bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500" },
+                      { id: "bg-gradient-to-r from-gray-900 via-slate-800 to-gray-950", name: "Obsidian", color: "bg-gradient-to-r from-gray-900 via-slate-800 to-gray-950" },
+                      { id: "bg-gradient-to-r from-pink-300 via-rose-300 to-pink-400", name: "Sakura Bloom", color: "bg-gradient-to-r from-pink-300 via-rose-300 to-pink-400" },
+                      { id: "bg-gradient-to-r from-blue-400 via-cyan-400 to-indigo-500", name: "Đại Dương", color: "bg-gradient-to-r from-blue-400 via-cyan-400 to-indigo-500" },
+                    ].map((coverOpt) => (
+                      <div
+                        key={coverOpt.id}
+                        onClick={() => setVipCoverImage(coverOpt.id)}
+                        className={cn(
+                          "cursor-pointer rounded-2xl border overflow-hidden transition-all hover:shadow-md",
+                          vipCoverImage === coverOpt.id
+                            ? "border-amber-500 ring-2 ring-amber-500/20"
+                            : "border-gray-200"
+                        )}
+                      >
+                        <div className={cn("h-16 w-full", coverOpt.color)} />
+                        <div className="p-2.5 bg-white text-center">
+                          <p className="text-xs font-bold text-gray-800">{coverOpt.name}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Save button */}
+                <Button
+                  className="w-full h-12 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-2xl font-black shadow-lg shadow-amber-500/10 gap-2 border-none"
+                  onClick={async () => {
+                    setIsUpdating(true);
+                    try {
+                      const response = await authApi.updateProfile({ vipTheme, vipAvatarFrame, vipCoverImage });
+                      if (response.data.success) {
+                        dispatch(setUser(response.data.data!));
+                        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+                        swalAlert({
+                          title: "🎨 Kích hoạt giao diện VIP thành công!",
+                          text: "Các cài đặt về chủ đề và khung viền đã được áp dụng toàn hệ thống.",
+                          icon: "success",
+                        });
+                      }
+                    } catch (error: any) {
+                      swalAlert({
+                        title: "❌ Kích hoạt giao diện thất bại",
+                        text: error.response?.data?.message || "Có lỗi xảy ra",
+                        icon: "error",
+                      });
+                    } finally {
+                      setIsUpdating(false);
+                    }
+                  }}
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Save size={18} />
+                  )}
+                  LƯU THIẾT LẬP GIAO DIỆN
+                </Button>
               </div>
             </div>
           )}

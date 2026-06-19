@@ -4,7 +4,7 @@ import { usersApi } from "@/services/api";
 import { Trophy, Medal, ShoppingBag, Crown } from "lucide-react";
 import { formatVND } from "@/lib/utils";
 
-type TabType = "turns" | "vip" | "orders";
+type TabType = "turns" | "orders";
 
 export default function LeaderboardPage() {
   const [activeTab, setActiveTab] = useState<TabType>("turns");
@@ -12,11 +12,6 @@ export default function LeaderboardPage() {
   const { data: turnsData, isLoading: loadingTurns } = useQuery({
     queryKey: ["leaderboard"],
     queryFn: () => usersApi.getLeaderboard(),
-  });
-
-  const { data: coinsData, isLoading: loadingCoins } = useQuery({
-    queryKey: ["topVip"],
-    queryFn: () => usersApi.getTopVip(),
   });
 
   const { data: ordersData, isLoading: loadingOrders } = useQuery({
@@ -28,8 +23,6 @@ export default function LeaderboardPage() {
     switch (activeTab) {
       case "turns":
         return turnsData?.data?.data || [];
-      case "vip":
-        return coinsData?.data?.data || [];
       case "orders":
         return ordersData?.data?.data || [];
       default:
@@ -39,7 +32,6 @@ export default function LeaderboardPage() {
 
   const isLoading =
     (activeTab === "turns" && loadingTurns) ||
-    (activeTab === "vip" && loadingCoins) ||
     (activeTab === "orders" && loadingOrders);
 
   const currentUsers = getUsersForTab();
@@ -51,12 +43,6 @@ export default function LeaderboardPage() {
           <strong className="text-orange-600">
             {formatVND(user.totalTurns || 0)}
           </strong>
-        );
-      case "vip":
-        return (
-          <span className="text-yellow-600 font-bold">
-            👑 {user.vipLevelName} • <span className="font-semibold text-gray-500">{formatVND(user.totalSpent || 0)}</span>
-          </span>
         );
       case "orders":
         return (
@@ -79,17 +65,6 @@ export default function LeaderboardPage() {
           top1Badge: "from-orange-400 to-red-600 shadow-orange-500/30",
           fillIcon: "fill-orange-500",
           hoverGroup: "group-hover:bg-orange-50 group-hover:text-orange-500",
-        };
-      case "vip":
-        return {
-          titleGradient: "from-yellow-500 to-orange-500",
-          spinner: "border-yellow-200 border-t-yellow-500",
-          top1RankBg: "text-yellow-500 bg-yellow-100 border-yellow-200",
-          top1Gradient:
-            "from-yellow-50 via-white to-amber-50 border-yellow-200 shadow-yellow-100/50",
-          top1Badge: "from-yellow-400 to-orange-600 shadow-yellow-500/30",
-          fillIcon: "fill-yellow-500",
-          hoverGroup: "group-hover:bg-yellow-50 group-hover:text-yellow-500",
         };
       case "orders":
         return {
@@ -138,17 +113,6 @@ export default function LeaderboardPage() {
           >
             <Crown size={18} />
             Top Đại Gia
-          </button>
-          <button
-            onClick={() => setActiveTab("vip")}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all ${
-              activeTab === "vip"
-                ? "bg-white text-yellow-600 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            <Crown size={18} />
-            Đại Phú Hào (VIP)
           </button>
           <button
             onClick={() => setActiveTab("orders")}

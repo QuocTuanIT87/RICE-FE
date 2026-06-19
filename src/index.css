@@ -348,3 +348,123 @@
   animation: spinHalo 3.5s linear infinite;
   filter: blur(16px);
 }
+
+/* ==========================================================================
+   VIP THEMES & AVATAR FRAMES STYLING
+   ========================================================================== */
+
+.theme-gold {
+  --primary: 43 96% 48%;
+  --primary-foreground: 0 0% 100%;
+  --background: 43 30% 99%;
+  --foreground: 43 30% 10%;
+  --border: 43 60% 90%;
+  --ring: 43 96% 48%;
+}
+
+.theme-gold .bg-white,
+.theme-gold .bg-card {
+  background-color: hsl(43 25% 100%) !important;
+  border-color: hsl(43 60% 92%) !important;
+}
+
+.theme-gold .text-orange-500,
+.theme-gold .text-orange-600 {
+  color: hsl(43 96% 45%) !important;
+}
+
+.theme-gold .bg-orange-500,
+.theme-gold .bg-orange-600 {
+  background-color: hsl(43 96% 48%) !important;
+}
+
+.theme-dark {
+  --background: 224 71% 4%;
+  --foreground: 213 31% 91%;
+  --card: 224 71% 4%;
+  --card-foreground: 213 31% 91%;
+  --popover: 224 71% 4%;
+  --popover-foreground: 213 31% 91%;
+  --primary: 263.4 70% 50.4%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 222.2 47.4% 11.2%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 223 47% 11%;
+  --muted-foreground: 215.4 16.3% 56.9%;
+  --accent: 216 34% 17%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 216 34% 17%;
+  --input: 216 34% 17%;
+  --ring: 263.4 70% 50.4%;
+}
+
+.theme-dark .bg-white,
+.theme-dark .bg-card {
+  background-color: hsl(224 71% 6%) !important;
+  border-color: hsl(216 34% 15%) !important;
+  color: hsl(213 31% 91%) !important;
+}
+
+.theme-dark .text-gray-900,
+.theme-dark .text-slate-900 {
+  color: hsl(213 31% 95%) !important;
+}
+
+.theme-dark .text-orange-500,
+.theme-dark .text-orange-600 {
+  color: hsl(263.4 70% 60%) !important;
+}
+
+.theme-dark .bg-orange-500,
+.theme-dark .bg-orange-600 {
+  background-color: hsl(263.4 70% 50.4%) !important;
+}
+
+.theme-sakura {
+  --primary: 340 82% 65%;
+  --primary-foreground: 0 0% 100%;
+  --background: 340 100% 99%;
+  --foreground: 340 30% 20%;
+  --card: 340 100% 100%;
+  --card-foreground: 340 30% 20%;
+  --border: 340 60% 93%;
+  --ring: 340 82% 65%;
+}
+
+.theme-sakura .bg-white,
+.theme-sakura .bg-card {
+  background-color: hsl(340 100% 100%) !important;
+  border-color: hsl(340 60% 95%) !important;
+}
+
+.theme-sakura .text-orange-500,
+.theme-sakura .text-orange-600 {
+  color: hsl(340 82% 60%) !important;
+}
+
+.theme-sakura .bg-orange-500,
+.theme-sakura .bg-orange-600 {
+  background-color: hsl(340 82% 65%) !important;
+}
+
+/* VIP Avatar Frame Animations */
+@keyframes neonPulse {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(139, 92, 246, 0.6)) drop-shadow(0 0 4px rgba(6, 182, 212, 0.4)); }
+  50% { filter: drop-shadow(0 0 6px rgba(139, 92, 246, 1)) drop-shadow(0 0 10px rgba(6, 182, 212, 0.8)); }
+}
+
+@keyframes sparkleSpin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.03); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+.vip-frame-neon {
+  animation: neonPulse 2s ease-in-out infinite;
+}
+
+.vip-frame-sparkle {
+  animation: sparkleSpin 6s linear infinite;
+}

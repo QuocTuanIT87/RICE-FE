@@ -25,6 +25,7 @@ export default function AdminDeposits() {
     queryFn: () =>
       depositRequestsApi.getAllRequests({
         status: filterStatus || undefined,
+        requestType: "normal",
         page,
         limit,
       }),

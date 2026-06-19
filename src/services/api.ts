@@ -13,7 +13,11 @@ import type {
   PackageType,
   PaginatedData,
   DepositRequest,
-  VipLevel,
+  VipPackage,
+  UserMembership,
+  ForumPost,
+  ForumComment,
+  ForumReaction,
 } from "@/types";
 
 // API Base URL - lấy từ biến môi trường, chỉ cần thay đổi ở file .env
@@ -87,7 +91,7 @@ export const authApi = {
 
   getMe: () => api.get<ApiResponse<User>>("/auth/me"),
 
-  updateProfile: (data: { name?: string; phone?: string }) =>
+  updateProfile: (data: { name?: string; phone?: string; vipTheme?: string; vipAvatarFrame?: string; vipCoverImage?: string }) =>
     api.patch<ApiResponse<User>>("/auth/profile", data),
 
   updateAvatar: (formData: FormData) =>
@@ -141,11 +145,11 @@ export const depositRequestsApi = {
   getMyRequests: () =>
     api.get<ApiResponse<DepositRequest[]>>("/deposit-requests/my"),
 
-  createRequest: (amount: number, voucherCode?: string) =>
-    api.post<ApiResponse<DepositRequest>>("/deposit-requests", { amount, voucherCode }),
+  createRequest: (amount: number, voucherCode?: string, requestType?: string, vipPackageId?: string) =>
+    api.post<ApiResponse<DepositRequest>>("/deposit-requests", { amount, voucherCode, requestType, vipPackageId }),
 
   // Admin
-  getAllRequests: (params?: { status?: string; page?: number; limit?: number }) =>
+  getAllRequests: (params?: { status?: string; requestType?: string; page?: number; limit?: number }) =>
     api.get<ApiResponse<PaginatedData<DepositRequest>>>("/deposit-requests", {
       params,
     }),
@@ -265,14 +269,45 @@ export const statisticsApi = {
 };
 
 // =============================================
-// VIP LEVELS API
+// VIP PACKAGES API (Admin CRUD & User Get)
 // =============================================
-export const vipLevelsApi = {
-  getLevels: () => api.get<ApiResponse<VipLevel[]>>("/vip-levels"),
-  createLevel: (data: any) => api.post<ApiResponse<VipLevel>>("/vip-levels", data),
-  updateLevel: (id: string, data: any) =>
-    api.put<ApiResponse<VipLevel>>(`/vip-levels/${id}`, data),
-  deleteLevel: (id: string) => api.delete<ApiResponse>(`/vip-levels/${id}`),
+export const vipPackagesApi = {
+  getAllPackages: () => api.get<ApiResponse<VipPackage[]>>("/vip-packages/admin"),
+  getActivePackages: () => api.get<ApiResponse<VipPackage[]>>("/vip-packages"),
+  createPackage: (data: Partial<VipPackage>) => api.post<ApiResponse<VipPackage>>("/vip-packages", data),
+  updatePackage: (id: string, data: Partial<VipPackage>) =>
+    api.put<ApiResponse<VipPackage>>(`/vip-packages/${id}`, data),
+  deletePackage: (id: string) => api.delete<ApiResponse>(`/vip-packages/${id}`),
+};
+
+// =============================================
+// USER MEMBERSHIPS API
+// =============================================
+export const userMembershipsApi = {
+  buyWithWallet: (vipPackageId: string) =>
+    api.post<ApiResponse<UserMembership>>("/user-memberships/buy-with-wallet", { vipPackageId }),
+};
+
+// =============================================
+// FORUM API
+// =============================================
+export const forumApi = {
+  getPosts: (params?: { category?: string; page?: number; limit?: number }) =>
+    api.get<ApiResponse<PaginatedData<ForumPost>>>("/forum/posts", { params }),
+  getPostById: (id: string) => api.get<ApiResponse<{ post: ForumPost; comments: ForumComment[] }>>(`/forum/posts/${id}`),
+  createPost: (data: FormData) =>
+    api.post<ApiResponse<ForumPost>>("/forum/posts", data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
+  createComment: (postId: string, content: string, parentId?: string) =>
+    api.post<ApiResponse<ForumComment>>(`/forum/posts/${postId}/comment`, { content, parentId }),
+  likePost: (postId: string) => api.post<ApiResponse<ForumPost>>(`/forum/posts/${postId}/like`),
+  reactPost: (postId: string, type: string) =>
+    api.post<ApiResponse<{ reactions: ForumReaction[]; likesCount: number }>>(`/forum/posts/${postId}/react`, { type }),
+  reactComment: (commentId: string, type: string) =>
+    api.post<ApiResponse<{ reactions: ForumReaction[] }>>(`/forum/comments/${commentId}/react`, { type }),
 };
 
 // =============================================
