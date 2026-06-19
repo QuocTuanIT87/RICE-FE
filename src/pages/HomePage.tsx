@@ -53,7 +53,9 @@ export default function HomePage() {
   const menu = menus.length > 0 ? menus[0] : null;
 
   const { config: systemConfig } = useAppSelector((state) => state.system);
-  const bannerUrl = systemConfig?.websiteBanner || "https://www.shutterstock.com/image-photo/blurred-modern-restaurant-interior-warm-260nw-2687315663.jpg";
+  const bannerUrl =
+    systemConfig?.websiteBanner ||
+    "https://www.shutterstock.com/image-photo/blurred-modern-restaurant-interior-warm-260nw-2687315663.jpg";
 
   return (
     <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen -mt-8 -mb-8 overflow-x-hidden">
@@ -62,8 +64,7 @@ export default function HomePage() {
         className="relative flex items-center justify-center"
         style={{
           minHeight: "100vh",
-          backgroundImage:
-            `url('${bannerUrl}')`,
+          backgroundImage: `url('${bannerUrl}')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundAttachment: "fixed",
@@ -260,23 +261,32 @@ export default function HomePage() {
             Giá tiền phần ăn cực tốt
           </h2>
           <p className="text-gray-500 text-sm max-w-xl mx-auto mb-10">
-            Hệ thống đặt cơm Thiên Hương Các áp dụng đồng giá cho tất cả các món ăn trong thực đơn hàng ngày.
+            Hệ thống đặt cơm Thiên Hương Các áp dụng đồng giá cho tất cả các món
+            ăn trong thực đơn hàng ngày.
           </p>
 
           <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
             <div className="p-6 rounded-2xl border border-orange-100 bg-orange-50/20 text-center">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Suất cơm thường (Có cơm)</h3>
+              <h3 className="text-lg font-bold text-gray-800 mb-2">
+                Suất cơm thường (Có cơm)
+              </h3>
               <p className="text-3xl font-black text-orange-600">
                 {formatVND(systemConfig?.priceNormal || 30000)}
               </p>
-              <p className="text-xs text-gray-400 mt-2">Đầy đủ cơm, món mặn và canh ăn kèm</p>
+              <p className="text-xs text-gray-400 mt-2">
+                Đầy đủ cơm, món mặn và canh ăn kèm
+              </p>
             </div>
             <div className="p-6 rounded-2xl border border-gray-100 bg-gray-50/30 text-center">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Suất không cơm</h3>
+              <h3 className="text-lg font-bold text-gray-800 mb-2">
+                Suất không cơm
+              </h3>
               <p className="text-3xl font-black text-gray-600">
                 {formatVND(systemConfig?.priceNoRice || 20000)}
               </p>
-              <p className="text-xs text-gray-400 mt-2">Dành cho phần ăn bún, mì hoặc chỉ lấy thức ăn</p>
+              <p className="text-xs text-gray-400 mt-2">
+                Dành cho phần ăn bún, mì hoặc chỉ lấy thức ăn
+              </p>
             </div>
           </div>
         </div>
@@ -351,7 +361,7 @@ export default function HomePage() {
             <Link to="/wallet">
               <Button
                 variant="outline"
-                className="h-12 px-7 text-sm font-bold border-white/30 text-white hover:bg-white/10 rounded-full"
+                className="h-12 px-7 text-sm font-bold border-orange-600/30 text-orange-600 hover:bg-orange-600/10 rounded-full"
               >
                 Nạp tiền vào ví
               </Button>
