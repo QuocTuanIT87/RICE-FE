@@ -38,8 +38,9 @@ export default function AdminLayout() {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const { config: systemConfig } = useAppSelector((state) => state.system);
-  const websiteName = systemConfig?.websiteName || "Thiên Hương Các";
-  const websiteLogo = systemConfig?.websiteLogo || "";
+  const isVip = user?.hasMembership;
+  const websiteName = (isVip && user?.vipWebsiteName) ? user.vipWebsiteName : (systemConfig?.websiteName || "Thiên Hương Các");
+  const websiteLogo = (isVip && user?.vipWebsiteLogo) ? user.vipWebsiteLogo : (systemConfig?.websiteLogo || "");
   const [showDropdown, setShowDropdown] = useState(false);
 
   const handleLogout = async () => {

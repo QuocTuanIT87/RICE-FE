@@ -43,6 +43,7 @@ import {
   EyeOff,
   Crown,
   Camera,
+  Upload,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -82,6 +83,61 @@ export default function ProfilePage() {
   const [vipAvatarFrame, setVipAvatarFrame] = useState("none");
   const [vipCoverImage, setVipCoverImage] = useState("");
   const [vipMascot, setVipMascot] = useState("ronaldo");
+  const [vipWebsiteName, setVipWebsiteName] = useState("");
+  const [vipWebsiteLogo, setVipWebsiteLogo] = useState("");
+  const [vipWebsiteBanner, setVipWebsiteBanner] = useState("");
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append("logo", file);
+      const response = await authApi.uploadVipLogo(formData);
+      if (response.data.success) {
+        setVipWebsiteLogo(response.data.data!.vipWebsiteLogo || "");
+        dispatch(setUser(response.data.data!));
+        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+        swalAlert({ title: "🎨 Cập nhật Logo VIP thành công!", icon: "success" });
+      }
+    } catch (error: any) {
+      swalAlert({
+        title: "❌ Lỗi tải lên logo",
+        text: error.response?.data?.message || "Có lỗi xảy ra",
+        icon: "error"
+      });
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingBanner(true);
+    try {
+      const formData = new FormData();
+      formData.append("banner", file);
+      const response = await authApi.uploadVipBanner(formData);
+      if (response.data.success) {
+        setVipWebsiteBanner(response.data.data!.vipWebsiteBanner || "");
+        dispatch(setUser(response.data.data!));
+        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+        swalAlert({ title: "🎨 Cập nhật Banner VIP thành công!", icon: "success" });
+      }
+    } catch (error: any) {
+      swalAlert({
+        title: "❌ Lỗi tải lên banner",
+        text: error.response?.data?.message || "Có lỗi xảy ra",
+        icon: "error"
+      });
+    } finally {
+      setIsUploadingBanner(false);
+    }
+  };
 
   const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -191,6 +247,9 @@ export default function ProfilePage() {
       setVipAvatarFrame(freshUser.vipAvatarFrame || "none");
       setVipCoverImage(freshUser.vipCoverImage || "");
       setVipMascot(freshUser.vipMascot || "ronaldo");
+      setVipWebsiteName(freshUser.vipWebsiteName || "");
+      setVipWebsiteLogo(freshUser.vipWebsiteLogo || "");
+      setVipWebsiteBanner(freshUser.vipWebsiteBanner || "");
     }
   }, [freshUser]);
 
@@ -673,6 +732,25 @@ export default function ProfilePage() {
                   </Label>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Mock Navbar Preview */}
+                    <div className="md:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-md p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-red-500 rounded-lg flex items-center justify-center overflow-hidden shadow-sm">
+                          {vipWebsiteLogo ? (
+                            <img src={vipWebsiteLogo} alt="Logo Preview" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-white text-sm">🍚</span>
+                          )}
+                        </div>
+                        <span className="text-sm font-black bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
+                          {vipWebsiteName || "Thiên Hương Các"}
+                        </span>
+                      </div>
+                      <span className="text-[9px] bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full font-black uppercase">
+                        Mock Navbar (VIP)
+                      </span>
+                    </div>
+
                     {/* Mock Profile Card */}
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden flex flex-col">
                       {/* Cover Background */}
@@ -960,13 +1038,159 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
+                {/* 5. Personal VIP Branding */}
+                <div className="space-y-6 border-t border-gray-100 pt-6">
+                  <div>
+                    <h3 className="text-sm font-black text-gray-900 flex items-center gap-2">
+                      <span>🏷️</span> Cá nhân hóa thương hiệu VIP (Branding Customization)
+                    </h3>
+                    <p className="text-xs text-gray-400 font-medium">
+                      Tự đặt tên cho website, thay đổi logo và banner trang chủ của riêng bạn
+                    </p>
+                  </div>
+
+                  {/* 5.1. Website Name Override */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
+                      Tên trang web cá nhân (Website Name)
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={vipWebsiteName}
+                        onChange={(e) => setVipWebsiteName(e.target.value)}
+                        placeholder="Ví dụ: Thiên Đường Ăn Trưa, Cơm Chiều Pro..."
+                        className="h-11 rounded-xl border-gray-200 focus:ring-amber-500 flex-grow"
+                        maxLength={50}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 5.2. Website Logo Override */}
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
+                      Logo Trang Web VIP (Logo)
+                    </Label>
+                    
+                    {/* Presets */}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                      {[
+                        { id: "", name: "Mặc định", icon: "🍚" },
+                        { id: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&h=100&fit=crop", name: "Bento Vàng", icon: "🍱" },
+                        { id: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=100&h=100&fit=crop", name: "Sushi Đỏ", icon: "🍣" },
+                        { id: "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=100&h=100&fit=crop", name: "Sakura Tea", icon: "🌸" },
+                      ].map((logoOpt) => (
+                        <div
+                          key={logoOpt.id}
+                          onClick={() => setVipWebsiteLogo(logoOpt.id)}
+                          className={cn(
+                            "cursor-pointer p-3 rounded-2xl border transition-all flex flex-col items-center gap-2 justify-center hover:shadow-md text-center",
+                            vipWebsiteLogo === logoOpt.id
+                              ? "border-amber-500 bg-amber-50/20 shadow-sm ring-2 ring-amber-500/20"
+                              : "border-gray-100 bg-white"
+                          )}
+                        >
+                          {logoOpt.id ? (
+                            <img src={logoOpt.id} alt={logoOpt.name} className="w-10 h-10 rounded-lg object-cover shadow-sm" />
+                          ) : (
+                            <span className="text-2xl">{logoOpt.icon}</span>
+                          )}
+                          <span className="text-[10px] font-bold text-gray-700">{logoOpt.name}</span>
+                        </div>
+                      ))}
+
+                      {/* Custom Upload Logo */}
+                      <label className="cursor-pointer p-3 rounded-2xl border border-dashed border-gray-300 bg-gray-50/50 hover:bg-gray-50 flex flex-col items-center justify-center gap-2 hover:border-amber-500 transition-all text-center min-h-[92px]">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoUpload}
+                          className="hidden"
+                          disabled={isUploadingLogo}
+                        />
+                        {isUploadingLogo ? (
+                          <Loader2 className="animate-spin text-amber-500 w-5 h-5" />
+                        ) : (
+                          <Upload className="text-gray-400 w-5 h-5" />
+                        )}
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-tight">
+                          {isUploadingLogo ? "ĐANG TẢI..." : "TẢI LOGO"}
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* 5.3. Website Banner Override */}
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
+                      Ảnh Banner Trang Chủ VIP (Banner)
+                    </Label>
+                    
+                    {/* Presets */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {[
+                        { id: "", name: "Mặc định", color: "bg-gradient-to-r from-orange-500 to-red-500" },
+                        { id: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&auto=format&fit=crop&q=80", name: "Amber Palace", color: "bg-amber-800" },
+                        { id: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&auto=format&fit=crop&q=80", name: "Cyber Street", color: "bg-slate-800" },
+                        { id: "https://images.unsplash.com/photo-1522336572468-97b06e8ef143?w=1200&auto=format&fit=crop&q=80", name: "Sakura Garden", color: "bg-pink-700" },
+                      ].map((bannerOpt) => (
+                        <div
+                          key={bannerOpt.id}
+                          onClick={() => setVipWebsiteBanner(bannerOpt.id)}
+                          className={cn(
+                            "cursor-pointer rounded-2xl border overflow-hidden transition-all hover:shadow-md flex flex-col justify-between",
+                            vipWebsiteBanner === bannerOpt.id
+                              ? "border-amber-500 ring-2 ring-amber-500/20"
+                              : "border-gray-200"
+                          )}
+                        >
+                          {bannerOpt.id ? (
+                            <img src={bannerOpt.id} alt={bannerOpt.name} className="h-12 w-full object-cover" />
+                          ) : (
+                            <div className={cn("h-12 w-full", bannerOpt.color)} />
+                          )}
+                          <div className="p-1.5 bg-white text-center border-t border-gray-50">
+                            <p className="text-[10px] font-bold text-gray-700">{bannerOpt.name}</p>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Custom Upload Banner */}
+                      <label className="cursor-pointer rounded-2xl border border-dashed border-gray-300 bg-gray-50/50 hover:bg-gray-50 flex flex-col items-center justify-center gap-1 hover:border-amber-500 transition-all text-center h-[76px]">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleBannerUpload}
+                          className="hidden"
+                          disabled={isUploadingBanner}
+                        />
+                        {isUploadingBanner ? (
+                          <Loader2 className="animate-spin text-amber-500 w-5 h-5" />
+                        ) : (
+                          <Upload className="text-gray-400 w-5 h-5" />
+                        )}
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-tight">
+                          {isUploadingBanner ? "ĐANG TẢI..." : "TẢI BANNER"}
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Save button */}
                 <Button
                   className="w-full h-12 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-2xl font-black shadow-lg shadow-amber-500/10 gap-2 border-none"
                   onClick={async () => {
                     setIsUpdating(true);
                     try {
-                      const response = await authApi.updateProfile({ vipTheme, vipAvatarFrame, vipCoverImage, vipMascot });
+                      const response = await authApi.updateProfile({
+                        vipTheme,
+                        vipAvatarFrame,
+                        vipCoverImage,
+                        vipMascot,
+                        vipWebsiteName,
+                        vipWebsiteLogo,
+                        vipWebsiteBanner,
+                      });
                       if (response.data.success) {
                         dispatch(setUser(response.data.data!));
                         queryClient.invalidateQueries({ queryKey: ["userProfile"] });

@@ -21,6 +21,9 @@ export interface User {
   vipAvatarFrame?: string;
   vipCoverImage?: string;
   vipMascot?: string;
+  vipWebsiteName?: string;
+  vipWebsiteLogo?: string;
+  vipWebsiteBanner?: string;
   hasMembership?: boolean;
   membershipName?: string;
   membershipExpiresAt?: string | null;

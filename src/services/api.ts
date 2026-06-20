@@ -92,11 +92,34 @@ export const authApi = {
 
   getMe: () => api.get<ApiResponse<User>>("/auth/me"),
 
-  updateProfile: (data: { name?: string; phone?: string; vipTheme?: string; vipAvatarFrame?: string; vipCoverImage?: string; vipMascot?: string }) =>
-    api.patch<ApiResponse<User>>("/auth/profile", data),
+  updateProfile: (data: {
+    name?: string;
+    phone?: string;
+    vipTheme?: string;
+    vipAvatarFrame?: string;
+    vipCoverImage?: string;
+    vipMascot?: string;
+    vipWebsiteName?: string;
+    vipWebsiteLogo?: string;
+    vipWebsiteBanner?: string;
+  }) => api.patch<ApiResponse<User>>("/auth/profile", data),
 
   updateAvatar: (formData: FormData) =>
     api.patch<ApiResponse<User>>("/auth/avatar", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
+
+  uploadVipLogo: (formData: FormData) =>
+    api.patch<ApiResponse<User>>("/auth/vip-logo", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
+
+  uploadVipBanner: (formData: FormData) =>
+    api.patch<ApiResponse<User>>("/auth/vip-banner", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },

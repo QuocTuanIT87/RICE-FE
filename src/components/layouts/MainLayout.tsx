@@ -27,6 +27,7 @@ import {
   Bell,
   Gift,
   AlertCircle,
+  ArrowUp,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import PriceNoticeBanner from "@/components/PriceNoticeBanner";
@@ -70,12 +71,14 @@ export default function MainLayout() {
   const [showBalance, setShowBalance] = useShowBalance();
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   const isAdmin = user?.role === "admin";
   const navItems = isAdmin ? adminNavItems : customerNavItems;
   const { config: systemConfig } = useAppSelector((state) => state.system);
-  const websiteName = systemConfig?.websiteName || "Thiên Hương Các";
-  const websiteLogo = systemConfig?.websiteLogo || "";
+  const isVip = user?.hasMembership;
+  const websiteName = (isVip && user?.vipWebsiteName) ? user.vipWebsiteName : (systemConfig?.websiteName || "Thiên Hương Các");
+  const websiteLogo = (isVip && user?.vipWebsiteLogo) ? user.vipWebsiteLogo : (systemConfig?.websiteLogo || "");
   const contactPhone = systemConfig?.contactPhone || "0123.456.789";
 
   const [notifOpen, setNotifOpen] = useState(false);
@@ -169,6 +172,26 @@ export default function MainLayout() {
     setMenuOpen(false);
     setNotifOpen(false);
   }, [location.pathname]);
+
+  // Scroll to Top effect
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 300) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
 
   const handleLogout = async () => {
     try {
@@ -747,6 +770,17 @@ export default function MainLayout() {
           </p>
         </div>
       </footer>
+
+      {/* Scroll to Top Button */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 active:scale-95 transition-all duration-300 group"
+          title="Lên đầu trang"
+        >
+          <ArrowUp className="w-6 h-6 group-hover:-translate-y-1 transition-transform duration-300" />
+        </button>
+      )}
     </div>
   );
 }

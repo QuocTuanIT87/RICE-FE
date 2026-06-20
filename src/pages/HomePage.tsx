@@ -53,7 +53,10 @@ export default function HomePage() {
   const menu = menus.length > 0 ? menus[0] : null;
 
   const { config: systemConfig } = useAppSelector((state) => state.system);
+  const { user } = useAppSelector((state) => state.auth);
+  const isVip = user?.hasMembership;
   const bannerUrl =
+    (isVip && user?.vipWebsiteBanner) ||
     systemConfig?.websiteBanner ||
     "https://www.shutterstock.com/image-photo/blurred-modern-restaurant-interior-warm-260nw-2687315663.jpg";
 
