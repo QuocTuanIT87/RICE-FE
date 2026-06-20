@@ -281,5 +281,32 @@ export interface PublicProfile {
   followingCount: number;
   friendStatus: FriendStatus;
   isFollowing: boolean;
+  isBlockedByMe?: boolean;
+  isBlockedByThem?: boolean;
   recentPosts: ForumPost[];
 }
+
+export interface MessageReaction {
+  userId: string;
+  type: "like" | "love" | "haha" | "wow" | "sad" | "angry";
+}
+
+export interface Message {
+  _id: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  imageUrl?: string;
+  isRead: boolean;
+  isRecalled: boolean;
+  reactions: MessageReaction[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Conversation {
+  otherUser: User;
+  lastMessage: Message;
+  unreadCount: number;
+}
+

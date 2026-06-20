@@ -24,6 +24,7 @@ import {
   Loader2,
   Crown,
   TrendingUp,
+  MessageCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -297,6 +298,17 @@ export default function UserPublicProfilePage() {
                       <UserX size={16} />
                     </Button>
                   )}
+
+                  {/* Message Button */}
+                  <Link to={`/chat?partnerId=${user._id || user.id}`}>
+                    <Button
+                      variant="outline"
+                      className="h-10 px-4 rounded-xl text-xs font-bold gap-2 border border-gray-200 text-gray-600 hover:bg-gray-50 active:scale-95 transition-all"
+                    >
+                      <MessageCircle size={14} className="text-orange-500" />
+                      <span>Nhắn tin</span>
+                    </Button>
+                  </Link>
 
                   {/* Follow Button */}
                   <Button

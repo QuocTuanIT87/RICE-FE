@@ -159,7 +159,7 @@ export default function VipMascots() {
     <>
       <div
         className={cn(
-          "hidden xl:block fixed left-[-30px] 2xl:left-[-60px] bottom-0 z-0 transition-all duration-500 hover:scale-110 active:scale-95 cursor-pointer select-none",
+          "hidden xl:block fixed left-[-30px] 2xl:left-[-60px] bottom-0 z-10 transition-all duration-500 hover:scale-110 active:scale-95 cursor-pointer select-none",
           mascotFloat.leftHeightClass
         )}
         onClick={mascotFloat.leftClick}
@@ -174,7 +174,7 @@ export default function VipMascots() {
 
       <div
         className={cn(
-          "hidden xl:block fixed right-[-30px] 2xl:right-[-60px] bottom-0 z-0 transition-all duration-500 hover:scale-110 active:scale-95 cursor-pointer select-none",
+          "hidden xl:block fixed right-[-30px] 2xl:right-[-60px] bottom-0 z-10 transition-all duration-500 hover:scale-110 active:scale-95 cursor-pointer select-none",
           mascotFloat.rightHeightClass
         )}
         onClick={mascotFloat.rightClick}

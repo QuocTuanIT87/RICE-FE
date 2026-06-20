@@ -41,6 +41,7 @@ import NotificationsPage from "@/pages/NotificationsPage";
 import AdminNotifications from "@/pages/admin/AdminNotifications";
 import MaintenancePage from "@/components/MaintenancePage";
 import SystemInitializer from "@/components/SystemInitializer";
+import ChatPage from "@/pages/ChatPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -301,6 +302,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <UserPublicProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <ChatPage />
             </ProtectedRoute>
           }
         />

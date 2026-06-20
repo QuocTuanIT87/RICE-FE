@@ -19,6 +19,8 @@ import type {
   ForumComment,
   ForumReaction,
   Notification,
+  Message,
+  Conversation,
 } from "@/types";
 
 // API Base URL - lấy từ biến môi trường, chỉ cần thay đổi ở file .env
@@ -433,6 +435,39 @@ export const socialApi = {
 
   getPublicProfile: (userId: string) =>
     api.get<ApiResponse<PublicProfile>>(`/social/profile/${userId}`),
+
+  blockUser: (userId: string) =>
+    api.post<ApiResponse>(`/social/block/${userId}`),
+
+  unblockUser: (userId: string) =>
+    api.post<ApiResponse>(`/social/unblock/${userId}`),
+
+  getBlockedList: () =>
+    api.get<ApiResponse<User[]>>("/social/blocked"),
+};
+
+// =============================================
+// CHAT API
+// =============================================
+export const chatApi = {
+  getConversations: () =>
+    api.get<ApiResponse<Conversation[]>>("/chat/conversations"),
+
+  getMessages: (partnerId: string) =>
+    api.get<ApiResponse<Message[]>>(`/chat/messages/${partnerId}`),
+
+  sendMessage: (formData: FormData) =>
+    api.post<ApiResponse<Message>>("/chat/messages", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
+
+  recallMessage: (messageId: string) =>
+    api.put<ApiResponse<Message>>(`/chat/messages/${messageId}/recall`),
+
+  reactMessage: (messageId: string, type: string) =>
+    api.post<ApiResponse<Message>>(`/chat/messages/${messageId}/react`, { type }),
 };
 
 export default api;

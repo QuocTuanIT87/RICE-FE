@@ -2,7 +2,7 @@ import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/authSlice";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { authApi, usersApi, notificationsApi } from "@/services/api";
+import { authApi, usersApi, notificationsApi, chatApi, socialApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { useShowBalance } from "@/hooks/useShowBalance";
 import {
@@ -28,8 +28,9 @@ import {
   Gift,
   AlertCircle,
   ArrowUp,
+  MessageCircle,
 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import PriceNoticeBanner from "@/components/PriceNoticeBanner";
 import VipMascots from "@/components/VipMascots";
 import { formatVND, cn } from "@/lib/utils";
@@ -108,8 +109,35 @@ export default function MainLayout() {
     enabled: isAuthenticated,
   });
 
-  const notifications = notifResponse?.data.data || [];
+  const notifications = notifResponse?.data?.data || [];
   const unreadCount = notifications.filter((n: any) => !n.isRead).length;
+
+  const { data: chatConversationsData } = useQuery({
+    queryKey: ["conversations"],
+    queryFn: () => chatApi.getConversations().then((res) => res.data.data || []),
+    enabled: isAuthenticated && !isAdmin,
+  });
+
+  // Tải danh sách người dùng bị chặn từ backend
+  const { data: blockedList } = useQuery({
+    queryKey: ["blockedUsers"],
+    queryFn: () => socialApi.getBlockedList().then((res) => res.data.data || []),
+    enabled: isAuthenticated && !isAdmin,
+  });
+
+  const blockedUsersSet = useMemo(() => {
+    const list = blockedList || [];
+    return new Set<string>(list.map((u: any) => u._id || u.id).filter(Boolean));
+  }, [blockedList]);
+
+  const chatConversations = chatConversationsData || [];
+  const totalUnreadChats = chatConversations.reduce((acc: number, curr: any) => {
+    const partnerId = curr.otherUser?._id || curr.otherUser?.id;
+    if (partnerId && blockedUsersSet.has(partnerId)) {
+      return acc;
+    }
+    return acc + curr.unreadCount;
+  }, 0);
 
   const markReadMutation = useMutation({
     mutationFn: (id: string) => notificationsApi.markAsRead(id),
@@ -126,10 +154,30 @@ export default function MainLayout() {
     },
   });
 
-  // Socket setup for notifications
+  // Socket setup for notifications & chat alerts
   const { socket } = useSocket();
+  
   useEffect(() => {
     if (!socket || !isAuthenticated) return;
+
+    const playTingSound = () => {
+      try {
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.35);
+      } catch (e) {
+        console.warn("Không thể phát âm thanh thông báo:", e);
+      }
+    };
 
     const handleNotificationReceived = (newNotif: any) => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -139,12 +187,38 @@ export default function MainLayout() {
       });
     };
 
+    const handleGlobalChatMessage = (msg: any) => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+
+      const myId = user?.id || user?._id || "";
+      if (msg.senderId !== myId && location.pathname !== "/chat") {
+        // Bỏ qua không phát thông báo nếu người gửi nằm trong danh sách chặn của mình
+        if (blockedUsersSet.has(msg.senderId)) {
+          return;
+        }
+
+        playTingSound();
+
+        const partner = chatConversations.find(
+          (c: any) => c.otherUser?._id === msg.senderId || c.otherUser?.id === msg.senderId
+        );
+        const senderName = partner?.otherUser?.name || "Đồng nghiệp";
+
+        swalToast({
+          title: `💬 Tin nhắn từ ${senderName}: ${msg.content ? (msg.content.length > 30 ? msg.content.substring(0, 30) + "..." : msg.content) : "Đã gửi một hình ảnh"}`,
+          icon: "info",
+        });
+      }
+    };
+
     socket.on("notification_received", handleNotificationReceived);
+    socket.on("chat_message", handleGlobalChatMessage);
 
     return () => {
       socket.off("notification_received", handleNotificationReceived);
+      socket.off("chat_message", handleGlobalChatMessage);
     };
-  }, [socket, isAuthenticated, queryClient]);
+  }, [socket, isAuthenticated, queryClient, user, location.pathname, chatConversations]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -260,11 +334,12 @@ export default function MainLayout() {
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = isActiveRoute(item.path);
+                const showBadge = item.path === "/chat" && totalUnreadChats > 0;
                 return (
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all relative ${
                       isActive
                         ? "bg-orange-500 text-white shadow-md shadow-orange-200"
                         : "text-gray-500 hover:text-orange-600 hover:bg-orange-50"
@@ -272,6 +347,11 @@ export default function MainLayout() {
                   >
                     <Icon size={16} />
                     {item.label}
+                    {showBadge && (
+                      <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 flex items-center justify-center text-[10px] font-black text-white bg-red-500 rounded-full px-1 border-2 border-white shadow-sm animate-pulse">
+                        {totalUnreadChats}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
@@ -302,6 +382,27 @@ export default function MainLayout() {
                     </button>
                   </div>
                 </div>
+              )}
+
+              {isAuthenticated && !isAdmin && (
+                <Link
+                  to="/chat"
+                  className="relative w-9 h-9 flex items-center justify-center rounded-xl transition-all border border-transparent hover:bg-gray-50 hover:border-gray-100"
+                  title="Nhắn tin"
+                >
+                  <MessageCircle
+                    size={18}
+                    className={cn(
+                      "text-gray-500",
+                      totalUnreadChats > 0 && "text-orange-500 animate-pulse",
+                    )}
+                  />
+                  {totalUnreadChats > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white font-black text-[9px] px-1 rounded-full flex items-center justify-center border border-white shadow-sm">
+                      {totalUnreadChats}
+                    </span>
+                  )}
+                </Link>
               )}
 
               {isAuthenticated && (
@@ -680,21 +781,32 @@ export default function MainLayout() {
         {mobileOpen && (
           <div className="md:hidden border-t border-gray-100 bg-white/95 backdrop-blur-xl animate-fade-in">
             <nav className="container mx-auto px-4 py-3 space-y-1">
-              {navItems.map((item) => {
+              {[
+                ...navItems,
+                ...(!isAdmin ? [{ path: "/chat", label: "Nhắn tin", icon: MessageCircle }] : [])
+              ].map((item) => {
                 const Icon = item.icon;
                 const isActive = isActiveRoute(item.path);
+                const showBadge = item.path === "/chat" && totalUnreadChats > 0;
                 return (
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                    className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
                       isActive
                         ? "bg-orange-500 text-white shadow-md shadow-orange-200"
                         : "text-gray-600 hover:bg-gray-50"
                     }`}
                   >
-                    <Icon size={18} />
-                    {item.label}
+                    <div className="flex items-center gap-3">
+                      <Icon size={18} />
+                      {item.label}
+                    </div>
+                    {showBadge && (
+                      <span className="min-w-5 h-5 flex items-center justify-center text-[10px] font-black text-white bg-red-500 rounded-full px-1 shadow-sm">
+                        {totalUnreadChats}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
