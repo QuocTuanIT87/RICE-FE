@@ -550,7 +550,7 @@ export default function ForumPage() {
                 avatarUrl={user?.avatar}
                 name={user?.name}
                 hasMembership={user?.hasMembership}
-                vipAvatarFrame={user?.vipAvatarFrame}
+                vipAvatarFrame={user?.vipCosmetics?.vipAvatarFrame}
                 size="md"
               />
               <button
@@ -626,7 +626,7 @@ export default function ForumPage() {
 
               // VIP styling checks
               const isAuthorVip = post.userId?.hasMembership;
-              const isVipGold = isAuthorVip && post.userId?.vipTheme === "gold";
+              const isVipGold = isAuthorVip && post.userId?.vipCosmetics?.vipTheme === "gold";
 
               return (
                 <div
@@ -642,7 +642,7 @@ export default function ForumPage() {
                           avatarUrl={post.userId?.avatar}
                           name={post.userId?.name}
                           hasMembership={post.userId?.hasMembership}
-                          vipAvatarFrame={post.userId?.vipAvatarFrame}
+                          vipAvatarFrame={post.userId?.vipCosmetics?.vipAvatarFrame}
                           size="md"
                         />
                         <div className="flex-1 min-w-0">
@@ -884,7 +884,7 @@ export default function ForumPage() {
                     avatarUrl={detailPost.userId?.avatar}
                     name={detailPost.userId?.name}
                     hasMembership={detailPost.userId?.hasMembership}
-                    vipAvatarFrame={detailPost.userId?.vipAvatarFrame}
+                    vipAvatarFrame={detailPost.userId?.vipCosmetics?.vipAvatarFrame}
                     size="md"
                   />
                   <div className="flex-1 min-w-0">
@@ -893,7 +893,7 @@ export default function ForumPage() {
                         className={cn(
                           "text-sm font-black truncate leading-tight",
                           detailPost.userId?.hasMembership
-                            ? detailPost.userId?.vipTheme === "gold"
+                            ? detailPost.userId?.vipCosmetics?.vipTheme === "gold"
                               ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
                               : "text-amber-500"
                             : "text-gray-900"
@@ -1032,7 +1032,7 @@ export default function ForumPage() {
                                   avatarUrl={parent.userId?.avatar}
                                   name={parent.userId?.name}
                                   hasMembership={parent.userId?.hasMembership}
-                                  vipAvatarFrame={parent.userId?.vipAvatarFrame}
+                                  vipAvatarFrame={parent.userId?.vipCosmetics?.vipAvatarFrame}
                                   size="sm"
                                   className="flex-shrink-0"
                                 />
@@ -1044,7 +1044,7 @@ export default function ForumPage() {
                                           className={cn(
                                             "text-xs font-black truncate leading-none",
                                             parent.userId?.hasMembership
-                                              ? parent.userId?.vipTheme === "gold"
+                                              ? parent.userId?.vipCosmetics?.vipTheme === "gold"
                                                 ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
                                                 : "text-amber-500"
                                               : "text-gray-900"
@@ -1138,7 +1138,7 @@ export default function ForumPage() {
                                           avatarUrl={reply.userId?.avatar}
                                           name={reply.userId?.name}
                                           hasMembership={reply.userId?.hasMembership}
-                                          vipAvatarFrame={reply.userId?.vipAvatarFrame}
+                                          vipAvatarFrame={reply.userId?.vipCosmetics?.vipAvatarFrame}
                                           size="sm"
                                           className="w-7 h-7 flex-shrink-0"
                                         />
@@ -1150,10 +1150,10 @@ export default function ForumPage() {
                                                   className={cn(
                                                     "text-[11px] font-black truncate leading-none",
                                                     reply.userId?.hasMembership
-                                                      ? reply.userId?.vipTheme === "gold"
+                                                      ? reply.userId?.vipCosmetics?.vipTheme === "gold"
                                                         ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
                                                         : "text-amber-500"
-                                                      : "text-gray-905"
+                                                      : "text-gray-900"
                                                   )}
                                                 >
                                                   {reply.userId?.name || "Đạo hữu ẩn danh"}
@@ -1239,7 +1239,7 @@ export default function ForumPage() {
                                       avatarUrl={user?.avatar}
                                       name={user?.name}
                                       hasMembership={user?.hasMembership}
-                                      vipAvatarFrame={user?.vipAvatarFrame}
+                                      vipAvatarFrame={user?.vipCosmetics?.vipAvatarFrame}
                                       size="sm"
                                       className="w-7 h-7 flex-shrink-0"
                                     />
@@ -1295,7 +1295,7 @@ export default function ForumPage() {
                     avatarUrl={user?.avatar}
                     name={user?.name}
                     hasMembership={user?.hasMembership}
-                    vipAvatarFrame={user?.vipAvatarFrame}
+                    vipAvatarFrame={user?.vipCosmetics?.vipAvatarFrame}
                     size="md"
                     className="flex-shrink-0"
                   />

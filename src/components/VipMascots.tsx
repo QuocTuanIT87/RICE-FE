@@ -152,7 +152,7 @@ export default function VipMascots() {
   const user = profileData?.data.data;
   if (!user || !user.hasMembership) return null;
 
-  const vipMascot = user.vipMascot || "ronaldo";
+  const vipMascot = user.vipCosmetics?.vipMascot || "ronaldo";
   const mascotFloat = getMascotFloatConfig(vipMascot);
 
   return (
@@ -200,7 +200,7 @@ export function VipMascotInline({ className }: { className?: string }) {
   const user = profileData?.data.data;
   if (!user || !user.hasMembership) return null;
 
-  const vipMascot = user.vipMascot || "ronaldo";
+  const vipMascot = user.vipCosmetics?.vipMascot || "ronaldo";
   const mascotConfig = getMascotCardConfig(vipMascot);
 
   return (

@@ -39,8 +39,8 @@ export default function AdminLayout() {
   const { user } = useAppSelector((state) => state.auth);
   const { config: systemConfig } = useAppSelector((state) => state.system);
   const isVip = user?.hasMembership;
-  const websiteName = (isVip && user?.vipWebsiteName) ? user.vipWebsiteName : (systemConfig?.websiteName || "Thiên Hương Các");
-  const websiteLogo = (isVip && user?.vipWebsiteLogo) ? user.vipWebsiteLogo : (systemConfig?.websiteLogo || "");
+  const websiteName = (isVip && user?.vipCosmetics?.vipWebsiteName) ? user.vipCosmetics.vipWebsiteName : (systemConfig?.websiteName || "Thiên Hương Các");
+  const websiteLogo = (isVip && user?.vipCosmetics?.vipWebsiteLogo) ? user.vipCosmetics.vipWebsiteLogo : (systemConfig?.websiteLogo || "");
   const [showDropdown, setShowDropdown] = useState(false);
 
   const handleLogout = async () => {

@@ -15,9 +15,9 @@ export default function SystemInitializer({ children }: { children: React.ReactN
   // 0. Cập nhật tiêu đề trang từ cấu hình
   useEffect(() => {
     const isVip = user?.hasMembership;
-    const title = (isVip && user?.vipWebsiteName) ? user.vipWebsiteName : (systemConfig?.websiteName || "Thiên Hương Các");
+    const title = (isVip && user?.vipCosmetics?.vipWebsiteName) ? user.vipCosmetics.vipWebsiteName : (systemConfig?.websiteName || "Thiên Hương Các");
     document.title = `${title} 🍚`;
-  }, [systemConfig?.websiteName, user?.hasMembership, user?.vipWebsiteName]);
+  }, [systemConfig?.websiteName, user?.hasMembership, user?.vipCosmetics?.vipWebsiteName]);
 
   // 1. Khi Admin tắt bảo trì thủ công qua Socket -> logout user
   useEffect(() => {

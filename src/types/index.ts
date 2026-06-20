@@ -2,6 +2,16 @@
 
 // User types
 export type UserRole = "admin" | "user";
+export interface VipCosmetics {
+  vipTheme: string;
+  vipAvatarFrame: string;
+  vipCoverImage: string;
+  vipMascot: string;
+  vipWebsiteName: string;
+  vipWebsiteLogo: string;
+  vipWebsiteBanner: string;
+}
+
 export interface User {
   _id: string;
   id: string;
@@ -16,14 +26,8 @@ export interface User {
   totalSpent?: number; // Tổng chi tiêu tích lũy
   vipLevelCode?: string; // normal, silver, gold, diamond
   vipLevelName?: string; // Tên hạng VIP
-  vipDiscountRate?: number; // Phần trăm giảm giá VIP / Số tiền giảm cứng của gói VIP
-  vipTheme?: string;
-  vipAvatarFrame?: string;
-  vipCoverImage?: string;
-  vipMascot?: string;
-  vipWebsiteName?: string;
-  vipWebsiteLogo?: string;
-  vipWebsiteBanner?: string;
+  vipDiscountRate?: number; // Phần tích giảm giá VIP / Số tiền giảm cứng của gói VIP
+  vipCosmetics?: VipCosmetics;
   hasMembership?: boolean;
   membershipName?: string;
   membershipExpiresAt?: string | null;

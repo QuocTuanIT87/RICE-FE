@@ -105,7 +105,7 @@ export default function PostDetailPage() {
 
   const hasLiked = user ? post.likes.includes(user.id || user._id) : false;
   const isAuthorVip = post.userId?.hasMembership;
-  const isVipGold = isAuthorVip && post.userId?.vipTheme === "gold";
+  const isVipGold = isAuthorVip && post.userId?.vipCosmetics?.vipTheme === "gold";
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -124,7 +124,7 @@ export default function PostDetailPage() {
               avatarUrl={post.userId?.avatar}
               name={post.userId?.name}
               hasMembership={post.userId?.hasMembership}
-              vipAvatarFrame={post.userId?.vipAvatarFrame}
+              vipAvatarFrame={post.userId?.vipCosmetics?.vipAvatarFrame}
               size="md"
             />
             <div className="flex-1 min-w-0">
@@ -213,7 +213,7 @@ export default function PostDetailPage() {
                 avatarUrl={user?.avatar}
                 name={user?.name}
                 hasMembership={user?.hasMembership}
-                vipAvatarFrame={user?.vipAvatarFrame}
+                vipAvatarFrame={user?.vipCosmetics?.vipAvatarFrame}
                 size="md"
                 className="flex-shrink-0"
               />
@@ -246,7 +246,7 @@ export default function PostDetailPage() {
           ) : (
             comments.map((comment: any) => {
               const isCommentAuthorVip = comment.userId?.hasMembership;
-              const isCommentVipGold = isCommentAuthorVip && comment.userId?.vipTheme === "gold";
+              const isCommentVipGold = isCommentAuthorVip && comment.userId?.vipCosmetics?.vipTheme === "gold";
 
               return (
                 <Card key={comment._id} className="border-gray-200/60 shadow-sm rounded-2xl overflow-hidden">
@@ -255,7 +255,7 @@ export default function PostDetailPage() {
                       avatarUrl={comment.userId?.avatar}
                       name={comment.userId?.name}
                       hasMembership={comment.userId?.hasMembership}
-                      vipAvatarFrame={comment.userId?.vipAvatarFrame}
+                      vipAvatarFrame={comment.userId?.vipCosmetics?.vipAvatarFrame}
                       size="md"
                       className="flex-shrink-0"
                     />

@@ -77,8 +77,8 @@ export default function MainLayout() {
   const navItems = isAdmin ? adminNavItems : customerNavItems;
   const { config: systemConfig } = useAppSelector((state) => state.system);
   const isVip = user?.hasMembership;
-  const websiteName = (isVip && user?.vipWebsiteName) ? user.vipWebsiteName : (systemConfig?.websiteName || "Thiên Hương Các");
-  const websiteLogo = (isVip && user?.vipWebsiteLogo) ? user.vipWebsiteLogo : (systemConfig?.websiteLogo || "");
+  const websiteName = (isVip && user?.vipCosmetics?.vipWebsiteName) ? user.vipCosmetics.vipWebsiteName : (systemConfig?.websiteName || "Thiên Hương Các");
+  const websiteLogo = (isVip && user?.vipCosmetics?.vipWebsiteLogo) ? user.vipCosmetics.vipWebsiteLogo : (systemConfig?.websiteLogo || "");
   const contactPhone = systemConfig?.contactPhone || "0123.456.789";
 
   const [notifOpen, setNotifOpen] = useState(false);
@@ -218,9 +218,9 @@ export default function MainLayout() {
       className={cn(
         "min-h-screen flex flex-col transition-all duration-300",
         user?.hasMembership &&
-          user?.vipTheme &&
-          user.vipTheme !== "default" &&
-          `theme-${user.vipTheme}`,
+          user?.vipCosmetics?.vipTheme &&
+          user.vipCosmetics.vipTheme !== "default" &&
+          `theme-${user.vipCosmetics.vipTheme}`,
       )}
     >
       {/* Header */}

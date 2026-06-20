@@ -56,7 +56,7 @@ export default function HomePage() {
   const { user } = useAppSelector((state) => state.auth);
   const isVip = user?.hasMembership;
   const bannerUrl =
-    (isVip && user?.vipWebsiteBanner) ||
+    (isVip && user?.vipCosmetics?.vipWebsiteBanner) ||
     systemConfig?.websiteBanner ||
     "https://www.shutterstock.com/image-photo/blurred-modern-restaurant-interior-warm-260nw-2687315663.jpg";
 

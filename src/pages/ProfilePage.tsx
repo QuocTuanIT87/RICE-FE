@@ -98,7 +98,7 @@ export default function ProfilePage() {
       formData.append("logo", file);
       const response = await authApi.uploadVipLogo(formData);
       if (response.data.success) {
-        setVipWebsiteLogo(response.data.data!.vipWebsiteLogo || "");
+        setVipWebsiteLogo(response.data.data!.vipCosmetics?.vipWebsiteLogo || "");
         dispatch(setUser(response.data.data!));
         queryClient.invalidateQueries({ queryKey: ["userProfile"] });
         swalAlert({ title: "🎨 Cập nhật Logo VIP thành công!", icon: "success" });
@@ -123,7 +123,7 @@ export default function ProfilePage() {
       formData.append("banner", file);
       const response = await authApi.uploadVipBanner(formData);
       if (response.data.success) {
-        setVipWebsiteBanner(response.data.data!.vipWebsiteBanner || "");
+        setVipWebsiteBanner(response.data.data!.vipCosmetics?.vipWebsiteBanner || "");
         dispatch(setUser(response.data.data!));
         queryClient.invalidateQueries({ queryKey: ["userProfile"] });
         swalAlert({ title: "🎨 Cập nhật Banner VIP thành công!", icon: "success" });
@@ -243,13 +243,13 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (freshUser) {
-      setVipTheme(freshUser.vipTheme || "default");
-      setVipAvatarFrame(freshUser.vipAvatarFrame || "none");
-      setVipCoverImage(freshUser.vipCoverImage || "");
-      setVipMascot(freshUser.vipMascot || "ronaldo");
-      setVipWebsiteName(freshUser.vipWebsiteName || "");
-      setVipWebsiteLogo(freshUser.vipWebsiteLogo || "");
-      setVipWebsiteBanner(freshUser.vipWebsiteBanner || "");
+      setVipTheme(freshUser.vipCosmetics?.vipTheme || "default");
+      setVipAvatarFrame(freshUser.vipCosmetics?.vipAvatarFrame || "none");
+      setVipCoverImage(freshUser.vipCosmetics?.vipCoverImage || "");
+      setVipMascot(freshUser.vipCosmetics?.vipMascot || "ronaldo");
+      setVipWebsiteName(freshUser.vipCosmetics?.vipWebsiteName || "");
+      setVipWebsiteLogo(freshUser.vipCosmetics?.vipWebsiteLogo || "");
+      setVipWebsiteBanner(freshUser.vipCosmetics?.vipWebsiteBanner || "");
     }
   }, [freshUser]);
 
@@ -361,7 +361,7 @@ export default function ProfilePage() {
                 avatarUrl={freshUser?.avatar}
                 name={freshUser?.name}
                 hasMembership={freshUser?.hasMembership}
-                vipAvatarFrame={freshUser?.vipAvatarFrame}
+                vipAvatarFrame={freshUser?.vipCosmetics?.vipAvatarFrame}
                 size="lg"
               />
               {/* Overlay hover to change avatar */}
@@ -450,7 +450,7 @@ export default function ProfilePage() {
           {activeTab === "overview" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* Header Banner */}
-              <div className={cn("rounded-3xl p-8 relative overflow-hidden shadow-2xl transition-all duration-300", freshUser?.hasMembership && freshUser?.vipCoverImage ? freshUser.vipCoverImage : "bg-gradient-to-br from-orange-500 via-orange-500 to-red-600 shadow-orange-200")}>
+              <div className={cn("rounded-3xl p-8 relative overflow-hidden shadow-2xl transition-all duration-300", freshUser?.hasMembership && freshUser?.vipCosmetics?.vipCoverImage ? freshUser.vipCosmetics.vipCoverImage : "bg-gradient-to-br from-orange-500 via-orange-500 to-red-600 shadow-orange-200")}>
                 <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full" />
                 <div className="absolute -left-5 -bottom-5 w-24 h-24 bg-white/5 rounded-full" />
                 <div className="relative z-10 flex items-center justify-between">

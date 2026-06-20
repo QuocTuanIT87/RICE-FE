@@ -116,7 +116,7 @@ export default function OrderPage() {
   const user = profileData?.data.data;
   const balance = user?.balance || 0;
   const vipDiscountRate = user?.vipDiscountRate || 0;
-  const vipMascot = user?.vipMascot || "ronaldo";
+  const vipMascot = user?.vipCosmetics?.vipMascot || "ronaldo";
 
   const mascotCard = getMascotCardConfig(vipMascot);
 
