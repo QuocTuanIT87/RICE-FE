@@ -585,7 +585,7 @@ export default function ForumPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 items-start">
         {/* Left Side: Filter Categories */}
-        <div className="md:col-span-1 space-y-4">
+        <div className="md:col-span-1 space-y-4 md:sticky md:top-[80px] self-start">
           <Card className="border border-gray-200/60 shadow-sm rounded-2xl overflow-hidden bg-white">
             <CardHeader className="bg-gray-50/50 p-4 border-b border-gray-100">
               <CardTitle className="text-sm font-black text-gray-700 flex items-center gap-1.5">
@@ -1016,7 +1016,7 @@ export default function ForumPage() {
         </div>
 
         {/* Right Side: Hot Topics & VIP Spotlights */}
-        <div className="hidden lg:block lg:col-span-1 space-y-6">
+        <div className="hidden lg:block lg:col-span-1 space-y-6 lg:sticky lg:top-[80px] self-start">
           {/* Hot Topics */}
           <Card className="border border-gray-200/60 shadow-sm rounded-2xl overflow-hidden bg-white">
             <CardHeader className="bg-gray-50/50 p-4 border-b border-gray-100">
