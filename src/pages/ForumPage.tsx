@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { forumApi, usersApi } from "@/services/api";
+import { forumApi, usersApi, socialApi } from "@/services/api";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -849,43 +850,47 @@ export default function ForumPage() {
                         className="flex items-center gap-3"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <Link
-                          to={getProfileLink(
-                            post.userId?._id || post.userId?.id,
-                          )}
-                          className="shrink-0"
-                        >
-                          <VipAvatar
-                            avatarUrl={post.userId?.avatar}
-                            name={post.userId?.name}
-                            hasMembership={post.userId?.hasMembership}
-                            vipAvatarFrame={
-                              post.userId?.vipCosmetics?.vipAvatarFrame
-                            }
-                            size="md"
-                          />
-                        </Link>
+                        <UserHoverCardWrapper userId={post.userId?._id || post.userId?.id}>
+                          <Link
+                            to={getProfileLink(
+                              post.userId?._id || post.userId?.id,
+                            )}
+                            className="shrink-0"
+                          >
+                            <VipAvatar
+                              avatarUrl={post.userId?.avatar}
+                              name={post.userId?.name}
+                              hasMembership={post.userId?.hasMembership}
+                              vipAvatarFrame={
+                                post.userId?.vipCosmetics?.vipAvatarFrame
+                              }
+                              size="md"
+                            />
+                          </Link>
+                        </UserHoverCardWrapper>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <Link
-                              to={getProfileLink(
-                                post.userId?._id || post.userId?.id,
-                              )}
-                              className="hover:underline"
-                            >
-                              <span
-                                className={cn(
-                                  "text-sm font-black truncate leading-tight",
-                                  isAuthorVip
-                                    ? isVipGold
-                                      ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
-                                      : "text-amber-500"
-                                    : "text-gray-900",
+                            <UserHoverCardWrapper userId={post.userId?._id || post.userId?.id}>
+                              <Link
+                                to={getProfileLink(
+                                  post.userId?._id || post.userId?.id,
                                 )}
+                                className="hover:underline"
                               >
-                                {post.userId?.name || "Đạo hữu ẩn danh"}
-                              </span>
-                            </Link>
+                                <span
+                                  className={cn(
+                                    "text-sm font-black truncate leading-tight",
+                                    isAuthorVip
+                                      ? isVipGold
+                                        ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
+                                        : "text-amber-500"
+                                      : "text-gray-900",
+                                  )}
+                                >
+                                  {post.userId?.name || "Đạo hữu ẩn danh"}
+                                </span>
+                              </Link>
+                            </UserHoverCardWrapper>
                             {isAuthorVip && (
                               <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[9px] px-1 py-0.5 rounded flex items-center gap-0.5 scale-90">
                                 <Award
@@ -1143,44 +1148,48 @@ export default function ForumPage() {
               <div className="p-4 md:p-5 space-y-4 flex-1 overflow-y-auto custom-scrollbar">
                 {/* Author Info */}
                 <div className="flex items-center gap-3">
-                  <Link
-                    to={getProfileLink(
-                      detailPost.userId?._id || detailPost.userId?.id,
-                    )}
-                    className="shrink-0"
-                  >
-                    <VipAvatar
-                      avatarUrl={detailPost.userId?.avatar}
-                      name={detailPost.userId?.name}
-                      hasMembership={detailPost.userId?.hasMembership}
-                      vipAvatarFrame={
-                        detailPost.userId?.vipCosmetics?.vipAvatarFrame
-                      }
-                      size="md"
-                    />
-                  </Link>
+                  <UserHoverCardWrapper userId={detailPost.userId?._id || detailPost.userId?.id}>
+                    <Link
+                      to={getProfileLink(
+                        detailPost.userId?._id || detailPost.userId?.id,
+                      )}
+                      className="shrink-0"
+                    >
+                      <VipAvatar
+                        avatarUrl={detailPost.userId?.avatar}
+                        name={detailPost.userId?.name}
+                        hasMembership={detailPost.userId?.hasMembership}
+                        vipAvatarFrame={
+                          detailPost.userId?.vipCosmetics?.vipAvatarFrame
+                        }
+                        size="md"
+                      />
+                    </Link>
+                  </UserHoverCardWrapper>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <Link
-                        to={getProfileLink(
-                          detailPost.userId?._id || detailPost.userId?.id,
-                        )}
-                        className="hover:underline"
-                      >
-                        <span
-                          className={cn(
-                            "text-sm font-black truncate leading-tight",
-                            detailPost.userId?.hasMembership
-                              ? detailPost.userId?.vipCosmetics?.vipTheme ===
-                                "gold"
-                                ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
-                                : "text-amber-500"
-                              : "text-gray-900",
+                      <UserHoverCardWrapper userId={detailPost.userId?._id || detailPost.userId?.id}>
+                        <Link
+                          to={getProfileLink(
+                            detailPost.userId?._id || detailPost.userId?.id,
                           )}
+                          className="hover:underline"
                         >
-                          {detailPost.userId?.name || "Đạo hữu ẩn danh"}
-                        </span>
-                      </Link>
+                          <span
+                            className={cn(
+                              "text-sm font-black truncate leading-tight",
+                              detailPost.userId?.hasMembership
+                                ? detailPost.userId?.vipCosmetics?.vipTheme ===
+                                  "gold"
+                                  ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
+                                  : "text-amber-500"
+                                : "text-gray-900",
+                            )}
+                          >
+                            {detailPost.userId?.name || "Đạo hữu ẩn danh"}
+                          </span>
+                        </Link>
+                      </UserHoverCardWrapper>
                       {detailPost.userId?.hasMembership && (
                         <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[9px] px-1 py-0.5 rounded flex items-center gap-0.5 scale-90">
                           👑 VIP
@@ -1347,49 +1356,53 @@ export default function ForumPage() {
                             <div key={parent._id} className="space-y-3">
                               {/* Parent Comment */}
                               <div className="flex gap-2.5 items-start">
-                                <Link
-                                  to={getProfileLink(
-                                    parent.userId?._id || parent.userId?.id,
-                                  )}
-                                  className="flex-shrink-0"
-                                >
-                                  <VipAvatar
-                                    avatarUrl={parent.userId?.avatar}
-                                    name={parent.userId?.name}
-                                    hasMembership={parent.userId?.hasMembership}
-                                    vipAvatarFrame={
-                                      parent.userId?.vipCosmetics
-                                        ?.vipAvatarFrame
-                                    }
-                                    size="sm"
-                                  />
-                                </Link>
+                                <UserHoverCardWrapper userId={parent.userId?._id || parent.userId?.id}>
+                                  <Link
+                                    to={getProfileLink(
+                                      parent.userId?._id || parent.userId?.id,
+                                    )}
+                                    className="flex-shrink-0"
+                                  >
+                                    <VipAvatar
+                                      avatarUrl={parent.userId?.avatar}
+                                      name={parent.userId?.name}
+                                      hasMembership={parent.userId?.hasMembership}
+                                      vipAvatarFrame={
+                                        parent.userId?.vipCosmetics
+                                          ?.vipAvatarFrame
+                                      }
+                                      size="sm"
+                                    />
+                                  </Link>
+                                </UserHoverCardWrapper>
                                 <div className="flex-1">
                                   <div className="relative inline-block max-w-[95%]">
                                     <div className="bg-gray-100 rounded-2xl px-4 py-2">
                                       <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                                        <Link
-                                          to={getProfileLink(
-                                            parent.userId?._id ||
-                                              parent.userId?.id,
-                                          )}
-                                          className="hover:underline"
-                                        >
-                                          <span
-                                            className={cn(
-                                              "text-xs font-black truncate leading-none",
-                                              parent.userId?.hasMembership
-                                                ? parent.userId?.vipCosmetics
-                                                    ?.vipTheme === "gold"
-                                                  ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
-                                                  : "text-amber-500"
-                                                : "text-gray-900",
+                                        <UserHoverCardWrapper userId={parent.userId?._id || parent.userId?.id}>
+                                          <Link
+                                            to={getProfileLink(
+                                              parent.userId?._id ||
+                                                parent.userId?.id,
                                             )}
+                                            className="hover:underline"
                                           >
-                                            {parent.userId?.name ||
-                                              "Đạo hữu ẩn danh"}
-                                          </span>
-                                        </Link>
+                                            <span
+                                              className={cn(
+                                                "text-xs font-black truncate leading-none",
+                                                parent.userId?.hasMembership
+                                                  ? parent.userId?.vipCosmetics
+                                                      ?.vipTheme === "gold"
+                                                    ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
+                                                    : "text-amber-500"
+                                                  : "text-gray-900",
+                                              )}
+                                            >
+                                              {parent.userId?.name ||
+                                                "Đạo hữu ẩn danh"}
+                                            </span>
+                                          </Link>
+                                        </UserHoverCardWrapper>
                                         {parent.userId?.hasMembership && (
                                           <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[8px] px-1 py-0 rounded flex items-center gap-0.5 scale-90 leading-none">
                                             👑 VIP
@@ -1519,56 +1532,60 @@ export default function ForumPage() {
                                         key={reply._id}
                                         className="flex gap-2 items-start"
                                       >
-                                        <Link
-                                          to={getProfileLink(
-                                            reply.userId?._id ||
-                                              reply.userId?.id,
-                                          )}
-                                          className="flex-shrink-0"
-                                        >
-                                          <VipAvatar
-                                            avatarUrl={reply.userId?.avatar}
-                                            name={reply.userId?.name}
-                                            hasMembership={
-                                              reply.userId?.hasMembership
-                                            }
-                                            vipAvatarFrame={
-                                              reply.userId?.vipCosmetics
-                                                ?.vipAvatarFrame
-                                            }
-                                            size="sm"
-                                            className="w-7 h-7"
-                                          />
-                                        </Link>
+                                        <UserHoverCardWrapper userId={reply.userId?._id || reply.userId?.id}>
+                                          <Link
+                                            to={getProfileLink(
+                                              reply.userId?._id ||
+                                                reply.userId?.id,
+                                            )}
+                                            className="flex-shrink-0"
+                                          >
+                                            <VipAvatar
+                                              avatarUrl={reply.userId?.avatar}
+                                              name={reply.userId?.name}
+                                              hasMembership={
+                                                reply.userId?.hasMembership
+                                              }
+                                              vipAvatarFrame={
+                                                reply.userId?.vipCosmetics
+                                                  ?.vipAvatarFrame
+                                              }
+                                              size="sm"
+                                              className="w-7 h-7"
+                                            />
+                                          </Link>
+                                        </UserHoverCardWrapper>
                                         <div className="flex-1">
                                           <div className="relative inline-block max-w-[95%]">
                                             <div className="bg-gray-100 rounded-2xl px-3.5 py-1.5">
                                               <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                                                <Link
-                                                  to={getProfileLink(
-                                                    reply.userId?._id ||
-                                                      reply.userId?.id,
-                                                  )}
-                                                  className="hover:underline"
-                                                >
-                                                  <span
-                                                    className={cn(
-                                                      "text-[11px] font-black truncate leading-none",
-                                                      reply.userId
-                                                        ?.hasMembership
-                                                        ? reply.userId
-                                                            ?.vipCosmetics
-                                                            ?.vipTheme ===
-                                                          "gold"
-                                                          ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
-                                                          : "text-amber-500"
-                                                        : "text-gray-900",
+                                                <UserHoverCardWrapper userId={reply.userId?._id || reply.userId?.id}>
+                                                  <Link
+                                                    to={getProfileLink(
+                                                      reply.userId?._id ||
+                                                        reply.userId?.id,
                                                     )}
+                                                    className="hover:underline"
                                                   >
-                                                    {reply.userId?.name ||
-                                                      "Đạo hữu ẩn danh"}
-                                                  </span>
-                                                </Link>
+                                                    <span
+                                                      className={cn(
+                                                        "text-[11px] font-black truncate leading-none",
+                                                        reply.userId
+                                                          ?.hasMembership
+                                                          ? reply.userId
+                                                              ?.vipCosmetics
+                                                              ?.vipTheme ===
+                                                            "gold"
+                                                            ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
+                                                            : "text-amber-500"
+                                                          : "text-gray-900",
+                                                      )}
+                                                    >
+                                                      {reply.userId?.name ||
+                                                        "Đạo hữu ẩn danh"}
+                                                    </span>
+                                                  </Link>
+                                                </UserHoverCardWrapper>
                                                 {reply.userId
                                                   ?.hasMembership && (
                                                   <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[8px] px-1 py-0 rounded flex items-center gap-0.5 scale-90 leading-none">
@@ -1793,4 +1810,195 @@ export default function ForumPage() {
       </Dialog>
     </div>
   );
+}
+
+export function UserHoverCardWrapper({
+  userId,
+  children,
+}: {
+  userId: string;
+  children: React.ReactNode;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(
+    null,
+  );
+  const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseEnter = () => {
+    if (timer) clearTimeout(timer);
+    const t = setTimeout(() => {
+      if (triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect();
+        setCoords({
+          top: rect.top + window.scrollY,
+          left: rect.left + window.scrollX,
+        });
+      }
+      setIsOpen(true);
+    }, 400);
+    setTimer(t);
+  };
+
+  const handleMouseLeave = () => {
+    if (timer) clearTimeout(timer);
+    const t = setTimeout(() => {
+      setIsOpen(false);
+    }, 200);
+    setTimer(t);
+  };
+
+  return (
+    <div
+      ref={triggerRef}
+      className="inline-block"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      {children}
+      {isOpen && coords && (
+        <UserHoverCardPortal
+          userId={userId}
+          coords={coords}
+          onMouseEnter={() => {
+            if (timer) clearTimeout(timer);
+          }}
+          onMouseLeave={handleMouseLeave}
+        />
+      )}
+    </div>
+  );
+}
+
+function UserHoverCardPortal({
+  userId,
+  coords,
+  onMouseEnter,
+  onMouseLeave,
+}: {
+  userId: string;
+  coords: { top: number; left: number };
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+}) {
+  const { data: profileResponse, isLoading } = useQuery({
+    queryKey: ["hoverProfile", userId],
+    queryFn: () => socialApi.getPublicProfile(userId),
+    staleTime: 30000,
+  });
+
+  const profile = profileResponse?.data?.data;
+
+  const content = (
+    <div
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      style={{
+        position: "absolute",
+        top: `${coords.top - 8}px`,
+        left: `${coords.left}px`,
+        transform: "translateY(-100%)",
+      }}
+      className="z-[9999] w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-fade-in pointer-events-auto"
+    >
+      {isLoading ? (
+        <div className="flex items-center justify-center h-28">
+          <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
+        </div>
+      ) : profile ? (
+        (() => {
+          const targetUser = profile.user;
+          const isVip = targetUser?.hasMembership;
+          const isVipGold =
+            isVip && targetUser?.vipCosmetics?.vipTheme === "gold";
+          const coverBg =
+            targetUser?.vipCosmetics?.vipTheme === "gold"
+              ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600"
+              : targetUser?.vipCosmetics?.vipTheme === "sakura"
+                ? "bg-gradient-to-r from-pink-400 to-rose-300"
+                : "bg-gradient-to-r from-orange-400 to-red-500";
+
+          return (
+            <>
+              <div className={cn("h-16 w-full relative", coverBg)}>
+                {isVip && (
+                  <div className="absolute top-2 right-2 bg-white/20 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-white/20">
+                    👑 VIP
+                  </div>
+                )}
+              </div>
+
+              <div className="px-4 pb-4 relative">
+                <div className="absolute -top-8 left-4">
+                  <VipAvatar
+                    avatarUrl={targetUser?.avatar}
+                    name={targetUser?.name}
+                    hasMembership={targetUser?.hasMembership}
+                    vipAvatarFrame={targetUser?.vipCosmetics?.vipAvatarFrame}
+                    size="md"
+                    className="border-2 border-white shadow-md w-14 h-14"
+                  />
+                </div>
+
+                <div className="pt-8 space-y-2">
+                  <div>
+                    <h4
+                      className={cn(
+                        "font-black text-sm truncate",
+                        isVipGold
+                          ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
+                          : isVip
+                            ? "text-amber-500"
+                            : "text-gray-900",
+                      )}
+                    >
+                      {targetUser?.name}
+                    </h4>
+                    <p className="text-[10px] text-gray-400 truncate">
+                      {targetUser?.email}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-4 text-[11px] text-gray-550 font-bold border-t border-b border-gray-50 py-1.5">
+                    <div>
+                      <span className="text-gray-800">
+                        {profile.friendsCount}
+                      </span>{" "}
+                      Bạn bè
+                    </div>
+                    <div>
+                      <span className="text-gray-800">
+                        {profile.followersCount}
+                      </span>{" "}
+                      Người theo dõi
+                    </div>
+                  </div>
+
+                  <div className="pt-1">
+                    <Link
+                      to={
+                        targetUser?._id || targetUser?.id
+                          ? `/user/${targetUser._id || targetUser.id}`
+                          : "#"
+                      }
+                    >
+                      <Button
+                        size="sm"
+                        className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-xs h-8"
+                      >
+                        Xem trang cá nhân
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </>
+          );
+        })()
+      ) : null}
+    </div>
+  );
+
+  return createPortal(content, document.body);
 }
