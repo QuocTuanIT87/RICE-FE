@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { forumApi } from "@/services/api";
+import { forumApi, usersApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,6 +37,7 @@ import {
   ThumbsUp,
   Image as ImageIcon,
   X,
+  User,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -103,6 +104,17 @@ export default function ForumPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [friendSearchQuery, setFriendSearchQuery] = useState("");
+
+  const { data: friendUsersResponse, isLoading: friendSearchLoading } = useQuery({
+    queryKey: ["forumFriendSearch", friendSearchQuery],
+    queryFn: () => usersApi.searchUsers({ search: friendSearchQuery, limit: 8 }),
+    enabled: friendSearchQuery.trim().length > 0,
+  });
+
+  const friendUsersList = (friendUsersResponse?.data?.data?.docs || []).filter(
+    (u: any) => u.role !== "admin"
+  );
 
   // Post form states
   const [title, setTitle] = useState("");
@@ -638,6 +650,78 @@ export default function ForumPage() {
               placeholder="Nhập từ khóa tìm kiếm..."
               className="rounded-xl border-gray-200"
             />
+          </Card>
+
+          {/* Friend Search Card */}
+          <Card className="border border-gray-200/60 shadow-sm rounded-2xl overflow-hidden p-4 space-y-3 bg-white">
+            <h3 className="text-sm font-black text-gray-700 flex items-center gap-1.5">
+              <User size={16} className="text-orange-500" />
+              Tìm kiếm đồng nghiệp
+            </h3>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+              <Input
+                value={friendSearchQuery}
+                onChange={(e) => setFriendSearchQuery(e.target.value)}
+                placeholder="Tìm tên hoặc email..."
+                className="pl-9 rounded-xl border-gray-200"
+              />
+            </div>
+            
+            {friendSearchLoading ? (
+              <div className="flex items-center gap-2 justify-center py-3 text-xs text-gray-400 font-medium">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Đang tìm kiếm...
+              </div>
+            ) : friendUsersList.length > 0 ? (
+              <div className="space-y-1.5 max-h-48 overflow-y-auto mt-2 pr-1 custom-scrollbar">
+                {friendUsersList.map((u: any) => {
+                  const isVip = u.hasMembership;
+                  const isGold = isVip && u.vipCosmetics?.vipTheme === "gold";
+                  return (
+                    <Link
+                      key={u._id || u.id}
+                      to={getProfileLink(u._id || u.id)}
+                      className="flex items-center gap-2.5 p-2 rounded-xl transition-all hover:bg-orange-50/50 border border-transparent hover:border-orange-100"
+                    >
+                      <VipAvatar
+                        avatarUrl={u.avatar}
+                        name={u.name}
+                        hasMembership={u.hasMembership}
+                        vipAvatarFrame={u.vipCosmetics?.vipAvatarFrame}
+                        size="sm"
+                      />
+                      <div className="truncate min-w-0 flex-1">
+                        <div className="flex items-center gap-1">
+                          <p className={cn(
+                            "font-extrabold text-xs truncate leading-tight",
+                            isVip
+                              ? isGold
+                                ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent font-black"
+                                : "text-amber-500"
+                              : "text-gray-800"
+                          )}>
+                            {u.name}
+                          </p>
+                          {isVip && (
+                            <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[8px] px-1 py-0 rounded flex items-center gap-0.5 scale-90">
+                              👑
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-gray-400 truncate leading-tight">
+                          {u.email}
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : friendSearchQuery ? (
+              <p className="text-center py-2 text-[10px] text-gray-450 font-bold">Không tìm thấy đồng nghiệp nào</p>
+            ) : (
+              <p className="text-[10px] text-gray-400 font-bold italic">Nhập tên để tìm kiếm nhanh đồng đạo...</p>
+            )}
           </Card>
         </div>
 
