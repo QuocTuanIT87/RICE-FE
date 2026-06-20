@@ -11,13 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSocket } from "@/contexts/SocketContext";
 import { toast } from "@/hooks/useToast";
-import { swalAlert } from "@/utils/swal";
+import { swalAlert, swalConfirm } from "@/utils/swal";
 import { useShowBalance } from "@/hooks/useShowBalance";
 import { cn, formatVND } from "@/lib/utils";
-import { authApi, vouchersApi } from "@/services/api";
+import { authApi, vouchersApi, socialApi } from "@/services/api";
 import { setUser } from "@/store/authSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import VipAvatar from "@/components/VipAvatar";
 import { format } from "date-fns";
 import {
@@ -44,13 +44,14 @@ import {
   Crown,
   Camera,
   Upload,
+  Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Cropper from "react-easy-crop";
 import { getCroppedImg } from "@/utils/cropImage";
 
-type ActiveTab = "overview" | "profile" | "vip_cosmetics" | "vouchers" | "security";
+type ActiveTab = "overview" | "profile" | "vip_cosmetics" | "vouchers" | "security" | "social";
 
 export default function ProfilePage() {
   const { user } = useAppSelector((state) => state.auth);
@@ -263,6 +264,82 @@ export default function ProfilePage() {
 
   const myVouchers = vouchersData?.data.data || [];
 
+  // Social query & mutations
+  const { data: friendsResponse, isLoading: friendsLoading } = useQuery({
+    queryKey: ["friendsList"],
+    queryFn: () => socialApi.getFriendsList(),
+    enabled: activeTab === "social",
+  });
+
+  const { data: requestsResponse, isLoading: requestsLoading } = useQuery({
+    queryKey: ["friendRequests"],
+    queryFn: () => socialApi.getFriendRequests(),
+    enabled: activeTab === "social",
+  });
+
+  const { data: followersResponse, isLoading: followersLoading } = useQuery({
+    queryKey: ["followersList"],
+    queryFn: () => socialApi.getFollowersList(),
+    enabled: activeTab === "social",
+  });
+
+  const { data: followingResponse, isLoading: followingLoading } = useQuery({
+    queryKey: ["followingList"],
+    queryFn: () => socialApi.getFollowingList(),
+    enabled: activeTab === "social",
+  });
+
+  const friends = friendsResponse?.data.data || [];
+  const requests = requestsResponse?.data.data || { incoming: [], outgoing: [] };
+  const followers = followersResponse?.data.data || [];
+  const following = followingResponse?.data.data || [];
+
+  const unfollowMutation = useMutation({
+    mutationFn: (targetId: string) => socialApi.unfollowUser(targetId),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["followingList"] });
+      queryClient.invalidateQueries({ queryKey: ["followersList"] }); // invalidate both just in case
+      toast({
+        title: "Hủy theo dõi",
+        description: res.data.message || "Đã hủy theo dõi thành công!",
+      });
+    },
+  });
+
+  const acceptFriendMutation = useMutation({
+    mutationFn: (targetId: string) => socialApi.acceptFriendRequest(targetId),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["friendsList"] });
+      queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
+      toast({
+        title: "Đồng ý kết bạn",
+        description: res.data.message || "Đã đồng ý lời mời kết bạn!",
+      });
+    },
+  });
+
+  const declineFriendMutation = useMutation({
+    mutationFn: (targetId: string) => socialApi.declineFriendRequest(targetId),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
+      toast({
+        title: "Từ chối/Hủy lời mời",
+        description: res.data.message || "Đã hủy/từ chối lời mời kết bạn thành công!",
+      });
+    },
+  });
+
+  const unfriendMutation = useMutation({
+    mutationFn: (targetId: string) => socialApi.unfriend(targetId),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["friendsList"] });
+      toast({
+        title: "Hủy kết bạn",
+        description: res.data.message || "Đã hủy kết bạn thành công!",
+      });
+    },
+  });
+
   const handleUpdateProfile = async () => {
     if (!name.trim()) {
       swalAlert({ title: "⚠️ Vui lòng nhập tên", icon: "warning" });
@@ -346,6 +423,7 @@ export default function ProfilePage() {
       icon: Ticket,
       badge: myVouchers.length,
     },
+    { id: "social", label: "Bạn bè & Theo dõi", icon: Users },
     { id: "security", label: "Bảo mật", icon: Lock },
   ];
 
@@ -1374,6 +1452,265 @@ export default function ProfilePage() {
                     >
                       THAY ĐỔI
                     </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "social" && (
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="p-8 border-b border-gray-50 flex items-center gap-3">
+                <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
+                  <Users size={20} className="text-orange-500" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-gray-900">
+                    Bạn bè & Theo dõi
+                  </h2>
+                  <p className="text-xs text-gray-400 font-medium">
+                    Kết nối và theo dõi các đồng nghiệp trong Thiên Hương Các
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-8 space-y-8">
+                {/* 1. Lời mời kết bạn */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Lời mời đã nhận */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1 flex items-center gap-2">
+                      📥 Lời mời đã nhận ({requests.incoming?.length || 0})
+                    </h3>
+                    {friendsLoading || requestsLoading ? (
+                      <div className="flex items-center gap-2 text-xs text-gray-400 font-bold italic p-4 bg-gray-55/20 rounded-2xl border border-gray-100">
+                        <Loader2 className="w-4 h-4 animate-spin text-orange-500" /> Đang tải dữ liệu...
+                      </div>
+                    ) : !requests.incoming || requests.incoming.length === 0 ? (
+                      <div className="text-center py-6 text-gray-405 text-xs italic bg-gray-55/30 border border-gray-100 rounded-2xl font-bold">
+                        Không có lời mời kết bạn nào.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {requests.incoming.map((reqUser: any) => (
+                          <div key={reqUser._id} className="flex items-center justify-between p-3.5 bg-gray-50 hover:bg-gray-100/50 border border-gray-100 rounded-2xl transition-colors">
+                            <Link to={`/user/${reqUser._id}`} className="flex items-center gap-2.5 min-w-0 hover:underline">
+                              <VipAvatar
+                                avatarUrl={reqUser.avatar}
+                                name={reqUser.name}
+                                hasMembership={reqUser.hasMembership}
+                                vipAvatarFrame={reqUser.vipCosmetics?.vipAvatarFrame}
+                                size="sm"
+                              />
+                              <div className="min-w-0">
+                                <p className="text-xs font-black text-gray-800 truncate leading-none">{reqUser.name}</p>
+                                <p className="text-[10px] text-gray-400 truncate mt-0.5">{reqUser.email}</p>
+                              </div>
+                            </Link>
+                            <div className="flex items-center gap-1 shrink-0 pl-2">
+                              <Button
+                                onClick={() => acceptFriendMutation.mutate(reqUser._id)}
+                                disabled={acceptFriendMutation.isPending}
+                                className="h-7 px-2.5 rounded-lg text-[10px] font-black bg-orange-500 hover:bg-orange-600 text-white shadow-sm"
+                              >
+                                Đồng ý
+                              </Button>
+                              <Button
+                                onClick={() => declineFriendMutation.mutate(reqUser._id)}
+                                disabled={declineFriendMutation.isPending}
+                                variant="ghost"
+                                className="h-7 px-2.5 rounded-lg text-[10px] font-bold text-red-500 hover:bg-red-50 hover:text-red-650 border border-red-100 bg-white"
+                              >
+                                Từ chối
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Lời mời đã gửi */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1 flex items-center gap-2">
+                      📤 Lời mời đã gửi ({requests.outgoing?.length || 0})
+                    </h3>
+                    {friendsLoading || requestsLoading ? (
+                      <div className="flex items-center gap-2 text-xs text-gray-400 font-bold italic p-4 bg-gray-55/20 rounded-2xl border border-gray-100">
+                        <Loader2 className="w-4 h-4 animate-spin text-orange-500" /> Đang tải dữ liệu...
+                      </div>
+                    ) : !requests.outgoing || requests.outgoing.length === 0 ? (
+                      <div className="text-center py-6 text-gray-405 text-xs italic bg-gray-55/30 border border-gray-100 rounded-2xl font-bold">
+                        Chưa gửi lời mời nào.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {requests.outgoing.map((reqUser: any) => (
+                          <div key={reqUser._id} className="flex items-center justify-between p-3.5 bg-gray-55/20 border border-gray-100 rounded-2xl">
+                            <Link to={`/user/${reqUser._id}`} className="flex items-center gap-2.5 min-w-0 hover:underline">
+                              <VipAvatar
+                                avatarUrl={reqUser.avatar}
+                                name={reqUser.name}
+                                hasMembership={reqUser.hasMembership}
+                                vipAvatarFrame={reqUser.vipCosmetics?.vipAvatarFrame}
+                                size="sm"
+                              />
+                              <div className="min-w-0">
+                                <p className="text-xs font-black text-gray-800 truncate leading-none">{reqUser.name}</p>
+                                <p className="text-[10px] text-gray-400 truncate mt-0.5">{reqUser.email}</p>
+                              </div>
+                            </Link>
+                            <Button
+                              onClick={() => declineFriendMutation.mutate(reqUser._id)}
+                              disabled={declineFriendMutation.isPending}
+                              variant="ghost"
+                              className="h-7 px-2.5 rounded-lg text-[10px] font-bold text-gray-500 hover:bg-gray-100 hover:text-gray-650 border border-gray-200 bg-white"
+                            >
+                              Thu hồi
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 2. Danh sách bạn bè */}
+                <div className="border-t border-gray-105 pt-6 space-y-4">
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">
+                    👥 Danh sách bạn bè ({friends.length})
+                  </h3>
+                  {friendsLoading ? (
+                    <div className="flex items-center gap-2 text-xs text-gray-400 font-bold italic p-4 bg-gray-55/20 rounded-2xl border border-gray-100">
+                      <Loader2 className="w-4 h-4 animate-spin text-orange-500" /> Đang tải bạn bè...
+                    </div>
+                  ) : friends.length === 0 ? (
+                    <div className="text-center py-10 text-gray-405 text-xs italic bg-gray-50 border border-gray-100 rounded-2xl font-bold">
+                      Chưa có bạn bè nào trong danh sách. Hãy kết nối trên Diễn đàn nhé!
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {friends.map((friend: any) => (
+                        <div key={friend._id} className="flex items-center justify-between p-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-orange-250 transition-colors">
+                          <Link to={`/user/${friend._id}`} className="flex items-center gap-2.5 min-w-0 hover:underline">
+                            <VipAvatar
+                              avatarUrl={friend.avatar}
+                              name={friend.name}
+                              hasMembership={friend.hasMembership}
+                              vipAvatarFrame={friend.vipCosmetics?.vipAvatarFrame}
+                              size="sm"
+                            />
+                            <div className="min-w-0">
+                              <p className="text-xs font-black text-gray-800 truncate leading-none">{friend.name}</p>
+                              <p className="text-[10px] text-gray-400 truncate mt-0.5">{friend.email}</p>
+                            </div>
+                          </Link>
+                          <Button
+                            onClick={() => {
+                              swalConfirm({
+                                title: "Hủy kết bạn?",
+                                text: `Đạo hữu có chắc chắn muốn hủy kết bạn với ${friend.name}?`,
+                                icon: "warning",
+                                confirmText: "Hủy kết bạn",
+                                cancelText: "Hủy bỏ",
+                              }).then((result) => {
+                                if (result.isConfirmed) {
+                                  unfriendMutation.mutate(friend._id);
+                                }
+                              });
+                            }}
+                            disabled={unfriendMutation.isPending}
+                            variant="ghost"
+                            className="h-7 px-2.5 rounded-lg text-[10px] font-bold text-red-500 hover:bg-red-50 hover:text-red-650 border border-red-50 bg-white"
+                          >
+                            Hủy kết bạn
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. Người theo dõi & Đang theo dõi */}
+                <div className="border-t border-gray-105 pt-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Followers */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1 flex items-center gap-2">
+                      🔔 Người theo dõi ({followers.length})
+                    </h3>
+                    {followersLoading ? (
+                      <div className="flex items-center gap-2 text-xs text-gray-400 font-bold italic p-4 bg-gray-55/20 rounded-2xl border border-gray-100">
+                        <Loader2 className="w-4 h-4 animate-spin text-orange-500" /> Đang tải...
+                      </div>
+                    ) : followers.length === 0 ? (
+                      <div className="text-center py-6 text-gray-405 text-xs italic bg-gray-55/30 border border-gray-100 rounded-2xl font-bold">
+                        Chưa có người theo dõi nào.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {followers.map((f: any) => (
+                          <div key={f._id} className="flex items-center justify-between p-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-orange-250 transition-colors">
+                            <Link to={`/user/${f._id}`} className="flex items-center gap-2.5 min-w-0 hover:underline">
+                              <VipAvatar
+                                avatarUrl={f.avatar}
+                                name={f.name}
+                                hasMembership={f.hasMembership}
+                                vipAvatarFrame={f.vipCosmetics?.vipAvatarFrame}
+                                size="sm"
+                              />
+                              <div className="min-w-0">
+                                <p className="text-xs font-black text-gray-800 truncate leading-none">{f.name}</p>
+                                <p className="text-[10px] text-gray-400 truncate mt-0.5">{f.email}</p>
+                              </div>
+                            </Link>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Following */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1 flex items-center gap-2">
+                      📡 Đang theo dõi ({following.length})
+                    </h3>
+                    {followingLoading ? (
+                      <div className="flex items-center gap-2 text-xs text-gray-400 font-bold italic p-4 bg-gray-55/20 rounded-2xl border border-gray-100">
+                        <Loader2 className="w-4 h-4 animate-spin text-orange-500" /> Đang tải...
+                      </div>
+                    ) : following.length === 0 ? (
+                      <div className="text-center py-6 text-gray-405 text-xs italic bg-gray-55/30 border border-gray-100 rounded-2xl font-bold">
+                        Chưa theo dõi ai.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {following.map((f: any) => (
+                          <div key={f._id} className="flex items-center justify-between p-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-orange-250 transition-colors">
+                            <Link to={`/user/${f._id}`} className="flex items-center gap-2.5 min-w-0 hover:underline">
+                              <VipAvatar
+                                avatarUrl={f.avatar}
+                                name={f.name}
+                                hasMembership={f.hasMembership}
+                                vipAvatarFrame={f.vipCosmetics?.vipAvatarFrame}
+                                size="sm"
+                              />
+                              <div className="min-w-0">
+                                <p className="text-xs font-black text-gray-800 truncate leading-none">{f.name}</p>
+                                <p className="text-[10px] text-gray-400 truncate mt-0.5">{f.email}</p>
+                              </div>
+                            </Link>
+                            <Button
+                              onClick={() => unfollowMutation.mutate(f._id)}
+                              disabled={unfollowMutation.isPending}
+                              variant="ghost"
+                              className="h-7 px-2.5 rounded-lg text-[10px] font-bold text-gray-500 hover:bg-red-50 hover:text-red-650 border border-gray-200 hover:border-red-100 bg-white"
+                            >
+                              Hủy theo dõi
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

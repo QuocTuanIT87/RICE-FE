@@ -120,26 +120,30 @@ export default function PostDetailPage() {
         <CardContent className="p-6 space-y-6">
           {/* Author Header */}
           <div className="flex items-center gap-3">
-            <VipAvatar
-              avatarUrl={post.userId?.avatar}
-              name={post.userId?.name}
-              hasMembership={post.userId?.hasMembership}
-              vipAvatarFrame={post.userId?.vipCosmetics?.vipAvatarFrame}
-              size="md"
-            />
+            <Link to={`/user/${post.userId?._id || post.userId?.id}`} className="shrink-0">
+              <VipAvatar
+                avatarUrl={post.userId?.avatar}
+                name={post.userId?.name}
+                hasMembership={post.userId?.hasMembership}
+                vipAvatarFrame={post.userId?.vipCosmetics?.vipAvatarFrame}
+                size="md"
+              />
+            </Link>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span
-                  className={`text-sm font-black truncate leading-tight ${
-                    isAuthorVip
-                      ? isVipGold
-                        ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
-                        : "text-amber-500"
-                      : "text-gray-900"
-                  }`}
-                >
-                  {post.userId?.name || "Đạo hữu ẩn danh"}
-                </span>
+                <Link to={`/user/${post.userId?._id || post.userId?.id}`} className="hover:underline">
+                  <span
+                    className={`text-sm font-black truncate leading-tight ${
+                      isAuthorVip
+                        ? isVipGold
+                          ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
+                          : "text-amber-500"
+                        : "text-gray-900"
+                    }`}
+                  >
+                    {post.userId?.name || "Đạo hữu ẩn danh"}
+                  </span>
+                </Link>
                 {isAuthorVip && (
                   <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[9px] px-1 py-0.5 rounded flex items-center gap-0.5 scale-90">
                     <Award size={10} className="fill-amber-700/20" />
@@ -251,28 +255,31 @@ export default function PostDetailPage() {
               return (
                 <Card key={comment._id} className="border-gray-200/60 shadow-sm rounded-2xl overflow-hidden">
                   <CardContent className="p-4 flex gap-3">
-                    <VipAvatar
-                      avatarUrl={comment.userId?.avatar}
-                      name={comment.userId?.name}
-                      hasMembership={comment.userId?.hasMembership}
-                      vipAvatarFrame={comment.userId?.vipCosmetics?.vipAvatarFrame}
-                      size="md"
-                      className="flex-shrink-0"
-                    />
+                    <Link to={`/user/${comment.userId?._id || comment.userId?.id}`} className="flex-shrink-0">
+                      <VipAvatar
+                        avatarUrl={comment.userId?.avatar}
+                        name={comment.userId?.name}
+                        hasMembership={comment.userId?.hasMembership}
+                        vipAvatarFrame={comment.userId?.vipCosmetics?.vipAvatarFrame}
+                        size="md"
+                      />
+                    </Link>
                     <div className="flex-1 min-w-0 space-y-1.5">
                       <div className="flex justify-between items-start flex-wrap gap-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span
-                            className={`text-xs font-black truncate leading-none ${
-                              isCommentAuthorVip
-                                ? isCommentVipGold
-                                  ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
+                          <Link to={`/user/${comment.userId?._id || comment.userId?.id}`} className="hover:underline">
+                            <span
+                              className={`text-xs font-black truncate leading-none ${
+                                isCommentAuthorVip
+                                  ? isCommentVipGold
+                                    ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
                                     : "text-amber-500"
                                   : "text-gray-900"
-                            }`}
-                          >
-                            {comment.userId?.name || "Đạo hữu ẩn danh"}
-                          </span>
+                              }`}
+                            >
+                              {comment.userId?.name || "Đạo hữu ẩn danh"}
+                            </span>
+                          </Link>
                           {isCommentAuthorVip && (
                             <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[8px] px-1 py-0 rounded flex items-center gap-0.5 scale-90 leading-none">
                               👑 VIP

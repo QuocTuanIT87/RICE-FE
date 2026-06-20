@@ -25,8 +25,7 @@ import ProfilePage from "@/pages/ProfilePage";
 import OrderHistoryPage from "@/pages/OrderHistoryPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import VipMembershipPage from "@/pages/VipMembershipPage";
-
-// Admin Pages
+import UserPublicProfilePage from "@/pages/UserPublicProfilePage";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminDeposits from "@/pages/admin/AdminDeposits";
 import AdminMenus from "@/pages/admin/AdminMenus";
@@ -294,6 +293,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <NotificationsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/user/:userId"
+          element={
+            <ProtectedRoute>
+              <UserPublicProfilePage />
             </ProtectedRoute>
           }
         />

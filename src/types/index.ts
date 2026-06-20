@@ -271,3 +271,15 @@ export interface Notification {
   createdAt: string;
   updatedAt: string;
 }
+
+export type FriendStatus = "none" | "pending_sent" | "pending_received" | "friends";
+
+export interface PublicProfile {
+  user: User;
+  friendsCount: number;
+  followersCount: number;
+  followingCount: number;
+  friendStatus: FriendStatus;
+  isFollowing: boolean;
+  recentPosts: ForumPost[];
+}

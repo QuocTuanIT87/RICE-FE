@@ -395,4 +395,44 @@ export const systemApi = {
   updateConfig: (data: any) => api.put<ApiResponse<any>>("/system/config", data),
 };
 
+// =============================================
+// SOCIAL API
+// =============================================
+import type { PublicProfile } from "@/types";
+
+export const socialApi = {
+  sendFriendRequest: (userId: string) =>
+    api.post<ApiResponse>(`/social/friends/request/${userId}`),
+
+  acceptFriendRequest: (userId: string) =>
+    api.post<ApiResponse>(`/social/friends/accept/${userId}`),
+
+  declineFriendRequest: (userId: string) =>
+    api.post<ApiResponse>(`/social/friends/decline/${userId}`),
+
+  unfriend: (userId: string) =>
+    api.delete<ApiResponse>(`/social/friends/unfriend/${userId}`),
+
+  getFriendRequests: () =>
+    api.get<ApiResponse<{ incoming: User[]; outgoing: User[] }>>("/social/friends/requests"),
+
+  getFriendsList: () =>
+    api.get<ApiResponse<User[]>>("/social/friends/list"),
+
+  getFollowersList: () =>
+    api.get<ApiResponse<User[]>>("/social/followers"),
+
+  getFollowingList: () =>
+    api.get<ApiResponse<User[]>>("/social/following"),
+
+  followUser: (userId: string) =>
+    api.post<ApiResponse>(`/social/follow/${userId}`),
+
+  unfollowUser: (userId: string) =>
+    api.delete<ApiResponse>(`/social/unfollow/${userId}`),
+
+  getPublicProfile: (userId: string) =>
+    api.get<ApiResponse<PublicProfile>>(`/social/profile/${userId}`),
+};
+
 export default api;

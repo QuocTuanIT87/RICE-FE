@@ -6,7 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/useToast";
 import { useAppSelector } from "@/store/hooks";
 import VipAvatar from "@/components/VipAvatar";
@@ -15,7 +22,6 @@ import { useSocket } from "@/contexts/SocketContext";
 import {
   MessageSquare,
   Heart,
-  Plus,
   Filter,
   Search,
   Award,
@@ -47,12 +53,42 @@ const CATEGORIES = [
 ];
 
 const REACTION_TYPES = [
-  { value: "like", emoji: "👍", label: "Thích", color: "text-blue-500 hover:text-blue-600 font-extrabold" },
-  { value: "love", emoji: "❤️", label: "Yêu thích", color: "text-red-500 hover:text-red-650 font-extrabold" },
-  { value: "haha", emoji: "😆", label: "Haha", color: "text-yellow-500 hover:text-yellow-600 font-extrabold" },
-  { value: "wow", emoji: "😮", label: "Wow", color: "text-yellow-550 hover:text-yellow-600 font-extrabold" },
-  { value: "sad", emoji: "😢", label: "Buồn", color: "text-blue-400 hover:text-blue-500 font-extrabold" },
-  { value: "angry", emoji: "😡", label: "Phẫn nộ", color: "text-orange-550 hover:text-orange-600 font-extrabold" },
+  {
+    value: "like",
+    emoji: "👍",
+    label: "Thích",
+    color: "text-blue-500 hover:text-blue-600 font-extrabold",
+  },
+  {
+    value: "love",
+    emoji: "❤️",
+    label: "Yêu thích",
+    color: "text-red-500 hover:text-red-650 font-extrabold",
+  },
+  {
+    value: "haha",
+    emoji: "😆",
+    label: "Haha",
+    color: "text-yellow-500 hover:text-yellow-600 font-extrabold",
+  },
+  {
+    value: "wow",
+    emoji: "😮",
+    label: "Wow",
+    color: "text-yellow-550 hover:text-yellow-600 font-extrabold",
+  },
+  {
+    value: "sad",
+    emoji: "😢",
+    label: "Buồn",
+    color: "text-blue-400 hover:text-blue-500 font-extrabold",
+  },
+  {
+    value: "angry",
+    emoji: "😡",
+    label: "Phẫn nộ",
+    color: "text-orange-550 hover:text-orange-600 font-extrabold",
+  },
 ];
 
 export default function ForumPage() {
@@ -60,6 +96,10 @@ export default function ForumPage() {
   const queryClient = useQueryClient();
   const { user } = useAppSelector((state) => state.auth);
   const { socket } = useSocket();
+  const getProfileLink = (authorId?: string) => {
+    const targetId = authorId || user?.id || user?._id;
+    return targetId ? `/user/${targetId}` : "/profile";
+  };
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,11 +110,15 @@ export default function ForumPage() {
   const [category, setCategory] = useState("general");
 
   // Selected post for modal view
-  const [selectedDetailPostId, setSelectedDetailPostId] = useState<string | null>(null);
+  const [selectedDetailPostId, setSelectedDetailPostId] = useState<
+    string | null
+  >(null);
   const [detailCommentContent, setDetailCommentContent] = useState("");
 
   // Reply states
-  const [replyingCommentId, setReplyingCommentId] = useState<string | null>(null);
+  const [replyingCommentId, setReplyingCommentId] = useState<string | null>(
+    null,
+  );
   const [replyContent, setReplyContent] = useState("");
 
   // Image upload states
@@ -99,18 +143,28 @@ export default function ForumPage() {
     const handleCommentCreated = (data: { postId: string; comment: any }) => {
       queryClient.invalidateQueries({ queryKey: ["forumPosts"] });
       if (selectedDetailPostId === data.postId) {
-        queryClient.invalidateQueries({ queryKey: ["forumPostDetail", data.postId] });
+        queryClient.invalidateQueries({
+          queryKey: ["forumPostDetail", data.postId],
+        });
       }
     };
 
-    const handleReactionUpdated = (data: { targetType: "post" | "comment"; targetId: string; postId?: string }) => {
+    const handleReactionUpdated = (data: {
+      targetType: "post" | "comment";
+      targetId: string;
+      postId?: string;
+    }) => {
       queryClient.invalidateQueries({ queryKey: ["forumPosts"] });
       if (selectedDetailPostId) {
         if (
-          (data.targetType === "post" && data.targetId === selectedDetailPostId) ||
-          (data.targetType === "comment" && data.postId === selectedDetailPostId)
+          (data.targetType === "post" &&
+            data.targetId === selectedDetailPostId) ||
+          (data.targetType === "comment" &&
+            data.postId === selectedDetailPostId)
         ) {
-          queryClient.invalidateQueries({ queryKey: ["forumPostDetail", selectedDetailPostId] });
+          queryClient.invalidateQueries({
+            queryKey: ["forumPostDetail", selectedDetailPostId],
+          });
         }
       }
     };
@@ -185,8 +239,7 @@ export default function ForumPage() {
 
   // Create post mutation
   const createPostMutation = useMutation({
-    mutationFn: (data: FormData) =>
-      forumApi.createPost(data),
+    mutationFn: (data: FormData) => forumApi.createPost(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["forumPosts"] });
       setIsCreateOpen(false);
@@ -204,7 +257,9 @@ export default function ForumPage() {
       toast({
         variant: "destructive",
         title: "Không thể đăng bài",
-        description: err.response?.data?.error?.message || "Vui lòng kiểm tra lại nội dung.",
+        description:
+          err.response?.data?.error?.message ||
+          "Vui lòng kiểm tra lại nội dung.",
       });
     },
   });
@@ -219,7 +274,11 @@ export default function ForumPage() {
     },
   });
 
-  const handleReactPost = (e: React.MouseEvent, postId: string, type: string) => {
+  const handleReactPost = (
+    e: React.MouseEvent,
+    postId: string,
+    type: string,
+  ) => {
     e.preventDefault();
     e.stopPropagation();
     reactPostMutation.mutate({ postId, type });
@@ -230,7 +289,9 @@ export default function ForumPage() {
     mutationFn: ({ commentId, type }: { commentId: string; type: string }) =>
       forumApi.reactComment(commentId, type),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["forumPostDetail", selectedDetailPostId] });
+      queryClient.invalidateQueries({
+        queryKey: ["forumPostDetail", selectedDetailPostId],
+      });
     },
   });
 
@@ -240,13 +301,22 @@ export default function ForumPage() {
 
   // Create comment mutation for modal
   const createCommentMutation = useMutation({
-    mutationFn: ({ postId, content, parentId }: { postId: string; content: string; parentId?: string }) =>
-      forumApi.createComment(postId, content, parentId),
+    mutationFn: ({
+      postId,
+      content,
+      parentId,
+    }: {
+      postId: string;
+      content: string;
+      parentId?: string;
+    }) => forumApi.createComment(postId, content, parentId),
     onSuccess: () => {
       setDetailCommentContent("");
       setReplyContent("");
       setReplyingCommentId(null);
-      queryClient.invalidateQueries({ queryKey: ["forumPostDetail", selectedDetailPostId] });
+      queryClient.invalidateQueries({
+        queryKey: ["forumPostDetail", selectedDetailPostId],
+      });
       queryClient.invalidateQueries({ queryKey: ["forumPosts"] });
       toast({
         title: "Bình luận thành công!",
@@ -257,7 +327,8 @@ export default function ForumPage() {
       toast({
         variant: "destructive",
         title: "Lỗi bình luận",
-        description: err.response?.data?.error?.message || "Vui lòng nhập lại bình luận.",
+        description:
+          err.response?.data?.error?.message || "Vui lòng nhập lại bình luận.",
       });
     },
   });
@@ -272,7 +343,7 @@ export default function ForumPage() {
       });
       return;
     }
-    
+
     const formData = new FormData();
     formData.append("title", title.trim());
     formData.append("content", content.trim());
@@ -280,7 +351,7 @@ export default function ForumPage() {
     if (imageFile) {
       formData.append("image", imageFile);
     }
-    
+
     createPostMutation.mutate(formData);
   };
 
@@ -311,12 +382,17 @@ export default function ForumPage() {
     (post) =>
       post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.userId?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      post.userId?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // Compute hot posts dynamically on the client side
   const hotPosts = [...posts]
-    .sort((a, b) => (b.commentsCount || 0) + (b.likes?.length || 0) - ((a.commentsCount || 0) + (a.likes?.length || 0)))
+    .sort(
+      (a, b) =>
+        (b.commentsCount || 0) +
+        (b.likes?.length || 0) -
+        ((a.commentsCount || 0) + (a.likes?.length || 0)),
+    )
     .slice(0, 4);
 
   // Helper to extract active user's reaction from post/comment
@@ -329,14 +405,16 @@ export default function ForumPage() {
   // Helper to render reaction summary icons (👍❤️😆) and count
   const renderReactionSummary = (reactions?: any[]) => {
     if (!reactions || reactions.length === 0) return null;
-    
+
     // Count unique reaction types
     const counts: Record<string, number> = {};
     reactions.forEach((r) => {
       counts[r.type] = (counts[r.type] || 0) + 1;
     });
 
-    const sortedTypes = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+    const sortedTypes = Object.keys(counts).sort(
+      (a, b) => counts[b] - counts[a],
+    );
 
     return (
       <div className="flex items-center gap-1.5">
@@ -344,7 +422,10 @@ export default function ForumPage() {
           {sortedTypes.slice(0, 3).map((type) => {
             const config = REACTION_TYPES.find((rt) => rt.value === type);
             return (
-              <span key={type} className="text-xs filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)]">
+              <span
+                key={type}
+                className="text-xs filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)]"
+              >
                 {config?.emoji || "👍"}
               </span>
             );
@@ -360,125 +441,135 @@ export default function ForumPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Forum Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-orange-500/10 to-red-500/5 p-6 rounded-2xl border border-orange-100/50">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-black text-gray-950 tracking-tight flex items-center gap-2">
-            💬 Diễn Đàn Nội Bộ Thiên Hương Các
-          </h1>
-          <p className="text-gray-500 text-xs md:text-sm mt-1">
-            Góc thảo luận, review đồ ăn trưa, tâm sự đời sống sinh viên công sở công ty.
-          </p>
-        </div>
-        <Dialog open={isCreateOpen} onOpenChange={(open) => {
+      <Dialog
+        open={isCreateOpen}
+        onOpenChange={(open) => {
           setIsCreateOpen(open);
           if (!open) {
             handleRemoveImage();
           }
-        }}>
-          <DialogTrigger asChild>
-            <Button className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl flex items-center gap-2 shadow-md shadow-orange-200 shrink-0">
-              <Plus size={18} />
-              Đăng bài mới
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px] rounded-2xl bg-white">
-            <form onSubmit={handleCreatePost}>
-              <DialogHeader>
-                <DialogTitle className="text-xl font-extrabold text-gray-900">
-                  Viết Bài Thảo Luận Mới
-                </DialogTitle>
-                <DialogDescription>
-                  Chia sẻ ý kiến hoặc phản hồi món ăn cùng các đồng nghiệp trong công ty.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="post-title" className="font-bold text-gray-700">Tiêu đề bài đăng</Label>
-                  <Input
-                    id="post-title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Nhập tiêu đề ngắn gọn xúc tích..."
-                    className="rounded-xl border-gray-200"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="post-category" className="font-bold text-gray-700">Chủ đề</Label>
-                  <select
-                    id="post-category"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full text-sm rounded-xl border border-gray-200 p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-                  >
-                    <option value="general">Tám chuyện</option>
-                    <option value="review">Review món ăn</option>
-                    <option value="life">Đời sống</option>
-                    <option value="knowledge">Kiến thức</option>
-                  </select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="post-content" className="font-bold text-gray-700">Nội dung</Label>
-                  <textarea
-                    id="post-content"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="Hãy viết gì đó vui vẻ hoặc review món cơm hôm nay..."
-                    rows={5}
-                    className="w-full text-sm rounded-xl border border-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 resize-none"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label className="font-bold text-gray-700">Hình ảnh đính kèm (Tùy chọn)</Label>
-                  {imagePreview ? (
-                    <div className="relative rounded-xl overflow-hidden border border-gray-200 max-h-[180px] bg-slate-50">
-                      <img src={imagePreview} alt="Preview" className="w-full h-full object-contain max-h-[180px]" />
-                      <button
-                        type="button"
-                        onClick={handleRemoveImage}
-                        className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors focus:outline-none"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl p-4 cursor-pointer hover:border-orange-500/50 hover:bg-orange-50/10 transition-all select-none">
-                      <ImageIcon className="text-gray-400 mb-1" size={20} />
-                      <span className="text-xs text-gray-500 font-bold">Chọn hình ảnh để tải lên</span>
-                      <span className="text-[10px] text-gray-400 mt-0.5">JPEG, PNG, WEBP (Tối đa 5MB)</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                </div>
+        }}
+      >
+        <DialogContent className="sm:max-w-[500px] rounded-2xl bg-white">
+          <form onSubmit={handleCreatePost}>
+            <DialogHeader>
+              <DialogTitle className="text-xl font-extrabold text-gray-900">
+                Viết Bài Thảo Luận Mới
+              </DialogTitle>
+              <DialogDescription>
+                Chia sẻ ý kiến hoặc phản hồi món ăn cùng các đồng nghiệp trong
+                công ty.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="post-title" className="font-bold text-gray-700">
+                  Tiêu đề bài đăng
+                </Label>
+                <Input
+                  id="post-title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Nhập tiêu đề ngắn gọn xúc tích..."
+                  className="rounded-xl border-gray-200"
+                />
               </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsCreateOpen(false);
-                    handleRemoveImage();
-                  }}
-                  className="rounded-xl border-gray-200 text-gray-500 font-bold"
+              <div className="grid gap-2">
+                <Label
+                  htmlFor="post-category"
+                  className="font-bold text-gray-700"
                 >
-                  Hủy bỏ
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={createPostMutation.isPending}
-                  className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl"
+                  Chủ đề
+                </Label>
+                <select
+                  id="post-category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full text-sm rounded-xl border border-gray-200 p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
                 >
-                  Đăng bài
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+                  <option value="general">Tám chuyện</option>
+                  <option value="review">Review món ăn</option>
+                  <option value="life">Đời sống</option>
+                  <option value="knowledge">Kiến thức</option>
+                </select>
+              </div>
+              <div className="grid gap-2">
+                <Label
+                  htmlFor="post-content"
+                  className="font-bold text-gray-700"
+                >
+                  Nội dung
+                </Label>
+                <textarea
+                  id="post-content"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Hãy viết gì đó vui vẻ hoặc review món cơm hôm nay..."
+                  rows={5}
+                  className="w-full text-sm rounded-xl border border-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 resize-none"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label className="font-bold text-gray-700">
+                  Hình ảnh đính kèm (Tùy chọn)
+                </Label>
+                {imagePreview ? (
+                  <div className="relative rounded-xl overflow-hidden border border-gray-200 max-h-[180px] bg-slate-50">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-full h-full object-contain max-h-[180px]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors focus:outline-none"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl p-4 cursor-pointer hover:border-orange-500/50 hover:bg-orange-50/10 transition-all select-none">
+                    <ImageIcon className="text-gray-400 mb-1" size={20} />
+                    <span className="text-xs text-gray-500 font-bold">
+                      Chọn hình ảnh để tải lên
+                    </span>
+                    <span className="text-[10px] text-gray-400 mt-0.5">
+                      JPEG, PNG, WEBP (Tối đa 5MB)
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsCreateOpen(false);
+                  handleRemoveImage();
+                }}
+                className="rounded-xl border-gray-200 text-gray-500 font-bold"
+              >
+                Hủy bỏ
+              </Button>
+              <Button
+                type="submit"
+                disabled={createPostMutation.isPending}
+                className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl"
+              >
+                Đăng bài
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 items-start">
         {/* Left Side: Filter Categories */}
@@ -514,11 +605,20 @@ export default function ForumPage() {
                           : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
                       )}
                     >
-                      <span className={cn("p-1.5 rounded-lg", isSelected ? "bg-orange-100 text-orange-600" : "bg-gray-100 text-gray-500")}>
+                      <span
+                        className={cn(
+                          "p-1.5 rounded-lg",
+                          isSelected
+                            ? "bg-orange-100 text-orange-600"
+                            : "bg-gray-100 text-gray-500",
+                        )}
+                      >
                         {catIcons[cat.value] || <MessageSquare size={16} />}
                       </span>
                       <span>{cat.label}</span>
-                      {isSelected && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />}
+                      {isSelected && (
+                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                      )}
                     </button>
                   );
                 })}
@@ -546,13 +646,15 @@ export default function ForumPage() {
           {/* Post Creator Card (Facebook Style) */}
           <Card className="border border-gray-200/80 shadow-sm rounded-2xl overflow-hidden bg-white p-4 space-y-3">
             <div className="flex items-center gap-3">
-              <VipAvatar
-                avatarUrl={user?.avatar}
-                name={user?.name}
-                hasMembership={user?.hasMembership}
-                vipAvatarFrame={user?.vipCosmetics?.vipAvatarFrame}
-                size="md"
-              />
+              <Link to={getProfileLink()} className="shrink-0">
+                <VipAvatar
+                  avatarUrl={user?.avatar}
+                  name={user?.name}
+                  hasMembership={user?.hasMembership}
+                  vipAvatarFrame={user?.vipCosmetics?.vipAvatarFrame}
+                  size="md"
+                />
+              </Link>
               <button
                 onClick={() => {
                   setCategory("general");
@@ -560,10 +662,12 @@ export default function ForumPage() {
                 }}
                 className="flex-1 text-left px-4 py-3 rounded-full bg-gray-100 hover:bg-gray-200/80 text-gray-500 text-xs font-medium border border-gray-200/50 transition-colors focus:outline-none"
               >
-                {user?.name ? `${user.name} ơi, hôm nay bạn có chia sẻ gì không?` : "Hôm nay bạn muốn chia sẻ gì thế?"}
+                {user?.name
+                  ? `${user.name} ơi, hôm nay bạn có chia sẻ gì không?`
+                  : "Hôm nay bạn muốn chia sẻ gì thế?"}
               </button>
             </div>
-            
+
             <div className="pt-3 border-t border-gray-100 flex items-center justify-around text-xs text-gray-500 font-bold">
               <button
                 onClick={() => {
@@ -602,31 +706,51 @@ export default function ForumPage() {
           {isLoading ? (
             <div className="flex flex-col items-center justify-center p-16 bg-white border border-gray-200/60 rounded-2xl space-y-2 shadow-sm">
               <div className="w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
-              <p className="text-sm text-gray-400 font-medium">Đang tải luồng thảo luận...</p>
+              <p className="text-sm text-gray-400 font-medium">
+                Đang tải luồng thảo luận...
+              </p>
             </div>
           ) : filteredPosts.length === 0 ? (
             <div className="bg-white border border-gray-200/60 rounded-2xl p-12 text-center text-gray-500 shadow-sm">
               <div className="text-4xl mb-2">💬</div>
-              <h3 className="font-bold text-lg text-gray-800">Chưa có bài viết nào</h3>
-              <p className="text-sm text-gray-400 mt-1">Đạo hữu hãy là người đầu tiên khơi mào cuộc thảo luận nhé!</p>
+              <h3 className="font-bold text-lg text-gray-800">
+                Chưa có bài viết nào
+              </h3>
+              <p className="text-sm text-gray-400 mt-1">
+                Đạo hữu hãy là người đầu tiên khơi mào cuộc thảo luận nhé!
+              </p>
             </div>
           ) : (
             filteredPosts.map((post: any) => {
               const myReaction = getMyReaction(post.reactions);
-              const myReactionConfig = myReaction ? REACTION_TYPES.find(rt => rt.value === myReaction.type) : null;
-              const myReactionLabel = myReactionConfig ? myReactionConfig.label : "Thích";
-              const myReactionColor = myReactionConfig ? myReactionConfig.color : "text-gray-650 hover:text-blue-500";
+              const myReactionConfig = myReaction
+                ? REACTION_TYPES.find((rt) => rt.value === myReaction.type)
+                : null;
+              const myReactionLabel = myReactionConfig
+                ? myReactionConfig.label
+                : "Thích";
+              const myReactionColor = myReactionConfig
+                ? myReactionConfig.color
+                : "text-gray-650 hover:text-blue-500";
               const myReactionIcon = myReactionConfig ? (
-                <span className="text-sm shrink-0 filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)]">{myReactionConfig.emoji}</span>
+                <span className="text-sm shrink-0 filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)]">
+                  {myReactionConfig.emoji}
+                </span>
               ) : (
-                <ThumbsUp size={16} className="text-gray-500 transition-transform group-hover:scale-110" />
+                <ThumbsUp
+                  size={16}
+                  className="text-gray-500 transition-transform group-hover:scale-110"
+                />
               );
 
-              const postCategory = CATEGORIES.find((c) => c.value === post.category)?.label || "Tám chuyện";
+              const postCategory =
+                CATEGORIES.find((c) => c.value === post.category)?.label ||
+                "Tám chuyện";
 
               // VIP styling checks
               const isAuthorVip = post.userId?.hasMembership;
-              const isVipGold = isAuthorVip && post.userId?.vipCosmetics?.vipTheme === "gold";
+              const isVipGold =
+                isAuthorVip && post.userId?.vipCosmetics?.vipTheme === "gold";
 
               return (
                 <div
@@ -637,31 +761,53 @@ export default function ForumPage() {
                   <Card className="border-none shadow-none bg-transparent">
                     <CardContent className="p-4 md:p-5 space-y-4">
                       {/* Author Header */}
-                      <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                        <VipAvatar
-                          avatarUrl={post.userId?.avatar}
-                          name={post.userId?.name}
-                          hasMembership={post.userId?.hasMembership}
-                          vipAvatarFrame={post.userId?.vipCosmetics?.vipAvatarFrame}
-                          size="md"
-                        />
+                      <div
+                        className="flex items-center gap-3"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Link
+                          to={getProfileLink(
+                            post.userId?._id || post.userId?.id,
+                          )}
+                          className="shrink-0"
+                        >
+                          <VipAvatar
+                            avatarUrl={post.userId?.avatar}
+                            name={post.userId?.name}
+                            hasMembership={post.userId?.hasMembership}
+                            vipAvatarFrame={
+                              post.userId?.vipCosmetics?.vipAvatarFrame
+                            }
+                            size="md"
+                          />
+                        </Link>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span
-                              className={cn(
-                                "text-sm font-black truncate leading-tight",
-                                isAuthorVip
-                                  ? isVipGold
-                                    ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
-                                    : "text-amber-500"
-                                  : "text-gray-900"
+                            <Link
+                              to={getProfileLink(
+                                post.userId?._id || post.userId?.id,
                               )}
+                              className="hover:underline"
                             >
-                              {post.userId?.name || "Đạo hữu ẩn danh"}
-                            </span>
+                              <span
+                                className={cn(
+                                  "text-sm font-black truncate leading-tight",
+                                  isAuthorVip
+                                    ? isVipGold
+                                      ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
+                                      : "text-amber-500"
+                                    : "text-gray-900",
+                                )}
+                              >
+                                {post.userId?.name || "Đạo hữu ẩn danh"}
+                              </span>
+                            </Link>
                             {isAuthorVip && (
                               <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[9px] px-1 py-0.5 rounded flex items-center gap-0.5 scale-90">
-                                <Award size={10} className="fill-amber-700/20" />
+                                <Award
+                                  size={10}
+                                  className="fill-amber-700/20"
+                                />
                                 VIP Member
                               </Badge>
                             )}
@@ -704,7 +850,10 @@ export default function ForumPage() {
                       </div>
 
                       {/* Engagement statistics - Row 1 */}
-                      <div className="flex items-center justify-between text-xs text-gray-400 font-medium pt-2 border-t border-gray-50" onClick={(e) => e.stopPropagation()}>
+                      <div
+                        className="flex items-center justify-between text-xs text-gray-400 font-medium pt-2 border-t border-gray-50"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {renderReactionSummary(post.reactions)}
                         <div className="hover:underline font-bold text-gray-500 text-[10px]">
                           {post.commentsCount || 0} bình luận
@@ -713,15 +862,19 @@ export default function ForumPage() {
 
                       {/* Footer Actions - Row 2 */}
                       <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-gray-500 text-xs font-bold gap-1">
-                        
                         {/* Reactions button wrapper */}
-                        <div className="relative group/react-btn flex-1" onClick={(e) => e.stopPropagation()}>
+                        <div
+                          className="relative group/react-btn flex-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {/* Floating Reaction Bar */}
                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/react-btn:flex items-center gap-1.5 bg-white p-2 rounded-full shadow-lg border border-gray-100 animate-fade-in z-20 after:absolute after:content-[''] after:top-full after:left-0 after:right-0 after:h-4">
                             {REACTION_TYPES.map((rt) => (
                               <button
                                 key={rt.value}
-                                onClick={(e) => handleReactPost(e, post._id, rt.value)}
+                                onClick={(e) =>
+                                  handleReactPost(e, post._id, rt.value)
+                                }
                                 className="text-xl transition-transform hover:scale-130 duration-150 active:scale-95 filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)]"
                                 title={rt.label}
                               >
@@ -731,17 +884,25 @@ export default function ForumPage() {
                           </div>
 
                           <button
-                            onClick={(e) => handleReactPost(e, post._id, myReaction ? myReaction.type : "like")}
+                            onClick={(e) =>
+                              handleReactPost(
+                                e,
+                                post._id,
+                                myReaction ? myReaction.type : "like",
+                              )
+                            }
                             className={cn(
                               "flex items-center justify-center gap-1.5 py-2 w-full rounded-xl transition-all hover:bg-gray-50",
-                              myReaction ? "bg-gray-50/50" : ""
+                              myReaction ? "bg-gray-50/50" : "",
                             )}
                           >
                             {myReactionIcon}
-                            <span className={cn(myReactionColor)}>{myReactionLabel}</span>
+                            <span className={cn(myReactionColor)}>
+                              {myReactionLabel}
+                            </span>
                           </button>
                         </div>
-                        
+
                         <button
                           onClick={(e) => {
                             e.preventDefault();
@@ -753,7 +914,7 @@ export default function ForumPage() {
                           <MessageSquare size={16} />
                           <span>Bình luận</span>
                         </button>
-                        
+
                         <button
                           onClick={(e) => handleShare(e, post._id)}
                           className="flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all hover:bg-gray-50 text-gray-600 hover:text-orange-500 flex-1 text-center"
@@ -782,7 +943,9 @@ export default function ForumPage() {
             </CardHeader>
             <CardContent className="p-4 space-y-4">
               {hotPosts.length === 0 ? (
-                <p className="text-xs text-gray-400 font-medium">Chưa có bài viết nào nổi bật.</p>
+                <p className="text-xs text-gray-400 font-medium">
+                  Chưa có bài viết nào nổi bật.
+                </p>
               ) : (
                 hotPosts.map((hp: any, idx: number) => (
                   <button
@@ -791,7 +954,9 @@ export default function ForumPage() {
                     className="w-full text-left block group space-y-1.5 pb-3 border-b border-gray-50 last:border-none last:pb-0"
                   >
                     <div className="flex items-start gap-2">
-                      <span className="text-xs font-black text-orange-500 mt-0.5">#{idx + 1}</span>
+                      <span className="text-xs font-black text-orange-500 mt-0.5">
+                        #{idx + 1}
+                      </span>
                       <h4 className="text-xs font-black text-gray-800 group-hover:text-orange-500 transition-colors line-clamp-2 leading-snug">
                         {hp.title}
                       </h4>
@@ -815,27 +980,39 @@ export default function ForumPage() {
                 <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center text-amber-600 shrink-0">
                   <Crown size={16} className="animate-bounce" />
                 </div>
-                <h4 className="text-xs font-black text-amber-900 uppercase tracking-wide">Đặc quyền vinh danh VIP</h4>
+                <h4 className="text-xs font-black text-amber-900 uppercase tracking-wide">
+                  Đặc quyền vinh danh VIP
+                </h4>
               </div>
               <p className="text-[11px] text-amber-900/80 leading-relaxed font-medium">
-                Sở hữu thẻ hội viên VIP để bài viết của đạo hữu luôn nổi bật với khung viền lấp lánh và tên gradient độc quyền trên diễn đàn!
+                Sở hữu thẻ hội viên VIP để bài viết của đạo hữu luôn nổi bật với
+                khung viền lấp lánh và tên gradient độc quyền trên diễn đàn!
               </p>
-              
+
               <ul className="space-y-1.5 text-[10px] text-amber-800 font-bold">
                 <li className="flex items-center gap-1.5">
-                  <Sparkles size={12} className="text-amber-500 animate-pulse" />
+                  <Sparkles
+                    size={12}
+                    className="text-amber-500 animate-pulse"
+                  />
                   <span>Khung Avatar VIP đặc chế</span>
                 </li>
                 <li className="flex items-center gap-1.5">
-                  <Sparkles size={12} className="text-amber-500 animate-pulse" />
+                  <Sparkles
+                    size={12}
+                    className="text-amber-500 animate-pulse"
+                  />
                   <span>Tên gradient Hoàng Kim lấp lánh</span>
                 </li>
                 <li className="flex items-center gap-1.5">
-                  <Sparkles size={12} className="text-amber-500 animate-pulse" />
+                  <Sparkles
+                    size={12}
+                    className="text-amber-500 animate-pulse"
+                  />
                   <span>Giảm ngay 2.000đ mỗi phần cơm</span>
                 </li>
               </ul>
-              
+
               <Link to="/vip" className="block pt-2">
                 <Button className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black rounded-xl h-9 border-none shadow-sm shadow-amber-200">
                   Khám phá Gói VIP →
@@ -865,7 +1042,9 @@ export default function ForumPage() {
           {detailLoading && !detailPost ? (
             <div className="flex flex-col items-center justify-center p-16 space-y-2">
               <Loader2 className="w-10 h-10 text-orange-500 animate-spin" />
-              <p className="text-sm text-gray-400 font-semibold">Đang tải bài viết...</p>
+              <p className="text-sm text-gray-400 font-semibold">
+                Đang tải bài viết...
+              </p>
             </div>
           ) : detailPost ? (
             <>
@@ -880,27 +1059,44 @@ export default function ForumPage() {
               <div className="p-4 md:p-5 space-y-4 flex-1 overflow-y-auto custom-scrollbar">
                 {/* Author Info */}
                 <div className="flex items-center gap-3">
-                  <VipAvatar
-                    avatarUrl={detailPost.userId?.avatar}
-                    name={detailPost.userId?.name}
-                    hasMembership={detailPost.userId?.hasMembership}
-                    vipAvatarFrame={detailPost.userId?.vipCosmetics?.vipAvatarFrame}
-                    size="md"
-                  />
+                  <Link
+                    to={getProfileLink(
+                      detailPost.userId?._id || detailPost.userId?.id,
+                    )}
+                    className="shrink-0"
+                  >
+                    <VipAvatar
+                      avatarUrl={detailPost.userId?.avatar}
+                      name={detailPost.userId?.name}
+                      hasMembership={detailPost.userId?.hasMembership}
+                      vipAvatarFrame={
+                        detailPost.userId?.vipCosmetics?.vipAvatarFrame
+                      }
+                      size="md"
+                    />
+                  </Link>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span
-                        className={cn(
-                          "text-sm font-black truncate leading-tight",
-                          detailPost.userId?.hasMembership
-                            ? detailPost.userId?.vipCosmetics?.vipTheme === "gold"
-                              ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
-                              : "text-amber-500"
-                            : "text-gray-900"
+                      <Link
+                        to={getProfileLink(
+                          detailPost.userId?._id || detailPost.userId?.id,
                         )}
+                        className="hover:underline"
                       >
-                        {detailPost.userId?.name || "Đạo hữu ẩn danh"}
-                      </span>
+                        <span
+                          className={cn(
+                            "text-sm font-black truncate leading-tight",
+                            detailPost.userId?.hasMembership
+                              ? detailPost.userId?.vipCosmetics?.vipTheme ===
+                                "gold"
+                                ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
+                                : "text-amber-500"
+                              : "text-gray-900",
+                          )}
+                        >
+                          {detailPost.userId?.name || "Đạo hữu ẩn danh"}
+                        </span>
+                      </Link>
                       {detailPost.userId?.hasMembership && (
                         <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[9px] px-1 py-0.5 rounded flex items-center gap-0.5 scale-90">
                           👑 VIP
@@ -920,7 +1116,8 @@ export default function ForumPage() {
                     variant="secondary"
                     className="bg-orange-50 text-orange-600 border-none font-bold text-xs rounded-xl px-2.5 py-1"
                   >
-                    {CATEGORIES.find((c) => c.value === detailPost.category)?.label || "Tám chuyện"}
+                    {CATEGORIES.find((c) => c.value === detailPost.category)
+                      ?.label || "Tám chuyện"}
                   </Badge>
                 </div>
 
@@ -953,7 +1150,6 @@ export default function ForumPage() {
 
                 {/* Post Actions */}
                 <div className="flex items-center justify-between py-1 border-t border-b border-gray-100 text-gray-500 text-xs font-bold gap-1">
-                  
                   {/* Modal Post Reaction Button with Hover */}
                   <div className="relative group/modal-react flex-1">
                     {/* Floating Reaction Bar */}
@@ -961,7 +1157,9 @@ export default function ForumPage() {
                       {REACTION_TYPES.map((rt) => (
                         <button
                           key={rt.value}
-                          onClick={(e) => handleReactPost(e, detailPost._id, rt.value)}
+                          onClick={(e) =>
+                            handleReactPost(e, detailPost._id, rt.value)
+                          }
                           className="text-xl transition-transform hover:scale-130 duration-150 active:scale-95 filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)]"
                           title={rt.label}
                         >
@@ -973,26 +1171,54 @@ export default function ForumPage() {
                     <button
                       onClick={(e) => {
                         const myReact = getMyReaction(detailPost.reactions);
-                        handleReactPost(e, detailPost._id, myReact ? myReact.type : "like");
+                        handleReactPost(
+                          e,
+                          detailPost._id,
+                          myReact ? myReact.type : "like",
+                        );
                       }}
                       className={cn(
                         "flex items-center justify-center gap-1.5 py-2 w-full rounded-xl transition-all hover:bg-gray-50",
-                        getMyReaction(detailPost.reactions) ? "bg-gray-50/50" : ""
+                        getMyReaction(detailPost.reactions)
+                          ? "bg-gray-50/50"
+                          : "",
                       )}
                     >
                       {getMyReaction(detailPost.reactions) ? (
                         <span className="text-sm shrink-0 filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)]">
-                          {REACTION_TYPES.find(rt => rt.value === getMyReaction(detailPost.reactions)?.type)?.emoji}
+                          {
+                            REACTION_TYPES.find(
+                              (rt) =>
+                                rt.value ===
+                                getMyReaction(detailPost.reactions)?.type,
+                            )?.emoji
+                          }
                         </span>
                       ) : (
                         <ThumbsUp size={16} className="text-gray-500" />
                       )}
-                      <span className={cn(getMyReaction(detailPost.reactions) ? REACTION_TYPES.find(rt => rt.value === getMyReaction(detailPost.reactions)?.type)?.color : "text-gray-600")}>
-                        {getMyReaction(detailPost.reactions) ? REACTION_TYPES.find(rt => rt.value === getMyReaction(detailPost.reactions)?.type)?.label : "Thích"}
+                      <span
+                        className={cn(
+                          getMyReaction(detailPost.reactions)
+                            ? REACTION_TYPES.find(
+                                (rt) =>
+                                  rt.value ===
+                                  getMyReaction(detailPost.reactions)?.type,
+                              )?.color
+                            : "text-gray-600",
+                        )}
+                      >
+                        {getMyReaction(detailPost.reactions)
+                          ? REACTION_TYPES.find(
+                              (rt) =>
+                                rt.value ===
+                                getMyReaction(detailPost.reactions)?.type,
+                            )?.label
+                          : "Thích"}
                       </span>
                     </button>
                   </div>
-                  
+
                   <button
                     onClick={(e) => handleShare(e, detailPost._id)}
                     className="flex items-center justify-center gap-1.5 py-2 rounded-xl transition-all hover:bg-gray-50 text-gray-600 hover:text-orange-500 flex-1"
@@ -1017,41 +1243,69 @@ export default function ForumPage() {
                     ) : (
                       (() => {
                         // Filter parent comments vs replies
-                        const parentComments = detailComments.filter((c: any) => !c.parentId);
-                        const replyComments = detailComments.filter((c: any) => c.parentId);
+                        const parentComments = detailComments.filter(
+                          (c: any) => !c.parentId,
+                        );
+                        const replyComments = detailComments.filter(
+                          (c: any) => c.parentId,
+                        );
 
                         return parentComments.map((parent: any) => {
-                          const parentReaction = getMyReaction(parent.reactions);
-                          const parentReplies = replyComments.filter((r: any) => (r.parentId?._id || r.parentId) === parent._id);
+                          const parentReaction = getMyReaction(
+                            parent.reactions,
+                          );
+                          const parentReplies = replyComments.filter(
+                            (r: any) =>
+                              (r.parentId?._id || r.parentId) === parent._id,
+                          );
 
                           return (
                             <div key={parent._id} className="space-y-3">
                               {/* Parent Comment */}
                               <div className="flex gap-2.5 items-start">
-                                <VipAvatar
-                                  avatarUrl={parent.userId?.avatar}
-                                  name={parent.userId?.name}
-                                  hasMembership={parent.userId?.hasMembership}
-                                  vipAvatarFrame={parent.userId?.vipCosmetics?.vipAvatarFrame}
-                                  size="sm"
+                                <Link
+                                  to={getProfileLink(
+                                    parent.userId?._id || parent.userId?.id,
+                                  )}
                                   className="flex-shrink-0"
-                                />
+                                >
+                                  <VipAvatar
+                                    avatarUrl={parent.userId?.avatar}
+                                    name={parent.userId?.name}
+                                    hasMembership={parent.userId?.hasMembership}
+                                    vipAvatarFrame={
+                                      parent.userId?.vipCosmetics
+                                        ?.vipAvatarFrame
+                                    }
+                                    size="sm"
+                                  />
+                                </Link>
                                 <div className="flex-1">
                                   <div className="relative inline-block max-w-[95%]">
                                     <div className="bg-gray-100 rounded-2xl px-4 py-2">
                                       <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                                        <span
-                                          className={cn(
-                                            "text-xs font-black truncate leading-none",
-                                            parent.userId?.hasMembership
-                                              ? parent.userId?.vipCosmetics?.vipTheme === "gold"
-                                                ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
-                                                : "text-amber-500"
-                                              : "text-gray-900"
+                                        <Link
+                                          to={getProfileLink(
+                                            parent.userId?._id ||
+                                              parent.userId?.id,
                                           )}
+                                          className="hover:underline"
                                         >
-                                          {parent.userId?.name || "Đạo hữu ẩn danh"}
-                                        </span>
+                                          <span
+                                            className={cn(
+                                              "text-xs font-black truncate leading-none",
+                                              parent.userId?.hasMembership
+                                                ? parent.userId?.vipCosmetics
+                                                    ?.vipTheme === "gold"
+                                                  ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
+                                                  : "text-amber-500"
+                                                : "text-gray-900",
+                                            )}
+                                          >
+                                            {parent.userId?.name ||
+                                              "Đạo hữu ẩn danh"}
+                                          </span>
+                                        </Link>
                                         {parent.userId?.hasMembership && (
                                           <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[8px] px-1 py-0 rounded flex items-center gap-0.5 scale-90 leading-none">
                                             👑 VIP
@@ -1064,20 +1318,29 @@ export default function ForumPage() {
                                     </div>
 
                                     {/* Parent Comment Reactions Indicator */}
-                                    {parent.reactions && parent.reactions.length > 0 && (
-                                      <div className="absolute -bottom-2 right-2 bg-white px-1.5 py-0.5 rounded-full shadow-sm border border-gray-100 flex items-center gap-0.5 text-[9px] font-bold text-gray-500 select-none z-10">
-                                        <div className="flex -space-x-0.5">
-                                          {Array.from(new Set(parent.reactions.map((r: any) => r.type)))
-                                            .slice(0, 2)
-                                            .map((type: any) => (
-                                              <span key={type}>
-                                                {REACTION_TYPES.find((rt) => rt.value === type)?.emoji || "👍"}
-                                              </span>
-                                            ))}
+                                    {parent.reactions &&
+                                      parent.reactions.length > 0 && (
+                                        <div className="absolute -bottom-2 right-2 bg-white px-1.5 py-0.5 rounded-full shadow-sm border border-gray-100 flex items-center gap-0.5 text-[9px] font-bold text-gray-500 select-none z-10">
+                                          <div className="flex -space-x-0.5">
+                                            {Array.from(
+                                              new Set(
+                                                parent.reactions.map(
+                                                  (r: any) => r.type,
+                                                ),
+                                              ),
+                                            )
+                                              .slice(0, 2)
+                                              .map((type: any) => (
+                                                <span key={type}>
+                                                  {REACTION_TYPES.find(
+                                                    (rt) => rt.value === type,
+                                                  )?.emoji || "👍"}
+                                                </span>
+                                              ))}
+                                          </div>
+                                          <span>{parent.reactions.length}</span>
                                         </div>
-                                        <span>{parent.reactions.length}</span>
-                                      </div>
-                                    )}
+                                      )}
                                   </div>
 
                                   {/* Action links row */}
@@ -1088,7 +1351,12 @@ export default function ForumPage() {
                                         {REACTION_TYPES.map((rt) => (
                                           <button
                                             key={rt.value}
-                                            onClick={() => handleReactComment(parent._id, rt.value)}
+                                            onClick={() =>
+                                              handleReactComment(
+                                                parent._id,
+                                                rt.value,
+                                              )
+                                            }
                                             className="text-sm transition-transform hover:scale-130 duration-150 active:scale-95 filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)]"
                                           >
                                             {rt.emoji}
@@ -1097,18 +1365,43 @@ export default function ForumPage() {
                                       </div>
 
                                       <button
-                                        onClick={() => handleReactComment(parent._id, parentReaction ? parentReaction.type : "like")}
+                                        onClick={() =>
+                                          handleReactComment(
+                                            parent._id,
+                                            parentReaction
+                                              ? parentReaction.type
+                                              : "like",
+                                          )
+                                        }
                                         className={cn(
                                           "hover:underline",
-                                          parentReaction ? REACTION_TYPES.find(rt => rt.value === parentReaction.type)?.color : "text-gray-500"
+                                          parentReaction
+                                            ? REACTION_TYPES.find(
+                                                (rt) =>
+                                                  rt.value ===
+                                                  parentReaction.type,
+                                              )?.color
+                                            : "text-gray-500",
                                         )}
                                       >
-                                        {parentReaction ? REACTION_TYPES.find(rt => rt.value === parentReaction.type)?.label : "Thích"}
+                                        {parentReaction
+                                          ? REACTION_TYPES.find(
+                                              (rt) =>
+                                                rt.value ===
+                                                parentReaction.type,
+                                            )?.label
+                                          : "Thích"}
                                       </button>
                                     </div>
 
                                     <button
-                                      onClick={() => setReplyingCommentId(replyingCommentId === parent._id ? null : parent._id)}
+                                      onClick={() =>
+                                        setReplyingCommentId(
+                                          replyingCommentId === parent._id
+                                            ? null
+                                            : parent._id,
+                                        )
+                                      }
                                       className="hover:underline text-gray-500"
                                     >
                                       Phản hồi
@@ -1116,10 +1409,13 @@ export default function ForumPage() {
 
                                     <span>
                                       {parent.createdAt
-                                        ? formatDistanceToNow(new Date(parent.createdAt), {
-                                            addSuffix: true,
-                                            locale: vi,
-                                          })
+                                        ? formatDistanceToNow(
+                                            new Date(parent.createdAt),
+                                            {
+                                              addSuffix: true,
+                                              locale: vi,
+                                            },
+                                          )
                                         : "Vừa xong"}
                                     </span>
                                   </div>
@@ -1130,35 +1426,67 @@ export default function ForumPage() {
                               {parentReplies.length > 0 && (
                                 <div className="pl-10 space-y-3 border-l-2 border-gray-100 ml-4">
                                   {parentReplies.map((reply: any) => {
-                                    const replyReaction = getMyReaction(reply.reactions);
+                                    const replyReaction = getMyReaction(
+                                      reply.reactions,
+                                    );
 
                                     return (
-                                      <div key={reply._id} className="flex gap-2 items-start">
-                                        <VipAvatar
-                                          avatarUrl={reply.userId?.avatar}
-                                          name={reply.userId?.name}
-                                          hasMembership={reply.userId?.hasMembership}
-                                          vipAvatarFrame={reply.userId?.vipCosmetics?.vipAvatarFrame}
-                                          size="sm"
-                                          className="w-7 h-7 flex-shrink-0"
-                                        />
+                                      <div
+                                        key={reply._id}
+                                        className="flex gap-2 items-start"
+                                      >
+                                        <Link
+                                          to={getProfileLink(
+                                            reply.userId?._id ||
+                                              reply.userId?.id,
+                                          )}
+                                          className="flex-shrink-0"
+                                        >
+                                          <VipAvatar
+                                            avatarUrl={reply.userId?.avatar}
+                                            name={reply.userId?.name}
+                                            hasMembership={
+                                              reply.userId?.hasMembership
+                                            }
+                                            vipAvatarFrame={
+                                              reply.userId?.vipCosmetics
+                                                ?.vipAvatarFrame
+                                            }
+                                            size="sm"
+                                            className="w-7 h-7"
+                                          />
+                                        </Link>
                                         <div className="flex-1">
                                           <div className="relative inline-block max-w-[95%]">
                                             <div className="bg-gray-100 rounded-2xl px-3.5 py-1.5">
                                               <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                                                <span
-                                                  className={cn(
-                                                    "text-[11px] font-black truncate leading-none",
-                                                    reply.userId?.hasMembership
-                                                      ? reply.userId?.vipCosmetics?.vipTheme === "gold"
-                                                        ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
-                                                        : "text-amber-500"
-                                                      : "text-gray-900"
+                                                <Link
+                                                  to={getProfileLink(
+                                                    reply.userId?._id ||
+                                                      reply.userId?.id,
                                                   )}
+                                                  className="hover:underline"
                                                 >
-                                                  {reply.userId?.name || "Đạo hữu ẩn danh"}
-                                                </span>
-                                                {reply.userId?.hasMembership && (
+                                                  <span
+                                                    className={cn(
+                                                      "text-[11px] font-black truncate leading-none",
+                                                      reply.userId
+                                                        ?.hasMembership
+                                                        ? reply.userId
+                                                            ?.vipCosmetics
+                                                            ?.vipTheme ===
+                                                          "gold"
+                                                          ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent"
+                                                          : "text-amber-500"
+                                                        : "text-gray-900",
+                                                    )}
+                                                  >
+                                                    {reply.userId?.name ||
+                                                      "Đạo hữu ẩn danh"}
+                                                  </span>
+                                                </Link>
+                                                {reply.userId
+                                                  ?.hasMembership && (
                                                   <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[8px] px-1 py-0 rounded flex items-center gap-0.5 scale-90 leading-none">
                                                     👑 VIP
                                                   </Badge>
@@ -1170,20 +1498,32 @@ export default function ForumPage() {
                                             </div>
 
                                             {/* Reply Reaction counts */}
-                                            {reply.reactions && reply.reactions.length > 0 && (
-                                              <div className="absolute -bottom-2 right-2 bg-white px-1.5 py-0.5 rounded-full shadow-sm border border-gray-100 flex items-center gap-0.5 text-[9px] font-bold text-gray-505 select-none z-10">
-                                                <div className="flex -space-x-0.5">
-                                                  {Array.from(new Set(reply.reactions.map((r: any) => r.type)))
-                                                    .slice(0, 2)
-                                                    .map((type: any) => (
-                                                      <span key={type}>
-                                                        {REACTION_TYPES.find((rt) => rt.value === type)?.emoji || "👍"}
-                                                      </span>
-                                                    ))}
+                                            {reply.reactions &&
+                                              reply.reactions.length > 0 && (
+                                                <div className="absolute -bottom-2 right-2 bg-white px-1.5 py-0.5 rounded-full shadow-sm border border-gray-100 flex items-center gap-0.5 text-[9px] font-bold text-gray-505 select-none z-10">
+                                                  <div className="flex -space-x-0.5">
+                                                    {Array.from(
+                                                      new Set(
+                                                        reply.reactions.map(
+                                                          (r: any) => r.type,
+                                                        ),
+                                                      ),
+                                                    )
+                                                      .slice(0, 2)
+                                                      .map((type: any) => (
+                                                        <span key={type}>
+                                                          {REACTION_TYPES.find(
+                                                            (rt) =>
+                                                              rt.value === type,
+                                                          )?.emoji || "👍"}
+                                                        </span>
+                                                      ))}
+                                                  </div>
+                                                  <span>
+                                                    {reply.reactions.length}
+                                                  </span>
                                                 </div>
-                                                <span>{reply.reactions.length}</span>
-                                              </div>
-                                            )}
+                                              )}
                                           </div>
 
                                           <div className="flex items-center gap-3 pl-3 mt-1 text-[10px] text-gray-400 font-bold">
@@ -1193,7 +1533,12 @@ export default function ForumPage() {
                                                 {REACTION_TYPES.map((rt) => (
                                                   <button
                                                     key={rt.value}
-                                                    onClick={() => handleReactComment(reply._id, rt.value)}
+                                                    onClick={() =>
+                                                      handleReactComment(
+                                                        reply._id,
+                                                        rt.value,
+                                                      )
+                                                    }
                                                     className="text-xs transition-transform hover:scale-130 duration-150 active:scale-95 filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.15)]"
                                                   >
                                                     {rt.emoji}
@@ -1202,22 +1547,44 @@ export default function ForumPage() {
                                               </div>
 
                                               <button
-                                                onClick={() => handleReactComment(reply._id, replyReaction ? replyReaction.type : "like")}
+                                                onClick={() =>
+                                                  handleReactComment(
+                                                    reply._id,
+                                                    replyReaction
+                                                      ? replyReaction.type
+                                                      : "like",
+                                                  )
+                                                }
                                                 className={cn(
                                                   "hover:underline",
-                                                  replyReaction ? REACTION_TYPES.find(rt => rt.value === replyReaction.type)?.color : "text-gray-500"
+                                                  replyReaction
+                                                    ? REACTION_TYPES.find(
+                                                        (rt) =>
+                                                          rt.value ===
+                                                          replyReaction.type,
+                                                      )?.color
+                                                    : "text-gray-500",
                                                 )}
                                               >
-                                                {replyReaction ? REACTION_TYPES.find(rt => rt.value === replyReaction.type)?.label : "Thích"}
+                                                {replyReaction
+                                                  ? REACTION_TYPES.find(
+                                                      (rt) =>
+                                                        rt.value ===
+                                                        replyReaction.type,
+                                                    )?.label
+                                                  : "Thích"}
                                               </button>
                                             </div>
 
                                             <span>
                                               {reply.createdAt
-                                                ? formatDistanceToNow(new Date(reply.createdAt), {
-                                                    addSuffix: true,
-                                                    locale: vi,
-                                                  })
+                                                ? formatDistanceToNow(
+                                                    new Date(reply.createdAt),
+                                                    {
+                                                      addSuffix: true,
+                                                      locale: vi,
+                                                    },
+                                                  )
                                                 : "Vừa xong"}
                                             </span>
                                           </div>
@@ -1232,22 +1599,33 @@ export default function ForumPage() {
                               {replyingCommentId === parent._id && (
                                 <div className="pl-10 ml-4 pt-1">
                                   <form
-                                    onSubmit={(e) => handleReplySubmit(e, parent._id)}
+                                    onSubmit={(e) =>
+                                      handleReplySubmit(e, parent._id)
+                                    }
                                     className="flex gap-2 items-center"
                                   >
-                                    <VipAvatar
-                                      avatarUrl={user?.avatar}
-                                      name={user?.name}
-                                      hasMembership={user?.hasMembership}
-                                      vipAvatarFrame={user?.vipCosmetics?.vipAvatarFrame}
-                                      size="sm"
-                                      className="w-7 h-7 flex-shrink-0"
-                                    />
+                                    <Link
+                                      to={getProfileLink()}
+                                      className="flex-shrink-0 hover:opacity-90 transition-opacity"
+                                    >
+                                      <VipAvatar
+                                        avatarUrl={user?.avatar}
+                                        name={user?.name}
+                                        hasMembership={user?.hasMembership}
+                                        vipAvatarFrame={
+                                          user?.vipCosmetics?.vipAvatarFrame
+                                        }
+                                        size="sm"
+                                        className="w-7 h-7"
+                                      />
+                                    </Link>
                                     <div className="flex-1">
                                       <input
                                         type="text"
                                         value={replyContent}
-                                        onChange={(e) => setReplyContent(e.target.value)}
+                                        onChange={(e) =>
+                                          setReplyContent(e.target.value)
+                                        }
                                         placeholder={`Trả lời ${parent.userId?.name || "đạo hữu"}...`}
                                         className="w-full text-xs rounded-xl border border-gray-200 px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
                                       />
@@ -1291,14 +1669,18 @@ export default function ForumPage() {
                   }}
                   className="flex gap-2.5 items-end"
                 >
-                  <VipAvatar
-                    avatarUrl={user?.avatar}
-                    name={user?.name}
-                    hasMembership={user?.hasMembership}
-                    vipAvatarFrame={user?.vipCosmetics?.vipAvatarFrame}
-                    size="md"
-                    className="flex-shrink-0"
-                  />
+                  <Link
+                    to={getProfileLink()}
+                    className="flex-shrink-0 hover:opacity-90 transition-opacity"
+                  >
+                    <VipAvatar
+                      avatarUrl={user?.avatar}
+                      name={user?.name}
+                      hasMembership={user?.hasMembership}
+                      vipAvatarFrame={user?.vipCosmetics?.vipAvatarFrame}
+                      size="md"
+                    />
+                  </Link>
                   <div className="flex-1">
                     <textarea
                       value={detailCommentContent}
