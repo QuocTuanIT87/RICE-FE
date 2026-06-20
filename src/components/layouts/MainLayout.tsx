@@ -1,43 +1,45 @@
-import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { logout } from "@/store/authSlice";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { authApi, usersApi, notificationsApi, chatApi, socialApi } from "@/services/api";
-import { Button } from "@/components/ui/button";
-import { useShowBalance } from "@/hooks/useShowBalance";
-import {
-  User,
-  LogOut,
-  History,
-  UtensilsCrossed,
-  LayoutDashboard,
-  ClipboardList,
-  Settings,
-  Home,
-  ChevronDown,
-  Menu,
-  X,
-  Coins,
-  Trophy,
-  Wallet,
-  Eye,
-  EyeOff,
-  MessageSquare,
-  Crown,
-  Bell,
-  Gift,
-  AlertCircle,
-  ArrowUp,
-  MessageCircle,
-} from "lucide-react";
-import { useState, useRef, useEffect, useMemo } from "react";
 import PriceNoticeBanner from "@/components/PriceNoticeBanner";
+import { Button } from "@/components/ui/button";
 import VipMascots from "@/components/VipMascots";
-import { formatVND, cn } from "@/lib/utils";
 import { useSocket } from "@/contexts/SocketContext";
+import { cn } from "@/lib/utils";
+import {
+  authApi,
+  chatApi,
+  notificationsApi,
+  socialApi,
+  usersApi,
+} from "@/services/api";
+import { logout } from "@/store/authSlice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { swalToast } from "@/utils/swal";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
+import {
+  AlertCircle,
+  ArrowUp,
+  Bell,
+  ChevronDown,
+  ClipboardList,
+  Coins,
+  Crown,
+  Gift,
+  History,
+  Home,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  MessageCircle,
+  MessageSquare,
+  Settings,
+  Trophy,
+  User,
+  UtensilsCrossed,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 const customerNavItems = [
   { path: "/", label: "Trang chủ", icon: Home },
@@ -69,7 +71,6 @@ export default function MainLayout() {
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [showBalance, setShowBalance] = useShowBalance();
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -78,8 +79,14 @@ export default function MainLayout() {
   const navItems = isAdmin ? adminNavItems : customerNavItems;
   const { config: systemConfig } = useAppSelector((state) => state.system);
   const isVip = user?.hasMembership;
-  const websiteName = (isVip && user?.vipCosmetics?.vipWebsiteName) ? user.vipCosmetics.vipWebsiteName : (systemConfig?.websiteName || "Thiên Hương Các");
-  const websiteLogo = (isVip && user?.vipCosmetics?.vipWebsiteLogo) ? user.vipCosmetics.vipWebsiteLogo : (systemConfig?.websiteLogo || "");
+  const websiteName =
+    isVip && user?.vipCosmetics?.vipWebsiteName
+      ? user.vipCosmetics.vipWebsiteName
+      : systemConfig?.websiteName || "Thiên Hương Các";
+  const websiteLogo =
+    isVip && user?.vipCosmetics?.vipWebsiteLogo
+      ? user.vipCosmetics.vipWebsiteLogo
+      : systemConfig?.websiteLogo || "";
   const contactPhone = systemConfig?.contactPhone || "0123.456.789";
 
   const [notifOpen, setNotifOpen] = useState(false);
@@ -114,14 +121,16 @@ export default function MainLayout() {
 
   const { data: chatConversationsData } = useQuery({
     queryKey: ["conversations"],
-    queryFn: () => chatApi.getConversations().then((res) => res.data.data || []),
+    queryFn: () =>
+      chatApi.getConversations().then((res) => res.data.data || []),
     enabled: isAuthenticated && !isAdmin,
   });
 
   // Tải danh sách người dùng bị chặn từ backend
   const { data: blockedList } = useQuery({
     queryKey: ["blockedUsers"],
-    queryFn: () => socialApi.getBlockedList().then((res) => res.data.data || []),
+    queryFn: () =>
+      socialApi.getBlockedList().then((res) => res.data.data || []),
     enabled: isAuthenticated && !isAdmin,
   });
 
@@ -131,13 +140,16 @@ export default function MainLayout() {
   }, [blockedList]);
 
   const chatConversations = chatConversationsData || [];
-  const totalUnreadChats = chatConversations.reduce((acc: number, curr: any) => {
-    const partnerId = curr.otherUser?._id || curr.otherUser?.id;
-    if (partnerId && blockedUsersSet.has(partnerId)) {
-      return acc;
-    }
-    return acc + curr.unreadCount;
-  }, 0);
+  const totalUnreadChats = chatConversations.reduce(
+    (acc: number, curr: any) => {
+      const partnerId = curr.otherUser?._id || curr.otherUser?.id;
+      if (partnerId && blockedUsersSet.has(partnerId)) {
+        return acc;
+      }
+      return acc + curr.unreadCount;
+    },
+    0,
+  );
 
   const markReadMutation = useMutation({
     mutationFn: (id: string) => notificationsApi.markAsRead(id),
@@ -156,13 +168,15 @@ export default function MainLayout() {
 
   // Socket setup for notifications & chat alerts
   const { socket } = useSocket();
-  
+
   useEffect(() => {
     if (!socket || !isAuthenticated) return;
 
     const playTingSound = () => {
       try {
-        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const ctx = new (
+          window.AudioContext || (window as any).webkitAudioContext
+        )();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
@@ -200,7 +214,9 @@ export default function MainLayout() {
         playTingSound();
 
         const partner = chatConversations.find(
-          (c: any) => c.otherUser?._id === msg.senderId || c.otherUser?.id === msg.senderId
+          (c: any) =>
+            c.otherUser?._id === msg.senderId ||
+            c.otherUser?.id === msg.senderId,
         );
         const senderName = partner?.otherUser?.name || "Đồng nghiệp";
 
@@ -218,7 +234,14 @@ export default function MainLayout() {
       socket.off("notification_received", handleNotificationReceived);
       socket.off("chat_message", handleGlobalChatMessage);
     };
-  }, [socket, isAuthenticated, queryClient, user, location.pathname, chatConversations]);
+  }, [
+    socket,
+    isAuthenticated,
+    queryClient,
+    user,
+    location.pathname,
+    chatConversations,
+  ]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -358,32 +381,6 @@ export default function MainLayout() {
             </nav>
 
             <div className="flex items-center gap-3">
-              {isAuthenticated && (
-                <div className="relative group">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-400 to-red-500 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
-                  <div className="relative flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-orange-100 shadow-sm">
-                    <div className="w-6 h-6 rounded-lg bg-orange-50 flex items-center justify-center">
-                      <Wallet size={14} className="text-orange-500" />
-                    </div>
-                    <div className="flex flex-col pr-1">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter leading-none mb-0.5">
-                        Số dư ví
-                      </span>
-                      <span className="text-sm font-black text-orange-600 leading-none">
-                        {showBalance ? formatVND(user?.balance || 0) : "••••••"}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => setShowBalance(!showBalance)}
-                      className="text-gray-400 hover:text-gray-600 transition-colors ml-1 p-0.5 rounded-md hover:bg-gray-50 focus:outline-none"
-                      title={showBalance ? "Ẩn số dư" : "Hiện số dư"}
-                    >
-                      {showBalance ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {isAuthenticated && !isAdmin && (
                 <Link
                   to="/chat"
@@ -783,7 +780,9 @@ export default function MainLayout() {
             <nav className="container mx-auto px-4 py-3 space-y-1">
               {[
                 ...navItems,
-                ...(!isAdmin ? [{ path: "/chat", label: "Nhắn tin", icon: MessageCircle }] : [])
+                ...(!isAdmin
+                  ? [{ path: "/chat", label: "Nhắn tin", icon: MessageCircle }]
+                  : []),
               ].map((item) => {
                 const Icon = item.icon;
                 const isActive = isActiveRoute(item.path);

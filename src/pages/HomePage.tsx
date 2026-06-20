@@ -4,7 +4,7 @@ import { useAppSelector } from "@/store/hooks";
 import { dailyMenusApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatVND } from "@/lib/utils";
+import { cn, formatVND } from "@/lib/utils";
 import {
   UtensilsCrossed,
   Clock,
@@ -55,6 +55,7 @@ export default function HomePage() {
   const { config: systemConfig } = useAppSelector((state) => state.system);
   const { user } = useAppSelector((state) => state.auth);
   const isVip = user?.hasMembership;
+  const vipTheme = user?.vipCosmetics?.vipTheme || "default";
   const bannerUrl =
     (isVip && user?.vipCosmetics?.vipWebsiteBanner) ||
     systemConfig?.websiteBanner ||
@@ -346,17 +347,46 @@ export default function HomePage() {
       </section>
 
       {/* ===================== CTA ===================== */}
-      <section className="py-20 bg-gradient-to-r from-orange-500 to-red-500">
+      <section
+        className={cn(
+          "py-20 transition-all duration-300",
+          vipTheme === "gold" &&
+            "bg-gradient-to-r from-amber-500 to-yellow-600",
+          vipTheme === "sakura" && "bg-gradient-to-r from-pink-500 to-rose-500",
+          vipTheme === "dark" &&
+            "bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 border-t border-b border-slate-800",
+          (vipTheme === "default" || !vipTheme) &&
+            "bg-gradient-to-r from-orange-500 to-red-500",
+        )}
+      >
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-2xl md:text-3xl font-black text-white mb-3">
             Sẵn sàng đặt cơm ngay?
           </h2>
-          <p className="text-orange-100 text-base mb-8 max-w-lg mx-auto">
+          <p
+            className={cn(
+              "text-base mb-8 max-w-lg mx-auto",
+              vipTheme === "gold" && "text-amber-100",
+              vipTheme === "sakura" && "text-pink-100",
+              vipTheme === "dark" && "text-slate-400",
+              (vipTheme === "default" || !vipTheme) && "text-orange-100",
+            )}
+          >
             Tham gia cùng hàng trăm khách hàng đã tin tưởng sử dụng.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link to={isAuthenticated ? "/order" : "/register"}>
-              <Button className="h-12 px-7 text-sm font-bold bg-white text-orange-600 hover:bg-orange-50 rounded-full shadow-lg gap-2">
+              <Button
+                className={cn(
+                  "h-12 px-7 text-sm font-bold bg-white rounded-full shadow-lg gap-2 transition-all duration-300 border-none",
+                  vipTheme === "gold" && "text-amber-600 hover:bg-amber-50",
+                  vipTheme === "sakura" && "text-pink-600 hover:bg-pink-50",
+                  vipTheme === "dark" &&
+                    "text-cyan-400 bg-slate-800 hover:bg-slate-700",
+                  (vipTheme === "default" || !vipTheme) &&
+                    "text-orange-600 hover:bg-orange-50",
+                )}
+              >
                 <Star size={18} />
                 {isAuthenticated ? "Đặt cơm ngay" : "Bắt đầu miễn phí"}
               </Button>
@@ -364,7 +394,15 @@ export default function HomePage() {
             <Link to="/wallet">
               <Button
                 variant="outline"
-                className="h-12 px-7 text-sm font-bold border-orange-600/30 text-orange-600 hover:bg-orange-600/10 rounded-full"
+                className={cn(
+                  "h-12 px-7 text-sm font-bold bg-white rounded-full shadow-lg gap-2 transition-all duration-300 border-none",
+                  vipTheme === "gold" && "text-amber-600 hover:bg-amber-50",
+                  vipTheme === "sakura" && "text-pink-600 hover:bg-pink-50",
+                  vipTheme === "dark" &&
+                    "text-cyan-400 bg-slate-800 hover:bg-slate-700",
+                  (vipTheme === "default" || !vipTheme) &&
+                    "text-orange-600 hover:bg-orange-50",
+                )}
               >
                 Nạp tiền vào ví
               </Button>
