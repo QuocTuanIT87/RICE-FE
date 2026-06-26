@@ -245,6 +245,11 @@ export const ordersApi = {
       params: menuId ? { menuId } : {},
     }),
 
+  getTodayPublicOrders: (menuId?: string) =>
+    api.get<ApiResponse<Order[]>>("/orders/today-public", {
+      params: menuId ? { menuId } : {},
+    }),
+
   createOrder: (
     items: Array<{ menuItemId: string; note?: string; quantity?: number }>,
     orderType: PackageType = "normal",

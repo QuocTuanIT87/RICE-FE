@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { dailyMenusApi, ordersApi, authApi, vouchersApi } from "@/services/api";
 import { swalAlert, swalConfirm, swalToast } from "@/utils/swal";
 import { getMascotCardConfig } from "@/components/VipMascots";
+import VipAvatar from "@/components/VipAvatar";
 import type { DailyMenu, MenuItem, PackageType } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppSelector } from "@/store/hooks";
@@ -59,12 +60,20 @@ export default function OrderPage() {
     return () => clearInterval(timer);
   }, []);
 
-
-
   const { data: todayMenus, isLoading: menuLoading } = useQuery({
     queryKey: ["todayMenu"],
     queryFn: () => dailyMenusApi.getTodayMenu(),
   });
+
+  useEffect(() => {
+    if (
+      todayMenus?.data?.data &&
+      todayMenus.data.data.length > 0 &&
+      !activeMenuId
+    ) {
+      setActiveMenuId(todayMenus.data.data[0]._id);
+    }
+  }, [todayMenus, activeMenuId]);
 
   useEffect(() => {
     if (!socket) return;
@@ -91,13 +100,18 @@ export default function OrderPage() {
         variant: "success",
       });
     };
+    const handleOrderPlaced = () => {
+      queryClient.invalidateQueries({ queryKey: ["todayPublicOrders"] });
+    };
     socket.on("menu_created", handleMenuCreated);
     socket.on("menu_locked", handleMenuLocked);
     socket.on("menu_unlocked", handleMenuUnlocked);
+    socket.on("order_placed", handleOrderPlaced);
     return () => {
       socket.off("menu_created", handleMenuCreated);
       socket.off("menu_locked", handleMenuLocked);
       socket.off("menu_unlocked", handleMenuUnlocked);
+      socket.off("order_placed", handleOrderPlaced);
     };
   }, [socket, queryClient]);
 
@@ -110,6 +124,13 @@ export default function OrderPage() {
     queryKey: ["userProfile"],
     queryFn: () => authApi.getMe(),
   });
+
+  const { data: todayPublicOrdersData } = useQuery({
+    queryKey: ["todayPublicOrders", activeMenuId],
+    queryFn: () => ordersApi.getTodayPublicOrders(activeMenuId || undefined),
+    enabled: !!activeMenuId,
+  });
+  const todayPublicOrders = todayPublicOrdersData?.data.data || [];
 
   const menus = todayMenus?.data.data || [];
   const order = myOrder?.data.data;
@@ -256,7 +277,10 @@ export default function OrderPage() {
     if (user && systemConfig && myOrder !== undefined && !hasAlerted) {
       const order = myOrder?.data.data;
       if (!order) {
-        const minMealPrice = Math.max(0, Math.min(priceNormal, priceNoRice) - vipDiscountRate);
+        const minMealPrice = Math.max(
+          0,
+          Math.min(priceNormal, priceNoRice) - vipDiscountRate,
+        );
         if (balance < minMealPrice) {
           setHasAlerted(true);
           swalConfirm({
@@ -273,7 +297,17 @@ export default function OrderPage() {
         }
       }
     }
-  }, [user, systemConfig, myOrder, balance, priceNormal, priceNoRice, vipDiscountRate, hasAlerted, navigate]);
+  }, [
+    user,
+    systemConfig,
+    myOrder,
+    balance,
+    priceNormal,
+    priceNoRice,
+    vipDiscountRate,
+    hasAlerted,
+    navigate,
+  ]);
 
   const handleIncrement = (itemId: string) => {
     setItemQuantities((prev) => ({
@@ -757,7 +791,8 @@ export default function OrderPage() {
                         const isDisabled =
                           !canOrder ||
                           (qty === 0 &&
-                            (totalQuantity + 1) * Math.max(0, currentPrice - vipDiscountRate) >
+                            (totalQuantity + 1) *
+                              Math.max(0, currentPrice - vipDiscountRate) >
                               effectiveBalance);
                         const accentColor =
                           orderType === "normal" ? "orange" : "blue";
@@ -899,22 +934,34 @@ export default function OrderPage() {
                         <span>Tạm tính:</span>
                         <span>{totalPrice.toLocaleString("vi-VN")} VND</span>
                       </div>
-                      
+
                       {vipDiscountRate > 0 && (
                         <div className="flex justify-between items-center text-xs font-bold text-amber-600 px-1">
-                          <span>Giảm VIP ({user?.membershipName || "Hội Viên"} -{vipDiscountRate.toLocaleString("vi-VN")}đ/suất):</span>
-                          <span>-{vipDiscountAmount.toLocaleString("vi-VN")} VND</span>
+                          <span>
+                            Giảm VIP ({user?.membershipName || "Hội Viên"} -
+                            {vipDiscountRate.toLocaleString("vi-VN")}đ/suất):
+                          </span>
+                          <span>
+                            -{vipDiscountAmount.toLocaleString("vi-VN")} VND
+                          </span>
                         </div>
                       )}
 
                       <div className="flex justify-between items-center text-xs font-bold text-gray-700 px-1 pt-1.5 border-t border-dashed border-gray-100">
                         <span>Tổng thanh toán:</span>
                         <span className="text-base font-black text-orange-600">
-                          {Math.max(0, totalPrice - vipDiscountAmount).toLocaleString("vi-VN")} VND
+                          {Math.max(
+                            0,
+                            totalPrice - vipDiscountAmount,
+                          ).toLocaleString("vi-VN")}{" "}
+                          VND
                         </span>
                       </div>
 
-                      {!(effectiveBalance >= (totalPrice - vipDiscountAmount)) && (
+                      {!(
+                        effectiveBalance >=
+                        totalPrice - vipDiscountAmount
+                      ) && (
                         <p className="text-[10px] font-bold text-red-500 text-center animate-pulse">
                           ⚠️ Số dư ví không đủ để đặt đơn này!
                         </p>
@@ -923,7 +970,8 @@ export default function OrderPage() {
                       <Button
                         onClick={handleOpenConfirmModal}
                         disabled={
-                          createOrderMutation.isPending || !(effectiveBalance >= (totalPrice - vipDiscountAmount))
+                          createOrderMutation.isPending ||
+                          !(effectiveBalance >= totalPrice - vipDiscountAmount)
                         }
                         className="w-full h-12 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-sm shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 disabled:bg-gray-300 disabled:scale-100 disabled:cursor-not-allowed"
                       >
@@ -1053,12 +1101,119 @@ export default function OrderPage() {
                 </div>
               </div>
 
+              {/* 3. TODAY'S PUBLIC ORDERS FEED */}
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-lg overflow-hidden animate-in fade-in duration-500">
+                <div className="px-5 py-4 border-b border-gray-50 bg-gray-50/30 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-base">👥</span>
+                    <h3 className="font-black text-gray-900 uppercase text-xs">
+                      Các đạo hữu khác đã đặt ({todayPublicOrders.length})
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="p-5 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar space-y-4">
+                  {todayPublicOrders.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest leading-relaxed">
+                        Chưa có ai đặt cơm hôm nay.
+                        <br />
+                        Hãy là người đầu tiên! 🍚
+                      </p>
+                    </div>
+                  ) : (
+                    todayPublicOrders.map((publicOrder: any) => {
+                      const orderUser = publicOrder.userId;
+                      if (!orderUser) return null;
+
+                      const itemsText = publicOrder.orderItems
+                        ?.map((item: any) => {
+                          const name = item.menuItemId?.name || "Món ăn";
+                          return `${name} x${item.quantity || 1}`;
+                        })
+                        .join(", ");
+
+                      const isVipOrder = orderUser.hasMembership;
+                      const vipAvatarFrame =
+                        orderUser.vipCosmetics?.vipAvatarFrame || "none";
+
+                      const orderTime = publicOrder.orderedAt
+                        ? new Date(publicOrder.orderedAt).toLocaleTimeString(
+                            "vi-VN",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            },
+                          )
+                        : "Vừa xong";
+
+                      return (
+                        <div
+                          key={publicOrder._id}
+                          className="flex items-start gap-3 p-3 bg-gray-50/50 rounded-2xl border border-gray-100 hover:border-orange-200 transition-all"
+                        >
+                          <VipAvatar
+                            avatarUrl={orderUser.avatar}
+                            name={orderUser.name}
+                            vipAvatarFrame={vipAvatarFrame}
+                            hasMembership={isVipOrder}
+                            size="sm"
+                            className="shrink-0 mt-0.5"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <span
+                                className={cn(
+                                  "text-xs font-black truncate",
+                                  isVipOrder
+                                    ? "text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-yellow-500 font-extrabold"
+                                    : "text-gray-800",
+                                )}
+                              >
+                                {orderUser.name}
+                                {isVipOrder && " 👑"}
+                              </span>
+                              <span className="text-[9px] font-bold text-gray-400 shrink-0">
+                                {orderTime}
+                              </span>
+                            </div>
+                            <p className="text-[11px] font-bold text-gray-600 mt-1 line-clamp-2">
+                              {publicOrder.orderType === "no-rice"
+                                ? "🥢 Không cơm: "
+                                : "🍚 Có cơm: "}
+                              <span className="font-semibold text-gray-500">
+                                {itemsText}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
               {/* Compact Help Card */}
-              <div className={cn("p-5 border rounded-3xl shadow-sm transition-all duration-300", mascotCard.containerClass)}>
-                <h4 className={cn("font-black text-xs mb-1 italic", mascotCard.titleClass)}>
+              <div
+                className={cn(
+                  "p-5 border rounded-3xl shadow-sm transition-all duration-300",
+                  mascotCard.containerClass,
+                )}
+              >
+                <h4
+                  className={cn(
+                    "font-black text-xs mb-1 italic",
+                    mascotCard.titleClass,
+                  )}
+                >
                   {mascotCard.title}
                 </h4>
-                <p className={cn("text-[9px] font-bold leading-relaxed", mascotCard.textClass)}>
+                <p
+                  className={cn(
+                    "text-[9px] font-bold leading-relaxed",
+                    mascotCard.textClass,
+                  )}
+                >
                   {mascotCard.message}
                 </p>
               </div>
@@ -1222,7 +1377,10 @@ export default function OrderPage() {
                 </div>
                 {vipDiscountRate > 0 && (
                   <div className="flex justify-between text-amber-600">
-                    <span>Giảm VIP ({user?.membershipName || "Hội Viên"} -{vipDiscountRate.toLocaleString("vi-VN")}đ/suất):</span>
+                    <span>
+                      Giảm VIP ({user?.membershipName || "Hội Viên"} -
+                      {vipDiscountRate.toLocaleString("vi-VN")}đ/suất):
+                    </span>
                     <span>
                       -{vipDiscountAmount.toLocaleString("vi-VN")} VND
                     </span>
@@ -1241,7 +1399,12 @@ export default function OrderPage() {
                 <div className="flex justify-between text-sm font-black pt-1 border-t border-dashed border-gray-100">
                   <span className="text-gray-900">Tổng thanh toán:</span>
                   <span className="text-orange-600">
-                    {Math.max(0, totalPrice - vipDiscountAmount - (appliedVoucher ? appliedVoucher.discountAmount : 0)).toLocaleString("vi-VN")}{" "}
+                    {Math.max(
+                      0,
+                      totalPrice -
+                        vipDiscountAmount -
+                        (appliedVoucher ? appliedVoucher.discountAmount : 0),
+                    ).toLocaleString("vi-VN")}{" "}
                     VND
                   </span>
                 </div>
@@ -1254,7 +1417,12 @@ export default function OrderPage() {
                   className={cn(
                     "font-black",
                     effectiveBalance -
-                      Math.max(0, totalPrice - vipDiscountAmount - (appliedVoucher ? appliedVoucher.discountAmount : 0)) >=
+                      Math.max(
+                        0,
+                        totalPrice -
+                          vipDiscountAmount -
+                          (appliedVoucher ? appliedVoucher.discountAmount : 0),
+                      ) >=
                       0
                       ? "text-emerald-600"
                       : "text-red-500",
@@ -1262,7 +1430,12 @@ export default function OrderPage() {
                 >
                   {(
                     effectiveBalance -
-                    Math.max(0, totalPrice - vipDiscountAmount - (appliedVoucher ? appliedVoucher.discountAmount : 0))
+                    Math.max(
+                      0,
+                      totalPrice -
+                        vipDiscountAmount -
+                        (appliedVoucher ? appliedVoucher.discountAmount : 0),
+                    )
                   ).toLocaleString("vi-VN")}{" "}
                   VND
                 </span>
@@ -1284,7 +1457,12 @@ export default function OrderPage() {
                 disabled={
                   createOrderMutation.isPending ||
                   effectiveBalance <
-                    Math.max(0, totalPrice - vipDiscountAmount - (appliedVoucher ? appliedVoucher.discountAmount : 0))
+                    Math.max(
+                      0,
+                      totalPrice -
+                        vipDiscountAmount -
+                        (appliedVoucher ? appliedVoucher.discountAmount : 0),
+                    )
                 }
               >
                 {createOrderMutation.isPending ? (
