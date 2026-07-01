@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
-import {
-  depositRequestsApi,
-  authApi,
-  vouchersApi,
-} from "@/services/api";
+import { depositRequestsApi, authApi, vouchersApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -81,7 +77,10 @@ export default function MyWalletPage() {
 
     // Check if depositAmount changed from the programmatically set package price
     const searchAmount = Number(searchParams.get("amount"));
-    if (depositRequestType === "buy_membership" && depositAmount !== searchAmount) {
+    if (
+      depositRequestType === "buy_membership" &&
+      depositAmount !== searchAmount
+    ) {
       setDepositRequestType("normal");
       setDepositVipPackageId("");
     }
@@ -381,7 +380,9 @@ export default function MyWalletPage() {
                   Trạng thái hội viên VIP
                 </p>
                 <h2 className="text-xl font-black text-amber-600 uppercase tracking-wide italic">
-                  {user?.hasMembership ? user.membershipName : "Thành viên thường"}
+                  {user?.hasMembership
+                    ? user.membershipName
+                    : "Thành viên thường"}
                 </h2>
               </div>
               <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500">
@@ -392,13 +393,19 @@ export default function MyWalletPage() {
               <span className="text-gray-500 font-medium">
                 {user?.hasMembership ? (
                   <>
-                    Hạn dùng: <span className="font-bold text-gray-900">{formatDate(user.membershipExpiresAt!)}</span>
+                    Hạn dùng:{" "}
+                    <span className="font-bold text-gray-900">
+                      {formatDate(user.membershipExpiresAt!)}
+                    </span>
                   </>
                 ) : (
                   "Đăng ký gói VIP để hưởng ưu đãi"
                 )}
               </span>
-              <Link to="/vip" className="text-amber-500 hover:text-amber-600 font-black flex items-center gap-0.5">
+              <Link
+                to="/vip"
+                className="text-amber-500 hover:text-amber-600 font-black flex items-center gap-0.5"
+              >
                 {user?.hasMembership ? "Quản lý VIP →" : "Đăng ký ngay →"}
               </Link>
             </div>
@@ -410,7 +417,11 @@ export default function MyWalletPage() {
       <VipMascotInline className="max-w-2xl mx-auto" />
 
       {/* Main Operations Block */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="w-full space-y-6"
+      >
         <TabsList className="grid w-full grid-cols-3 bg-gray-100/80 p-1 rounded-2xl h-11 mb-2">
           <TabsTrigger
             value="deposit"
@@ -566,7 +577,7 @@ export default function MyWalletPage() {
                     </div>
                   </div>
 
-                  {depositAmount > 0 && (
+                  {depositAmount >= 10000 && (
                     <div className="pt-4 border-t border-gray-100 space-y-4">
                       <div className="flex flex-col items-center p-4 bg-orange-50/50 rounded-xl border border-orange-100">
                         <p className="text-xs font-bold text-orange-800 mb-3 uppercase tracking-wide">
@@ -705,7 +716,9 @@ export default function MyWalletPage() {
                   {/* Completed transfer button */}
                   <Button
                     onClick={handleCreateDeposit}
-                    disabled={submittingDeposit || !depositAmount || depositAmount <= 0}
+                    disabled={
+                      submittingDeposit || !depositAmount || depositAmount <= 0
+                    }
                     className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold shadow-md shadow-orange-100 transition-all text-sm gap-2"
                   >
                     {submittingDeposit ? (
@@ -749,7 +762,8 @@ export default function MyWalletPage() {
                           Tiết kiệm chi phí ăn trưa
                         </span>
                         <span className="text-[10px] text-gray-400 font-medium">
-                          Khấu trừ trực tiếp tiền mặt (ví dụ: 2,000đ) trên mỗi phần cơm đặt trong thời hạn gói.
+                          Khấu trừ trực tiếp tiền mặt (ví dụ: 2,000đ) trên mỗi
+                          phần cơm đặt trong thời hạn gói.
                         </span>
                       </div>
                     </div>
@@ -763,7 +777,8 @@ export default function MyWalletPage() {
                           Cá nhân hóa giao diện VIP
                         </span>
                         <span className="text-[10px] text-gray-400 font-medium">
-                          Tùy chọn chủ đề ứng dụng Hoàng Kim, Đêm Huyền Bí, Hoa Anh Đào trong trang cá nhân.
+                          Tùy chọn chủ đề ứng dụng Hoàng Kim, Đêm Huyền Bí, Hoa
+                          Anh Đào trong trang cá nhân.
                         </span>
                       </div>
                     </div>
@@ -777,14 +792,18 @@ export default function MyWalletPage() {
                           Khung Viền & Tên Nổi Bật
                         </span>
                         <span className="text-[10px] text-gray-400 font-medium">
-                          Trang bị khung Avatar VIP (Vương miện, Neon, Kim cương) và hiển thị tên lấp lánh khi tương tác trên Diễn đàn công ty.
+                          Trang bị khung Avatar VIP (Vương miện, Neon, Kim
+                          cương) và hiển thị tên lấp lánh khi tương tác trên
+                          Diễn đàn công ty.
                         </span>
                       </div>
                     </div>
                   </div>
 
                   <div className="text-[10px] text-gray-400 leading-relaxed pt-2 border-t border-dashed border-gray-200">
-                    💡 <span className="font-bold text-gray-500">Lưu ý:</span> Phí dịch vụ mua gói hội viên VIP là phí mua đứt dịch vụ và không được hoàn lại vào ví sau khi đã kích hoạt thành công.
+                    💡 <span className="font-bold text-gray-500">Lưu ý:</span>{" "}
+                    Phí dịch vụ mua gói hội viên VIP là phí mua đứt dịch vụ và
+                    không được hoàn lại vào ví sau khi đã kích hoạt thành công.
                   </div>
                 </CardContent>
               </Card>
@@ -827,7 +846,9 @@ export default function MyWalletPage() {
                         </div>
                         <div>
                           <p className="font-bold text-gray-900 text-sm">
-                            {req.requestType === "buy_membership" ? "Yêu cầu mua gói VIP" : "Yêu cầu nạp tiền ví"}
+                            {req.requestType === "buy_membership"
+                              ? "Yêu cầu mua gói VIP"
+                              : "Yêu cầu nạp tiền ví"}
                           </p>
                           <p className="text-xs text-gray-500 mt-0.5">
                             Chuyển khoản:{" "}
@@ -997,7 +1018,11 @@ export default function MyWalletPage() {
                               {formatDate(req.requestedAt)}
                             </td>
                             <td className="px-5 py-3.5 font-bold text-gray-900 text-sm">
-                              <div>{req.requestType === "buy_membership" ? "Mua gói Hội Viên VIP" : "Nạp tiền vào ví"}</div>
+                              <div>
+                                {req.requestType === "buy_membership"
+                                  ? "Mua gói Hội Viên VIP"
+                                  : "Nạp tiền vào ví"}
+                              </div>
                               {req.voucherCode && (
                                 <div className="text-[10px] text-indigo-500 font-bold uppercase tracking-wide mt-0.5">
                                   Voucher: {req.voucherCode} (
