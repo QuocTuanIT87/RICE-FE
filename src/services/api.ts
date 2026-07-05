@@ -127,6 +127,13 @@ export const authApi = {
       },
     }),
 
+  uploadVipMascot: (formData: FormData) =>
+    api.patch<ApiResponse<User>>("/auth/vip-mascot", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
+
   changePassword: (data: { oldPassword: string; newPassword: string }) =>
     api.patch<ApiResponse>("/auth/change-password", data),
 };

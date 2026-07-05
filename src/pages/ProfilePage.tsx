@@ -46,7 +46,7 @@ import {
   Upload,
   Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Cropper from "react-easy-crop";
 import { getCroppedImg } from "@/utils/cropImage";
@@ -95,6 +95,8 @@ export default function ProfilePage() {
   const [vipWebsiteBanner, setVipWebsiteBanner] = useState("");
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [isUploadingMascot, setIsUploadingMascot] = useState(false);
+  const mascotFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -153,6 +155,35 @@ export default function ProfilePage() {
       });
     } finally {
       setIsUploadingBanner(false);
+    }
+  };
+
+  const handleMascotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingMascot(true);
+    try {
+      const formData = new FormData();
+      formData.append("mascot", file);
+      const response = await authApi.uploadVipMascot(formData);
+      if (response.data.success) {
+        const mascotUrl = response.data.data!.vipCosmetics?.vipMascot || "";
+        setVipMascot(mascotUrl);
+        dispatch(setUser(response.data.data!));
+        queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+        swalAlert({
+          title: "🎨 Cập nhật Mascot VIP thành công!",
+          icon: "success",
+        });
+      }
+    } catch (error: any) {
+      swalAlert({
+        title: "❌ Lỗi tải lên Mascot",
+        text: error.response?.data?.message || "Có lỗi xảy ra",
+        icon: "error",
+      });
+    } finally {
+      setIsUploadingMascot(false);
     }
   };
 
@@ -1086,79 +1117,191 @@ export default function ProfilePage() {
                   <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
                     Chủ đề ứng dụng (App Themes)
                   </Label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[
-                      {
-                        id: "default",
-                        name: "Mặc định",
-                        desc: "Màu cam truyền thống",
-                        color: "#f97316",
-                        activeBorder: "border-orange-500",
-                        activeBg: "bg-orange-50/30",
-                      },
-                      {
-                        id: "gold",
-                        name: "Hoàng Kim",
-                        desc: "Sắc vàng quý phái",
-                        color: "#fbbf24",
-                        activeBorder: "border-amber-500",
-                        activeBg: "bg-amber-50/20",
-                      },
-                      {
-                        id: "dark",
-                        name: "Đêm Huyền Bí",
-                        desc: "Giao diện tối huyền bí",
-                        color: "#8b5cf6",
-                        activeBorder: "border-violet-500",
-                        activeBg: "bg-violet-950/20",
-                      },
-                      {
-                        id: "sakura",
-                        name: "Hoa Anh Đào",
-                        desc: "Sắc hồng pastel ngọt ngào",
-                        color: "#ec4899",
-                        activeBorder: "border-pink-400",
-                        activeBg: "bg-pink-50/20",
-                      },
-                    ].map((themeOpt) => (
-                      <div
-                        key={themeOpt.id}
-                        onClick={() => setVipTheme(themeOpt.id)}
-                        className={cn(
-                          "cursor-pointer p-4 rounded-2xl border transition-all flex flex-col gap-3 justify-between hover:shadow-md",
-                          vipTheme === themeOpt.id
-                            ? cn(
-                                "border-2 shadow-sm",
-                                themeOpt.activeBorder,
-                                themeOpt.activeBg,
-                              )
-                            : "border-gray-100 bg-white",
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
+                  <div className="max-h-[224px] overflow-y-auto pr-1.5 custom-scrollbar pb-1">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      {[
+                        {
+                          id: "default",
+                          name: "Mặc định",
+                          desc: "Màu cam truyền thống",
+                          color: "bg-orange-500",
+                          cardBg:
+                            "bg-orange-50/10 border-orange-100 hover:border-orange-200 text-orange-950",
+                          textTitle: "text-orange-950",
+                          textDesc: "text-orange-600/70",
+                          activeClass:
+                            "border-orange-500 bg-orange-50/30 ring-2 ring-orange-500/20",
+                        },
+                        {
+                          id: "gold",
+                          name: "Hoàng Kim",
+                          desc: "Sắc vàng quý phái",
+                          color:
+                            "bg-gradient-to-r from-amber-400 to-yellow-500",
+                          cardBg:
+                            "bg-amber-50/10 border-amber-100 hover:border-amber-200 text-amber-950",
+                          textTitle: "text-amber-950",
+                          textDesc: "text-amber-700/70",
+                          activeClass:
+                            "border-amber-500 bg-amber-50/30 ring-2 ring-amber-500/20",
+                        },
+                        {
+                          id: "dark",
+                          name: "Đêm Huyền Bí",
+                          desc: "Giao diện tối huyền bí",
+                          color:
+                            "bg-gradient-to-r from-violet-550 to-indigo-600",
+                          cardBg:
+                            "bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-100",
+                          textTitle: "text-slate-100",
+                          textDesc: "text-slate-400",
+                          activeClass:
+                            "border-violet-500 ring-2 ring-violet-500/30",
+                        },
+                        {
+                          id: "sakura",
+                          name: "Hoa Anh Đào",
+                          desc: "Sắc hồng ngọt ngào",
+                          color: "bg-gradient-to-r from-pink-400 to-rose-450",
+                          cardBg:
+                            "bg-pink-50/10 border-pink-100 hover:border-pink-200 text-pink-950",
+                          textTitle: "text-pink-950",
+                          textDesc: "text-pink-650/70",
+                          activeClass:
+                            "border-pink-500 bg-pink-50/30 ring-2 ring-pink-500/20",
+                        },
+                        {
+                          id: "emerald",
+                          name: "Ngọc Bích",
+                          desc: "Sắc xanh ngọc lục bảo",
+                          color:
+                            "bg-gradient-to-r from-emerald-450 to-green-500",
+                          cardBg:
+                            "bg-emerald-50/10 border-emerald-100 hover:border-emerald-200 text-emerald-950",
+                          textTitle: "text-emerald-950",
+                          textDesc: "text-emerald-700/70",
+                          activeClass:
+                            "border-emerald-500 bg-emerald-50/30 ring-2 ring-emerald-500/20",
+                        },
+                        {
+                          id: "ocean",
+                          name: "Đại Dương",
+                          desc: "Xanh biển tươi mát",
+                          color: "bg-gradient-to-r from-sky-400 to-blue-500",
+                          cardBg:
+                            "bg-sky-50/10 border-sky-100 hover:border-sky-200 text-sky-950",
+                          textTitle: "text-sky-950",
+                          textDesc: "text-sky-700/70",
+                          activeClass:
+                            "border-sky-500 bg-sky-50/30 ring-2 ring-sky-500/20",
+                        },
+                        {
+                          id: "lava",
+                          name: "Lava Đỏ",
+                          desc: "Lửa đỏ nhiệt huyết",
+                          color: "bg-gradient-to-r from-red-500 to-rose-600",
+                          cardBg:
+                            "bg-red-50/10 border-red-100 hover:border-red-200 text-red-950",
+                          textTitle: "text-red-950",
+                          textDesc: "text-red-700/70",
+                          activeClass:
+                            "border-red-500 bg-red-50/30 ring-2 ring-red-500/20",
+                        },
+                        {
+                          id: "sunset",
+                          name: "Hoàng Hôn",
+                          desc: "Hồng cam lãng mạn",
+                          color:
+                            "bg-gradient-to-r from-orange-400 via-pink-500 to-rose-500",
+                          cardBg:
+                            "bg-rose-50/10 border-rose-100 hover:border-rose-200 text-rose-950",
+                          textTitle: "text-rose-950",
+                          textDesc: "text-rose-700/70",
+                          activeClass:
+                            "border-rose-500 bg-rose-50/30 ring-2 ring-rose-500/20",
+                        },
+                        {
+                          id: "cotton-candy",
+                          name: "Kẹo Ngọt",
+                          desc: "Tím hồng ngọt ngào",
+                          color:
+                            "bg-gradient-to-r from-purple-400 via-pink-400 to-sky-450",
+                          cardBg:
+                            "bg-purple-50/10 border-purple-100 hover:border-purple-200 text-purple-950",
+                          textTitle: "text-purple-950",
+                          textDesc: "text-purple-700/70",
+                          activeClass:
+                            "border-purple-500 bg-purple-50/30 ring-2 ring-purple-500/20",
+                        },
+                        {
+                          id: "cyberpunk",
+                          name: "Cyberpunk",
+                          desc: "Neon đêm tương lai",
+                          color:
+                            "bg-gradient-to-r from-pink-500 via-purple-650 to-cyan-500",
+                          cardBg:
+                            "bg-zinc-900 border-zinc-800 hover:border-zinc-700 text-pink-400",
+                          textTitle: "text-pink-400",
+                          textDesc: "text-cyan-400/80",
+                          activeClass:
+                            "border-pink-500 ring-2 ring-pink-550/30",
+                        },
+                      ].map((themeOpt) => {
+                        const isSelected = vipTheme === themeOpt.id;
+                        return (
                           <div
-                            className="w-6 h-6 rounded-full shrink-0"
-                            style={{ backgroundColor: themeOpt.color }}
-                          />
-                          {vipTheme === themeOpt.id && (
-                            <div
-                              className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] text-white font-bold"
-                              style={{ backgroundColor: themeOpt.color }}
-                            >
-                              ✓
+                            key={themeOpt.id}
+                            onClick={() => setVipTheme(themeOpt.id)}
+                            className={cn(
+                              "cursor-pointer p-4 rounded-2xl border transition-all flex flex-col gap-3 justify-between hover:shadow-md select-none",
+                              themeOpt.cardBg,
+                              isSelected
+                                ? themeOpt.activeClass
+                                : "border-gray-100",
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div
+                                className={cn(
+                                  "w-6 h-6 rounded-full shrink-0 shadow-sm",
+                                  themeOpt.color,
+                                )}
+                              />
+                              {isSelected && (
+                                <div
+                                  className={cn(
+                                    "w-4 h-4 rounded-full flex items-center justify-center text-[10px] text-white font-bold shadow-sm",
+                                    themeOpt.id === "default"
+                                      ? "bg-orange-500"
+                                      : themeOpt.color,
+                                  )}
+                                >
+                                  ✓
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-900">
-                            {themeOpt.name}
-                          </p>
-                          <p className="text-[10px] text-gray-400 mt-0.5 leading-none">
-                            {themeOpt.desc}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                            <div>
+                              <p
+                                className={cn(
+                                  "text-xs font-black",
+                                  themeOpt.textTitle,
+                                )}
+                              >
+                                {themeOpt.name}
+                              </p>
+                              <p
+                                className={cn(
+                                  "text-[9px] mt-0.5 leading-tight font-medium",
+                                  themeOpt.textDesc,
+                                )}
+                              >
+                                {themeOpt.desc}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
@@ -1167,63 +1310,161 @@ export default function ProfilePage() {
                   <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
                     Khung viền ảnh đại diện
                   </Label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[
-                      {
-                        id: "none",
-                        name: "Mặc định",
-                        desc: "Không dùng khung",
-                        icon: "👤",
-                      },
-                      {
-                        id: "gold-crown",
-                        name: "Vương Miện Vàng",
-                        desc: "Vương miện lấp lánh",
-                        icon: "👑",
-                      },
-                      {
-                        id: "neon-ring",
-                        name: "Vòng Tròn Neon",
-                        desc: "Viền sáng chuyển động",
-                        icon: "💫",
-                      },
-                      {
-                        id: "diamond",
-                        name: "Kim Cương",
-                        desc: "Huy hiệu đá quý lấp lánh",
-                        icon: "💎",
-                      },
-                    ].map((frameOpt) => (
-                      <div
-                        key={frameOpt.id}
-                        onClick={() => setVipAvatarFrame(frameOpt.id)}
-                        className={cn(
-                          "cursor-pointer p-4 rounded-2xl border transition-all flex flex-col gap-3 justify-between hover:shadow-md",
-                          vipAvatarFrame === frameOpt.id
-                            ? "border-amber-500 bg-amber-50/20 shadow-sm"
-                            : "border-gray-100 bg-white",
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-2xl shrink-0">
-                            {frameOpt.icon}
-                          </span>
-                          {vipAvatarFrame === frameOpt.id && (
-                            <div className="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center text-[10px] text-white font-bold">
-                              ✓
-                            </div>
+                  <div className="max-h-[224px] overflow-y-auto pr-1.5 custom-scrollbar pb-1">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      {[
+                        {
+                          id: "none",
+                          name: "Mặc định",
+                          desc: "Không dùng khung",
+                          icon: "👤",
+                        },
+                        {
+                          id: "gold-crown",
+                          name: "Vương Miện Vàng",
+                          desc: "Vương miện lấp lánh",
+                          icon: "👑",
+                        },
+                        {
+                          id: "neon-ring",
+                          name: "Vòng Tròn Neon",
+                          desc: "Viền sáng chuyển động",
+                          icon: "💫",
+                        },
+                        {
+                          id: "diamond",
+                          name: "Kim Cương",
+                          desc: "Huy hiệu đá quý lấp lánh",
+                          icon: "💎",
+                        },
+                        {
+                          id: "dragon-fire",
+                          name: "Lửa Rồng Phượng",
+                          desc: "Huy hiệu lửa bập bùng",
+                          icon: "🔥",
+                        },
+                        {
+                          id: "angel-wings",
+                          name: "Cánh Thiên Thần",
+                          desc: "Đôi cánh thiên giới",
+                          icon: "🪽",
+                        },
+                        {
+                          id: "cat-ears",
+                          name: "Tai Mèo Cute",
+                          desc: "Dễ thương nhí nhảnh",
+                          icon: "🐱",
+                        },
+                        {
+                          id: "aurora-nebula",
+                          name: "Hào Quang Cực Quang",
+                          desc: "Hào quang tinh hà huyền ảo",
+                          icon: "✨",
+                        },
+                        {
+                          id: "banana-dance",
+                          name: "Chuối Tăng Động",
+                          desc: "Chuối nhảy bựa hài hước",
+                          icon: "🍌",
+                        },
+                        {
+                          id: "dark-skull",
+                          name: "Đầu Lâu Hắc Ám",
+                          desc: "Huyền thoại bóng tối",
+                          icon: "💀",
+                        },
+                        {
+                          id: "lucky-clover",
+                          name: "Cỏ Bốn Lá May Mắn",
+                          desc: "Vận đỏ ngập tràn",
+                          icon: "🍀",
+                        },
+                        {
+                          id: "rainbow-unicorn",
+                          name: "Cầu Vồng Kỳ Lân",
+                          desc: "Kỳ lân cổ tích rực rỡ",
+                          icon: "🦄",
+                        },
+                        {
+                          id: "winter-snow",
+                          name: "Tuyết Ngày Đông",
+                          desc: "Hoa tuyết rơi lạnh giá",
+                          icon: "❄️",
+                        },
+                        {
+                          id: "nerd-glasses",
+                          name: "Kính Trí Thức Nerd",
+                          desc: "Mọt sách thông thái",
+                          icon: "🤓",
+                        },
+                        {
+                          id: "alien-ufo",
+                          name: "Alien UFO",
+                          desc: "Người ngoài hành tinh bí ẩn",
+                          icon: "👽",
+                        },
+                        {
+                          id: "zombie-horde",
+                          name: "Zombie Đói Khát",
+                          desc: "Xác sống kinh dị rùng rợn",
+                          icon: "🧟",
+                        },
+                        {
+                          id: "love-balloon",
+                          name: "Bóng Tình Yêu",
+                          desc: "Bong bóng trái tim ngọt ngào",
+                          icon: "🎈",
+                        },
+                        {
+                          id: "playful-crab",
+                          name: "Cua Tinh Nghịch",
+                          desc: "Chú cua đỏ kẹp kẹp",
+                          icon: "🦀",
+                        },
+                        {
+                          id: "thunder-strike",
+                          name: "Sấm Sét Lôi Thần",
+                          desc: "Sức mạnh thiên kiếp",
+                          icon: "⚡",
+                        },
+                        {
+                          id: "golden-money",
+                          name: "Tiền Vàng Tài Lộc",
+                          desc: "Túi vàng chiêu tài",
+                          icon: "💰",
+                        },
+                      ].map((frameOpt) => (
+                        <div
+                          key={frameOpt.id}
+                          onClick={() => setVipAvatarFrame(frameOpt.id)}
+                          className={cn(
+                            "cursor-pointer p-4 rounded-2xl border transition-all flex flex-col gap-3 justify-between hover:shadow-md",
+                            vipAvatarFrame === frameOpt.id
+                              ? "border-amber-500 bg-amber-50/20 shadow-sm"
+                              : "border-gray-100 bg-white",
                           )}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-2xl shrink-0">
+                              {frameOpt.icon}
+                            </span>
+                            {vipAvatarFrame === frameOpt.id && (
+                              <div className="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center text-[10px] text-white font-bold">
+                                ✓
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-gray-900">
+                              {frameOpt.name}
+                            </p>
+                            <p className="text-[10px] text-gray-400 mt-0.5 leading-none">
+                              {frameOpt.desc}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-900">
-                            {frameOpt.name}
-                          </p>
-                          <p className="text-[10px] text-gray-400 mt-0.5 leading-none">
-                            {frameOpt.desc}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -1288,60 +1529,147 @@ export default function ProfilePage() {
 
                 {/* 4. Mascot Selector */}
                 <div className="space-y-3">
+                  <input
+                    type="file"
+                    ref={mascotFileInputRef}
+                    accept="image/*"
+                    onChange={handleMascotUpload}
+                    className="hidden"
+                  />
                   <Label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
                     Thần tượng đồng hành (VIP Mascot)
                   </Label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     {[
                       {
                         id: "ronaldo",
                         name: "Cristiano Ronaldo (CR7)",
                         desc: "Lời khuyên của anh Bảy SIUUUU! 🇵🇹",
-                        icon: "👑",
+                        image: "/ronaldo_left.png",
                       },
                       {
                         id: "messi",
                         name: "Lionel Messi (M10)",
                         desc: "Lời khuyên của anh Mười 🐐 🇦🇷",
-                        icon: "🐐",
+                        image: "/messi_left.png",
                       },
                       {
                         id: "neymar",
                         name: "Neymar Jr (NJ10)",
                         desc: "Samba dance của tiểu Neymar 🇧🇷 🤙",
-                        icon: "🤙",
+                        image: "/neymar_left.png",
                       },
-                    ].map((mascotOpt) => (
-                      <div
-                        key={mascotOpt.id}
-                        onClick={() => setVipMascot(mascotOpt.id)}
-                        className={cn(
-                          "cursor-pointer p-4 rounded-2xl border transition-all flex flex-col gap-3 justify-between hover:shadow-md",
-                          vipMascot === mascotOpt.id
-                            ? "border-amber-500 bg-amber-50/20 shadow-sm"
-                            : "border-gray-100 bg-white",
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-2xl shrink-0">
-                            {mascotOpt.icon}
-                          </span>
-                          {vipMascot === mascotOpt.id && (
-                            <div className="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center text-[10px] text-white font-bold">
-                              ✓
-                            </div>
+                      {
+                        id: "custom",
+                        name: "Thần tượng tự chọn",
+                        desc: isUploadingMascot
+                          ? "Đang tải ảnh lên..."
+                          : vipMascot.startsWith("http")
+                            ? "Đã tải lên! Bấm Thay ảnh để đổi"
+                            : "Tải ảnh mascot của riêng đạo hữu! 📷",
+                      },
+                    ].map((mascotOpt) => {
+                      const isSelected =
+                        mascotOpt.id === "custom"
+                          ? vipMascot.startsWith("http")
+                          : vipMascot === mascotOpt.id;
+
+                      if (
+                        mascotOpt.id === "custom" &&
+                        !vipMascot.startsWith("http")
+                      ) {
+                        return (
+                          <div
+                            key={mascotOpt.id}
+                            onClick={() => mascotFileInputRef.current?.click()}
+                            className="cursor-pointer p-4 rounded-2xl border border-dashed border-gray-300 bg-gray-50/50 hover:bg-gray-50 flex flex-col items-center justify-center gap-2 hover:border-amber-500 transition-all text-center h-28 select-none"
+                          >
+                            {isUploadingMascot ? (
+                              <Loader2 className="animate-spin text-amber-500 w-5 h-5" />
+                            ) : (
+                              <Upload className="text-gray-450 w-5 h-5" />
+                            )}
+                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-tight">
+                              {isUploadingMascot
+                                ? "ĐANG TẢI..."
+                                : "TẢI LÊN IDOL"}
+                            </span>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div
+                          key={mascotOpt.id}
+                          onClick={() => {
+                            if (mascotOpt.id === "custom") {
+                              if (vipMascot.startsWith("http")) {
+                                setVipMascot(vipMascot);
+                              } else {
+                                mascotFileInputRef.current?.click();
+                              }
+                            } else {
+                              setVipMascot(mascotOpt.id);
+                            }
+                          }}
+                          className={cn(
+                            "cursor-pointer p-4 rounded-2xl border transition-all flex items-center justify-between hover:shadow-md relative overflow-hidden h-28 select-none",
+                            isSelected
+                              ? "border-amber-500 bg-amber-50/5 shadow-sm"
+                              : "border-gray-100 bg-white",
                           )}
+                        >
+                          <div className="flex-1 min-w-0 pr-2 flex flex-col justify-between h-full py-1">
+                            <div>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <p className="text-[11px] font-black text-gray-900 leading-tight">
+                                  {mascotOpt.name}
+                                </p>
+                                {isSelected && (
+                                  <span className="w-3.5 h-3.5 rounded-full bg-amber-500 flex items-center justify-center text-[8px] text-white font-bold shrink-0">
+                                    ✓
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[9px] text-gray-400 leading-snug mt-1 line-clamp-2">
+                                {mascotOpt.desc}
+                              </p>
+                            </div>
+
+                            {mascotOpt.id === "custom" &&
+                              vipMascot.startsWith("http") && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    mascotFileInputRef.current?.click();
+                                  }}
+                                  className="text-[9px] text-amber-600 hover:underline font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 leading-none self-start mt-1"
+                                >
+                                  Thay ảnh
+                                </button>
+                              )}
+                          </div>
+
+                          <div className="w-16 h-20 flex-shrink-0 flex items-center justify-center relative">
+                            <img
+                              src={
+                                mascotOpt.id === "custom"
+                                  ? vipMascot
+                                  : mascotOpt.image
+                              }
+                              alt={mascotOpt.name}
+                              className={cn(
+                                "h-full w-auto object-contain filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.15)] transition-transform duration-300 hover:scale-105",
+                                mascotOpt.id === "custom"
+                                  ? "max-h-[64px] rounded-xl object-cover w-14"
+                                  : "",
+                              )}
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-900">
-                            {mascotOpt.name}
-                          </p>
-                          <p className="text-[10px] text-gray-400 mt-0.5 leading-none">
-                            {mascotOpt.desc}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 

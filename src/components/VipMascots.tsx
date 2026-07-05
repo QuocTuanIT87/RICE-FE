@@ -61,6 +61,35 @@ export const playNeymarRight = () => {
 
 // Mascot Float configuration helper
 export const getMascotFloatConfig = (vipMascot: string) => {
+  if (vipMascot && (vipMascot.startsWith("http://") || vipMascot.startsWith("https://"))) {
+    return {
+      leftSrc: vipMascot,
+      leftAlt: "Thần tượng tự chọn Left",
+      leftTitle: "Thần tượng đồng hành tự chọn của bạn! 💖",
+      leftClick: () => {
+        swalAlert({
+          title: "💖 THẦN TƯỢNG ĐỒNG HÀNH 💖",
+          text: "Đồng đạo đang đồng hành cùng thần tượng tự thiết kế!",
+          icon: "success",
+          timer: 3000,
+        });
+      },
+      leftHeightClass: "h-[260px] 2xl:h-[360px]",
+      rightSrc: vipMascot,
+      rightAlt: "Thần tượng tự chọn Right",
+      rightTitle: "Thần tượng đồng hành tự chọn của bạn! 💖",
+      rightClick: () => {
+        swalAlert({
+          title: "💖 THẦN TƯỢNG ĐỒNG HÀNH 💖",
+          text: "Đồng đạo đang đồng hành cùng thần tượng tự thiết kế!",
+          icon: "success",
+          timer: 3000,
+        });
+      },
+      rightHeightClass: "h-[260px] 2xl:h-[360px]",
+    };
+  }
+
   switch (vipMascot) {
     case "messi":
       return {
@@ -107,6 +136,25 @@ export const getMascotFloatConfig = (vipMascot: string) => {
 
 // Mascot Advice Card configuration helper
 export const getMascotCardConfig = (vipMascot: string) => {
+  if (vipMascot && (vipMascot.startsWith("http://") || vipMascot.startsWith("https://"))) {
+    return {
+      title: "Lời khuyên từ Thần tượng tự chọn 👑",
+      message: `"Đồng đạo hãy luôn ăn uống lành mạnh để có nhiều năng lượng tu tiên đắc đạo nhé!"`,
+      containerClass: "bg-orange-50 border-orange-100 dark:bg-orange-950/20 dark:border-orange-900/30",
+      titleClass: "text-orange-850 dark:text-orange-400 font-extrabold",
+      textClass: "text-orange-600 dark:text-orange-350",
+      avatar: vipMascot,
+      clickAction: () => {
+        swalAlert({
+          title: "👑 THẦN TƯỢNG ĐỒNG HÀNH 👑",
+          text: "Bạn đang chọn đồng hành cùng Thần tượng tự tải lên!",
+          icon: "success",
+          timer: 3000,
+        });
+      },
+    };
+  }
+
   switch (vipMascot) {
     case "messi":
       return {

@@ -138,6 +138,8 @@ export default function OrderPage() {
   const balance = user?.balance || 0;
   const vipDiscountRate = user?.vipDiscountRate || 0;
   const vipMascot = user?.vipCosmetics?.vipMascot || "ronaldo";
+  const isVip = user?.hasMembership || false;
+  const vipTheme = user?.vipCosmetics?.vipTheme || "default";
 
   const mascotCard = getMascotCardConfig(vipMascot);
 
@@ -346,6 +348,94 @@ export default function OrderPage() {
   const [voucherCode, setVoucherCode] = useState("");
   const [appliedVoucher, setAppliedVoucher] = useState<any | null>(null);
   const [checkingVoucher, setCheckingVoucher] = useState(false);
+
+  // Troll button states
+  const [trollOffsetCard, setTrollOffsetCard] = useState({ x: 0, y: 0 });
+  const [isTrollingCard, setIsTrollingCard] = useState(false);
+  const trollIntervalCardRef = useRef<any>(null);
+  const trollTimeoutCardRef = useRef<any>(null);
+  const hasTrolledCardRef = useRef(false);
+
+  const [trollOffsetModal, setTrollOffsetModal] = useState({ x: 0, y: 0 });
+  const [isTrollingModal, setIsTrollingModal] = useState(false);
+  const trollIntervalModalRef = useRef<any>(null);
+  const trollTimeoutModalRef = useRef<any>(null);
+  const hasTrolledModalRef = useRef(false);
+
+  const handleTrollCardHover = () => {
+    if (hasTrolledCardRef.current || trollIntervalCardRef.current) return;
+    hasTrolledCardRef.current = true;
+    setIsTrollingCard(true);
+    const setRandomOffset = () => {
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const rx = Math.max(20, Math.random() * (screenWidth - 340));
+      const ry = Math.max(20, Math.random() * (screenHeight - 80));
+      setTrollOffsetCard({ x: rx, y: ry });
+    };
+    setRandomOffset();
+    trollIntervalCardRef.current = setInterval(setRandomOffset, 200);
+    trollTimeoutCardRef.current = setTimeout(() => {
+      if (trollIntervalCardRef.current) {
+        clearInterval(trollIntervalCardRef.current);
+        trollIntervalCardRef.current = null;
+      }
+      setTrollOffsetCard({ x: 0, y: 0 });
+      setIsTrollingCard(false);
+    }, 2000);
+  };
+
+  const handleTrollModalHover = () => {
+    if (hasTrolledModalRef.current || trollIntervalModalRef.current) return;
+    hasTrolledModalRef.current = true;
+    setIsTrollingModal(true);
+    const setRandomOffset = () => {
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      const rx = Math.max(20, Math.random() * (screenWidth - 300));
+      const ry = Math.max(20, Math.random() * (screenHeight - 80));
+      setTrollOffsetModal({ x: rx, y: ry });
+    };
+    setRandomOffset();
+    trollIntervalModalRef.current = setInterval(setRandomOffset, 200);
+    trollTimeoutModalRef.current = setTimeout(() => {
+      if (trollIntervalModalRef.current) {
+        clearInterval(trollIntervalModalRef.current);
+        trollIntervalModalRef.current = null;
+      }
+      setTrollOffsetModal({ x: 0, y: 0 });
+      setIsTrollingModal(false);
+    }, 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (trollIntervalCardRef.current)
+        clearInterval(trollIntervalCardRef.current);
+      if (trollTimeoutCardRef.current)
+        clearTimeout(trollTimeoutCardRef.current);
+      if (trollIntervalModalRef.current)
+        clearInterval(trollIntervalModalRef.current);
+      if (trollTimeoutModalRef.current)
+        clearTimeout(trollTimeoutModalRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isConfirmModalOpen) {
+      if (trollIntervalModalRef.current) {
+        clearInterval(trollIntervalModalRef.current);
+        trollIntervalModalRef.current = null;
+      }
+      if (trollTimeoutModalRef.current) {
+        clearTimeout(trollTimeoutModalRef.current);
+        trollTimeoutModalRef.current = null;
+      }
+      setTrollOffsetModal({ x: 0, y: 0 });
+      setIsTrollingModal(false);
+      hasTrolledModalRef.current = false;
+    }
+  }, [isConfirmModalOpen]);
 
   const { data: myOrderVouchersData } = useQuery({
     queryKey: ["myOrderVouchers"],
@@ -967,27 +1057,47 @@ export default function OrderPage() {
                         </p>
                       )}
 
-                      <Button
-                        onClick={handleOpenConfirmModal}
-                        disabled={
-                          createOrderMutation.isPending ||
-                          !(effectiveBalance >= totalPrice - vipDiscountAmount)
-                        }
-                        className="w-full h-12 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-sm shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 disabled:bg-gray-300 disabled:scale-100 disabled:cursor-not-allowed"
-                      >
-                        {createOrderMutation.isPending ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Zap
-                              size={16}
-                              fill="white"
-                              className="text-yellow-300"
-                            />
-                            {order ? "CẬP NHẬT ĐƠN" : "XÁC NHẬN"}
-                          </>
-                        )}
-                      </Button>
+                      <div className="h-12 w-full relative">
+                        <Button
+                          onClick={handleOpenConfirmModal}
+                          disabled={
+                            createOrderMutation.isPending ||
+                            !(
+                              effectiveBalance >=
+                              totalPrice - vipDiscountAmount
+                            )
+                          }
+                          onMouseEnter={handleTrollCardHover}
+                          style={{
+                            position: isTrollingCard ? "fixed" : "relative",
+                            top: isTrollingCard
+                              ? `${trollOffsetCard.y}px`
+                              : "auto",
+                            left: isTrollingCard
+                              ? `${trollOffsetCard.x}px`
+                              : "auto",
+                            width: isTrollingCard ? "320px" : "100%",
+                            transition: isTrollingCard
+                              ? "all 0.1s ease-out"
+                              : "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                            zIndex: 99999,
+                          }}
+                          className="w-full h-12 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-black text-sm shadow-lg hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 disabled:bg-gray-300 disabled:scale-100 disabled:cursor-not-allowed"
+                        >
+                          {createOrderMutation.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Zap
+                                size={16}
+                                fill="white"
+                                className="text-yellow-300"
+                              />
+                              {order ? "CẬP NHẬT ĐƠN" : "XÁC NHẬN"}
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1137,6 +1247,23 @@ export default function OrderPage() {
                       const vipAvatarFrame =
                         orderUser.vipCosmetics?.vipAvatarFrame || "none";
 
+                      const vipMascot = orderUser.vipCosmetics?.vipMascot;
+                      const hasMascot =
+                        isVipOrder && vipMascot && vipMascot !== "none";
+
+                      let mascotImgSrc = "";
+                      if (hasMascot) {
+                        if (vipMascot.startsWith("http")) {
+                          mascotImgSrc = vipMascot;
+                        } else if (vipMascot === "ronaldo") {
+                          mascotImgSrc = "/ronaldo_left.png";
+                        } else if (vipMascot === "messi") {
+                          mascotImgSrc = "/messi_left.png";
+                        } else if (vipMascot === "neymar") {
+                          mascotImgSrc = "/neymar_left.png";
+                        }
+                      }
+
                       const orderTime = publicOrder.orderedAt
                         ? new Date(publicOrder.orderedAt).toLocaleTimeString(
                             "vi-VN",
@@ -1150,7 +1277,10 @@ export default function OrderPage() {
                       return (
                         <div
                           key={publicOrder._id}
-                          className="flex items-start gap-3 p-3 bg-gray-50/50 rounded-2xl border border-gray-100 hover:border-orange-200 transition-all"
+                          className={cn(
+                            "flex items-start gap-3 p-3 bg-gray-50/50 rounded-2xl border border-gray-100 hover:border-orange-200 transition-all relative overflow-hidden group",
+                            hasMascot && mascotImgSrc ? "pr-14" : "",
+                          )}
                         >
                           <VipAvatar
                             avatarUrl={orderUser.avatar}
@@ -1186,6 +1316,16 @@ export default function OrderPage() {
                               </span>
                             </p>
                           </div>
+
+                          {hasMascot && mascotImgSrc && (
+                            <div className="absolute right-1 bottom-0 w-11 h-14 pointer-events-none select-none transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-0.5">
+                              <img
+                                src={mascotImgSrc}
+                                alt="Mascot companion"
+                                className="h-full w-auto object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)] opacity-85 group-hover:opacity-100"
+                              />
+                            </div>
+                          )}
                         </div>
                       );
                     })
@@ -1223,13 +1363,13 @@ export default function OrderPage() {
 
         {/* CONFIRM ORDER MODAL */}
         <Dialog open={isConfirmModalOpen} onOpenChange={setIsConfirmModalOpen}>
-          <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-3xl border-none bg-white shadow-2xl">
-            <DialogHeader className="p-6 pb-4 bg-gradient-to-r from-orange-500 to-red-500 text-white">
+          <DialogContent className={cn("sm:max-w-md p-0 rounded-3xl border-none bg-white shadow-2xl", isVip && vipTheme !== "default" && `theme-${vipTheme}`)}>
+            <DialogHeader className="p-6 pb-4 bg-orange-500 text-white rounded-t-3xl">
               <DialogTitle className="text-lg font-black uppercase tracking-wide flex items-center gap-2 text-white">
                 <ShoppingBag size={20} />
                 Chi tiết đơn đặt cơm
               </DialogTitle>
-              <p className="text-xs text-orange-100 font-medium">
+              <p className="text-xs text-white/80 font-medium">
                 Vui lòng xác nhận thực đơn và nhập mã giảm giá nếu có.
               </p>
             </DialogHeader>
@@ -1442,7 +1582,7 @@ export default function OrderPage() {
               </div>
             </div>
 
-            <DialogFooter className="p-6 bg-gray-50 gap-3 sm:flex-row flex-col-reverse">
+            <DialogFooter className="p-6 bg-gray-50 gap-3 sm:flex-row flex-col-reverse rounded-b-3xl">
               <Button
                 variant="ghost"
                 onClick={() => setIsConfirmModalOpen(false)}
@@ -1451,32 +1591,45 @@ export default function OrderPage() {
               >
                 QUAY LẠI
               </Button>
-              <Button
-                className="flex-1 h-11 bg-orange-600 hover:bg-orange-700 text-white rounded-2xl font-black shadow-xl shadow-orange-100 gap-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                onClick={handleSubmitOrder}
-                disabled={
-                  createOrderMutation.isPending ||
-                  effectiveBalance <
-                    Math.max(
-                      0,
-                      totalPrice -
-                        vipDiscountAmount -
-                        (appliedVoucher ? appliedVoucher.discountAmount : 0),
-                    )
-                }
-              >
-                {createOrderMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    ĐANG ĐẶT CƠM...
-                  </>
-                ) : (
-                  <>
-                    <Zap size={14} fill="white" className="text-yellow-300" />
-                    ĐẶT CƠM
-                  </>
-                )}
-              </Button>
+              <div className="flex-1 h-11 relative">
+                <Button
+                  onMouseEnter={handleTrollModalHover}
+                  style={{
+                    position: isTrollingModal ? "fixed" : "relative",
+                    top: isTrollingModal ? `${trollOffsetModal.y}px` : "auto",
+                    left: isTrollingModal ? `${trollOffsetModal.x}px` : "auto",
+                    width: isTrollingModal ? "280px" : "100%",
+                    transition: isTrollingModal
+                      ? "all 0.1s ease-out"
+                      : "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                    zIndex: 99999,
+                  }}
+                  className="w-full h-11 bg-orange-600 hover:bg-orange-700 text-white rounded-2xl font-black shadow-xl shadow-orange-100 gap-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  onClick={handleSubmitOrder}
+                  disabled={
+                    createOrderMutation.isPending ||
+                    effectiveBalance <
+                      Math.max(
+                        0,
+                        totalPrice -
+                          vipDiscountAmount -
+                          (appliedVoucher ? appliedVoucher.discountAmount : 0),
+                      )
+                  }
+                >
+                  {createOrderMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      ĐANG ĐẶT CƠM...
+                    </>
+                  ) : (
+                    <>
+                      <Zap size={14} fill="white" className="text-yellow-300" />
+                      ĐẶT CƠM
+                    </>
+                  )}
+                </Button>
+              </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>

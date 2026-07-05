@@ -107,14 +107,16 @@ export default function ForumPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [friendSearchQuery, setFriendSearchQuery] = useState("");
 
-  const { data: friendUsersResponse, isLoading: friendSearchLoading } = useQuery({
-    queryKey: ["forumFriendSearch", friendSearchQuery],
-    queryFn: () => usersApi.searchUsers({ search: friendSearchQuery, limit: 8 }),
-    enabled: friendSearchQuery.trim().length > 0,
-  });
+  const { data: friendUsersResponse, isLoading: friendSearchLoading } =
+    useQuery({
+      queryKey: ["forumFriendSearch", friendSearchQuery],
+      queryFn: () =>
+        usersApi.searchUsers({ search: friendSearchQuery, limit: 8 }),
+      enabled: friendSearchQuery.trim().length > 0,
+    });
 
   const friendUsersList = (friendUsersResponse?.data?.data?.docs || []).filter(
-    (u: any) => u.role !== "admin"
+    (u: any) => u.role !== "admin",
   );
 
   // Post form states
@@ -137,6 +139,13 @@ export default function ForumPage() {
   // Image upload states
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // Reaction modal states
+  const [isReactionListOpen, setIsReactionListOpen] = useState(false);
+  const [activeReactionPost, setActiveReactionPost] = useState<any | null>(
+    null,
+  );
+  const [activeReactionTab, setActiveReactionTab] = useState<string>("all");
 
   useEffect(() => {
     return () => {
@@ -416,18 +425,22 @@ export default function ForumPage() {
   };
 
   // Helper to render reaction summary icons (👍❤️😆) and count
-  const renderReactionSummary = (reactions?: any[]) => {
-    if (!reactions || reactions.length === 0) return null;
+  const renderReactionSummary = (post: any) => {
+    const reactions = post?.reactions || [];
+    if (reactions.length === 0) return null;
 
     // Count unique reaction types
     const counts: Record<string, number> = {};
-    reactions.forEach((r) => {
+    reactions.forEach((r: any) => {
       counts[r.type] = (counts[r.type] || 0) + 1;
     });
 
     const sortedTypes = Object.keys(counts).sort(
       (a, b) => counts[b] - counts[a],
     );
+
+    const reactionNamesToShow = reactions.slice(0, 10);
+    const remainingCount = reactions.length - 10;
 
     return (
       <div className="flex items-center gap-1.5">
@@ -444,8 +457,43 @@ export default function ForumPage() {
             );
           })}
         </div>
-        <span className="hover:underline font-bold text-gray-500 text-[10px]">
+        <span
+          onClick={(e) => {
+            e.stopPropagation();
+            setActiveReactionPost(post);
+            setActiveReactionTab("all");
+            setIsReactionListOpen(true);
+          }}
+          className="relative group hover:underline font-bold text-gray-500 text-[10px] cursor-pointer"
+        >
           {reactions.length} cảm xúc
+          {/* Tooltip on hover */}
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900/95 backdrop-blur-sm text-white text-[10px] p-2.5 rounded-xl shadow-xl z-50 min-w-[140px] pointer-events-none transition-all duration-300">
+            <div className="font-extrabold text-orange-400 mb-1 border-b border-white/10 pb-1 text-center">
+              Người bày tỏ cảm xúc
+            </div>
+            <div className="space-y-0.5 max-h-[160px] overflow-y-auto pr-1">
+              {reactionNamesToShow.map((r: any, idx: number) => {
+                const reactorName = r.userId?.name || "Ẩn danh";
+                const emoji =
+                  REACTION_TYPES.find((rt) => rt.value === r.type)?.emoji ||
+                  "👍";
+                return (
+                  <div key={idx} className="flex items-center gap-1.5">
+                    <span className="shrink-0">{emoji}</span>
+                    <span className="truncate max-w-[120px] font-medium">
+                      {reactorName}
+                    </span>
+                  </div>
+                );
+              })}
+              {remainingCount > 0 && (
+                <div className="text-[9px] text-gray-400 italic text-center mt-1 border-t border-white/5 pt-1">
+                  + {remainingCount} người khác
+                </div>
+              )}
+            </div>
+          </div>
         </span>
       </div>
     );
@@ -668,7 +716,7 @@ export default function ForumPage() {
                 className="pl-9 rounded-xl border-gray-200"
               />
             </div>
-            
+
             {friendSearchLoading ? (
               <div className="flex items-center gap-2 justify-center py-3 text-xs text-gray-400 font-medium">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -694,19 +742,21 @@ export default function ForumPage() {
                       />
                       <div className="truncate min-w-0 flex-1">
                         <div className="flex items-center gap-1">
-                          <p className={cn(
-                            "font-extrabold text-xs truncate leading-tight",
-                            isVip
-                              ? isGold
-                                ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent font-black"
-                                : "text-amber-500"
-                              : "text-gray-800"
-                          )}>
+                          <p
+                            className={cn(
+                              "font-extrabold text-xs truncate leading-tight",
+                              isVip
+                                ? isGold
+                                  ? "bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 bg-clip-text text-transparent font-black"
+                                  : "text-amber-500"
+                                : "text-gray-800",
+                            )}
+                          >
                             {u.name}
                           </p>
                           {isVip && (
-                            <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[8px] px-1 py-0 rounded flex items-center gap-0.5 scale-90">
-                              👑
+                            <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[8px] px-1 py-0.5 rounded flex items-center gap-0.5 scale-90">
+                              👑 {u.membershipName || "VIP"}
                             </Badge>
                           )}
                         </div>
@@ -719,9 +769,13 @@ export default function ForumPage() {
                 })}
               </div>
             ) : friendSearchQuery ? (
-              <p className="text-center py-2 text-[10px] text-gray-450 font-bold">Không tìm thấy đồng nghiệp nào</p>
+              <p className="text-center py-2 text-[10px] text-gray-450 font-bold">
+                Không tìm thấy đồng nghiệp nào
+              </p>
             ) : (
-              <p className="text-[10px] text-gray-400 font-bold italic">Nhập tên để tìm kiếm nhanh đồng đạo...</p>
+              <p className="text-[10px] text-gray-400 font-bold italic">
+                Nhập tên để tìm kiếm nhanh đồng đạo...
+              </p>
             )}
           </Card>
         </div>
@@ -850,7 +904,9 @@ export default function ForumPage() {
                         className="flex items-center gap-3"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <UserHoverCardWrapper userId={post.userId?._id || post.userId?.id}>
+                        <UserHoverCardWrapper
+                          userId={post.userId?._id || post.userId?.id}
+                        >
                           <Link
                             to={getProfileLink(
                               post.userId?._id || post.userId?.id,
@@ -870,7 +926,9 @@ export default function ForumPage() {
                         </UserHoverCardWrapper>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <UserHoverCardWrapper userId={post.userId?._id || post.userId?.id}>
+                            <UserHoverCardWrapper
+                              userId={post.userId?._id || post.userId?.id}
+                            >
                               <Link
                                 to={getProfileLink(
                                   post.userId?._id || post.userId?.id,
@@ -897,7 +955,7 @@ export default function ForumPage() {
                                   size={10}
                                   className="fill-amber-700/20"
                                 />
-                                VIP Member
+                                {post.userId?.membershipName || "VIP Member"}
                               </Badge>
                             )}
                           </div>
@@ -941,9 +999,13 @@ export default function ForumPage() {
                       {/* Engagement statistics - Row 1 */}
                       <div
                         className="flex items-center justify-between text-xs text-gray-400 font-medium pt-2 border-t border-gray-50"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedDetailPostId(post._id);
+                        }}
                       >
-                        {renderReactionSummary(post.reactions)}
+                        {renderReactionSummary(post)}
                         <div className="hover:underline font-bold text-gray-500 text-[10px]">
                           {post.commentsCount || 0} bình luận
                         </div>
@@ -1148,7 +1210,9 @@ export default function ForumPage() {
               <div className="p-4 md:p-5 space-y-4 flex-1 overflow-y-auto custom-scrollbar">
                 {/* Author Info */}
                 <div className="flex items-center gap-3">
-                  <UserHoverCardWrapper userId={detailPost.userId?._id || detailPost.userId?.id}>
+                  <UserHoverCardWrapper
+                    userId={detailPost.userId?._id || detailPost.userId?.id}
+                  >
                     <Link
                       to={getProfileLink(
                         detailPost.userId?._id || detailPost.userId?.id,
@@ -1168,7 +1232,9 @@ export default function ForumPage() {
                   </UserHoverCardWrapper>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <UserHoverCardWrapper userId={detailPost.userId?._id || detailPost.userId?.id}>
+                      <UserHoverCardWrapper
+                        userId={detailPost.userId?._id || detailPost.userId?.id}
+                      >
                         <Link
                           to={getProfileLink(
                             detailPost.userId?._id || detailPost.userId?.id,
@@ -1192,7 +1258,7 @@ export default function ForumPage() {
                       </UserHoverCardWrapper>
                       {detailPost.userId?.hasMembership && (
                         <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[9px] px-1 py-0.5 rounded flex items-center gap-0.5 scale-90">
-                          👑 VIP
+                          👑 {detailPost.userId?.membershipName || "VIP"}
                         </Badge>
                       )}
                     </div>
@@ -1235,7 +1301,7 @@ export default function ForumPage() {
 
                 {/* Likes/Comments statistics */}
                 <div className="flex items-center justify-between text-xs text-gray-400 font-medium pt-2 border-t border-gray-55">
-                  {renderReactionSummary(detailPost.reactions)}
+                  {renderReactionSummary(detailPost)}
                   <div className="font-bold text-gray-500 text-[10px]">
                     {detailComments.length} bình luận
                   </div>
@@ -1356,7 +1422,11 @@ export default function ForumPage() {
                             <div key={parent._id} className="space-y-3">
                               {/* Parent Comment */}
                               <div className="flex gap-2.5 items-start">
-                                <UserHoverCardWrapper userId={parent.userId?._id || parent.userId?.id}>
+                                <UserHoverCardWrapper
+                                  userId={
+                                    parent.userId?._id || parent.userId?.id
+                                  }
+                                >
                                   <Link
                                     to={getProfileLink(
                                       parent.userId?._id || parent.userId?.id,
@@ -1366,7 +1436,9 @@ export default function ForumPage() {
                                     <VipAvatar
                                       avatarUrl={parent.userId?.avatar}
                                       name={parent.userId?.name}
-                                      hasMembership={parent.userId?.hasMembership}
+                                      hasMembership={
+                                        parent.userId?.hasMembership
+                                      }
                                       vipAvatarFrame={
                                         parent.userId?.vipCosmetics
                                           ?.vipAvatarFrame
@@ -1379,7 +1451,12 @@ export default function ForumPage() {
                                   <div className="relative inline-block max-w-[95%]">
                                     <div className="bg-gray-100 rounded-2xl px-4 py-2">
                                       <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                                        <UserHoverCardWrapper userId={parent.userId?._id || parent.userId?.id}>
+                                        <UserHoverCardWrapper
+                                          userId={
+                                            parent.userId?._id ||
+                                            parent.userId?.id
+                                          }
+                                        >
                                           <Link
                                             to={getProfileLink(
                                               parent.userId?._id ||
@@ -1405,7 +1482,7 @@ export default function ForumPage() {
                                         </UserHoverCardWrapper>
                                         {parent.userId?.hasMembership && (
                                           <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[8px] px-1 py-0 rounded flex items-center gap-0.5 scale-90 leading-none">
-                                            👑 VIP
+                                            👑 {parent.userId?.membershipName || "VIP"}
                                           </Badge>
                                         )}
                                       </div>
@@ -1532,7 +1609,12 @@ export default function ForumPage() {
                                         key={reply._id}
                                         className="flex gap-2 items-start"
                                       >
-                                        <UserHoverCardWrapper userId={reply.userId?._id || reply.userId?.id}>
+                                        <UserHoverCardWrapper
+                                          userId={
+                                            reply.userId?._id ||
+                                            reply.userId?.id
+                                          }
+                                        >
                                           <Link
                                             to={getProfileLink(
                                               reply.userId?._id ||
@@ -1559,7 +1641,12 @@ export default function ForumPage() {
                                           <div className="relative inline-block max-w-[95%]">
                                             <div className="bg-gray-100 rounded-2xl px-3.5 py-1.5">
                                               <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                                                <UserHoverCardWrapper userId={reply.userId?._id || reply.userId?.id}>
+                                                <UserHoverCardWrapper
+                                                  userId={
+                                                    reply.userId?._id ||
+                                                    reply.userId?.id
+                                                  }
+                                                >
                                                   <Link
                                                     to={getProfileLink(
                                                       reply.userId?._id ||
@@ -1589,7 +1676,7 @@ export default function ForumPage() {
                                                 {reply.userId
                                                   ?.hasMembership && (
                                                   <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[8px] px-1 py-0 rounded flex items-center gap-0.5 scale-90 leading-none">
-                                                    👑 VIP
+                                                    👑 {reply.userId?.membershipName || "VIP"}
                                                   </Badge>
                                                 )}
                                               </div>
@@ -1808,6 +1895,175 @@ export default function ForumPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* MODAL DANH SÁCH NGƯỜI THẢ CẢM XÚC */}
+      <Dialog open={isReactionListOpen} onOpenChange={setIsReactionListOpen}>
+        <DialogContent className="sm:max-w-[480px] max-h-[80vh] overflow-hidden rounded-3xl border-none bg-white p-0 shadow-2xl flex flex-col">
+          <DialogHeader className="p-6 pb-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-t-3xl shrink-0">
+            <DialogTitle className="text-lg font-black uppercase tracking-wide flex items-center gap-2 text-white">
+              <span>💖</span>
+              Người đã bày tỏ cảm xúc
+            </DialogTitle>
+            <DialogDescription className="text-xs text-orange-100 font-medium">
+              Danh sách chi tiết đồng nghiệp đã thả cảm xúc bài viết
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Custom Tabs list */}
+          {(() => {
+            const reactions = activeReactionPost?.reactions || [];
+
+            // Count unique reaction types
+            const counts: Record<string, number> = {};
+            reactions.forEach((r: any) => {
+              counts[r.type] = (counts[r.type] || 0) + 1;
+            });
+
+            // Get available reaction types with counts > 0
+            const activeReactionTypes = REACTION_TYPES.filter(
+              (rt) => counts[rt.value] > 0,
+            ).map((rt) => ({
+              ...rt,
+              count: counts[rt.value],
+            }));
+
+            // Filtered list based on active tab
+            const filteredReactions = reactions.filter(
+              (r: any) =>
+                activeReactionTab === "all" || r.type === activeReactionTab,
+            );
+
+            return (
+              <>
+                {/* Tabs bar */}
+                <div className="flex border-b border-gray-100 overflow-x-auto shrink-0 bg-gray-50/50 p-2 gap-1.5 scrollbar-thin">
+                  <button
+                    onClick={() => setActiveReactionTab("all")}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all",
+                      activeReactionTab === "all"
+                        ? "bg-white text-orange-600 shadow-sm border border-orange-100"
+                        : "text-gray-500 hover:bg-gray-100",
+                    )}
+                  >
+                    <span>Tất cả</span>
+                    <Badge
+                      variant="secondary"
+                      className="px-1.5 py-0 bg-gray-100 text-gray-700 text-[10px] font-bold border-none"
+                    >
+                      {reactions.length}
+                    </Badge>
+                  </button>
+
+                  {activeReactionTypes.map((rt) => (
+                    <button
+                      key={rt.value}
+                      onClick={() => setActiveReactionTab(rt.value)}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all",
+                        activeReactionTab === rt.value
+                          ? "bg-white text-orange-600 shadow-sm border border-orange-100"
+                          : "text-gray-500 hover:bg-gray-100",
+                      )}
+                    >
+                      <span className="text-sm">{rt.emoji}</span>
+                      <span>{rt.label}</span>
+                      <Badge
+                        variant="secondary"
+                        className="px-1.5 py-0 bg-gray-100 text-gray-700 text-[10px] font-bold border-none"
+                      >
+                        {rt.count}
+                      </Badge>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Users List */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[250px] max-h-[350px]">
+                  {filteredReactions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                      <p className="text-sm font-bold">Chưa có cảm xúc nào</p>
+                    </div>
+                  ) : (
+                    filteredReactions.map((r: any, idx: number) => {
+                      const reactor = r.userId;
+                      if (!reactor) return null;
+
+                      const isVip = reactor.hasMembership;
+                      const isVipGold =
+                        isVip && reactor.vipCosmetics?.vipTheme === "gold";
+                      const emoji =
+                        REACTION_TYPES.find((rt) => rt.value === r.type)
+                          ?.emoji || "👍";
+
+                      return (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-2.5 hover:bg-orange-50/20 rounded-2xl transition-all border border-transparent hover:border-orange-100/50"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="relative shrink-0">
+                              <VipAvatar
+                                avatarUrl={reactor.avatar}
+                                name={reactor.name}
+                                hasMembership={isVip}
+                                vipAvatarFrame={
+                                  reactor.vipCosmetics?.vipAvatarFrame
+                                }
+                                size="sm"
+                              />
+                              <div className="absolute -bottom-1 -right-1 bg-white rounded-full w-5 h-5 flex items-center justify-center shadow-sm text-sm border border-gray-100 select-none">
+                                {emoji}
+                              </div>
+                            </div>
+
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <h4
+                                  className={cn(
+                                    "font-extrabold text-xs truncate max-w-[160px]",
+                                    isVip
+                                      ? isVipGold
+                                        ? "bg-gradient-to-r from-yellow-500 via-amber-600 to-yellow-600 bg-clip-text text-transparent font-black"
+                                        : "bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent font-black"
+                                      : "text-gray-900",
+                                  )}
+                                >
+                                  {reactor.name}
+                                </h4>
+                                {isVip && (
+                                  <span className="text-[8px] bg-amber-50 text-amber-600 px-1 py-0.5 rounded font-black uppercase shrink-0 border border-amber-100 leading-none">
+                                    👑 {reactor.membershipName || "VIP"}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-gray-400 font-medium truncate max-w-[180px]">
+                                {reactor.email}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div>
+                            <Link to={`/user/${reactor._id || reactor.id}`}>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 rounded-xl text-[10px] font-bold text-orange-500 hover:text-orange-600 hover:bg-orange-50"
+                              >
+                                Xem hồ sơ
+                              </Button>
+                            </Link>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -1924,7 +2180,7 @@ function UserHoverCardPortal({
               <div className={cn("h-16 w-full relative", coverBg)}>
                 {isVip && (
                   <div className="absolute top-2 right-2 bg-white/20 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-white/20">
-                    👑 VIP
+                    👑 {targetUser?.membershipName || "VIP"}
                   </div>
                 )}
               </div>

@@ -500,3 +500,136 @@
 .vip-frame-sparkle {
   animation: sparkleSpin 6s linear infinite;
 }
+
+/* 6 New VIP Themes */
+.theme-emerald {
+  --primary: 142.1 76.2% 36.3%;
+  --primary-foreground: 355.7 100% 97.3%;
+  --background: 142.1 100% 99%;
+  --foreground: 142.1 30% 10%;
+  --border: 142.1 60% 93%;
+  --ring: 142.1 76.2% 36.3%;
+}
+.theme-emerald .bg-white,
+.theme-emerald .bg-card {
+  background-color: hsl(142.1 100% 100%) !important;
+  border-color: hsl(142.1 60% 95%) !important;
+}
+.theme-emerald .text-orange-500,
+.theme-emerald .text-orange-600 {
+  color: hsl(142.1 76.2% 33%) !important;
+}
+.theme-emerald .bg-orange-500,
+.theme-emerald .bg-orange-600 {
+  background-color: hsl(142.1 76.2% 36.3%) !important;
+}
+
+.theme-ocean {
+  --primary: 199 89% 48%;
+  --primary-foreground: 0 0% 100%;
+  --background: 199 100% 99%;
+  --foreground: 199 30% 15%;
+  --border: 199 60% 92%;
+  --ring: 199 89% 48%;
+}
+.theme-ocean .bg-white,
+.theme-ocean .bg-card {
+  background-color: hsl(199 100% 100%) !important;
+  border-color: hsl(199 60% 94%) !important;
+}
+.theme-ocean .text-orange-500,
+.theme-ocean .text-orange-600 {
+  color: hsl(199 89% 44%) !important;
+}
+.theme-ocean .bg-orange-500,
+.theme-ocean .bg-orange-600 {
+  background-color: hsl(199 89% 48%) !important;
+}
+
+.theme-lava {
+  --primary: 0 84.2% 60.2%;
+  --primary-foreground: 210 40% 98%;
+  --background: 0 100% 99%;
+  --foreground: 0 30% 15%;
+  --border: 0 60% 92%;
+  --ring: 0 84.2% 60.2%;
+}
+.theme-lava .bg-white,
+.theme-lava .bg-card {
+  background-color: hsl(0 100% 100%) !important;
+  border-color: hsl(0 60% 94%) !important;
+}
+.theme-lava .text-orange-500,
+.theme-lava .text-orange-600 {
+  color: hsl(0 84.2% 55%) !important;
+}
+.theme-lava .bg-orange-500,
+.theme-lava .bg-orange-600 {
+  background-color: hsl(0 84.2% 60.2%) !important;
+}
+
+.theme-sunset {
+  --primary: 360 85% 60%;
+  --primary-foreground: 0 0% 100%;
+  --background: 360 100% 99%;
+  --foreground: 360 30% 15%;
+  --border: 360 60% 92%;
+  --ring: 360 85% 60%;
+}
+.theme-sunset .bg-white,
+.theme-sunset .bg-card {
+  background-color: hsl(360 100% 100%) !important;
+  border-color: hsl(360 60% 94%) !important;
+}
+.theme-sunset .text-orange-500,
+.theme-sunset .text-orange-600 {
+  color: hsl(360 85% 55%) !important;
+}
+.theme-sunset .bg-orange-500,
+.theme-sunset .bg-orange-600 {
+  background-color: hsl(360 85% 60%) !important;
+}
+
+.theme-cotton-candy {
+  --primary: 280 85% 65%;
+  --primary-foreground: 0 0% 100%;
+  --background: 280 100% 99%;
+  --foreground: 280 30% 15%;
+  --border: 280 60% 92%;
+  --ring: 280 85% 65%;
+}
+.theme-cotton-candy .bg-white,
+.theme-cotton-candy .bg-card {
+  background-color: hsl(280 100% 100%) !important;
+  border-color: hsl(280 60% 94%) !important;
+}
+.theme-cotton-candy .text-orange-500,
+.theme-cotton-candy .text-orange-600 {
+  color: hsl(280 85% 60%) !important;
+}
+.theme-cotton-candy .bg-orange-500,
+.theme-cotton-candy .bg-orange-600 {
+  background-color: hsl(280 85% 65%) !important;
+}
+
+.theme-cyberpunk {
+  --primary: 320 100% 60%;
+  --primary-foreground: 0 0% 100%;
+  --background: 320 100% 99%;
+  --foreground: 320 30% 15%;
+  --border: 320 60% 92%;
+  --ring: 320 100% 60%;
+}
+.theme-cyberpunk .bg-white,
+.theme-cyberpunk .bg-card {
+  background-color: hsl(320 100% 100%) !important;
+  border-color: hsl(320 60% 94%) !important;
+}
+.theme-cyberpunk .text-orange-500,
+.theme-cyberpunk .text-orange-600 {
+  color: hsl(320 100% 55%) !important;
+}
+.theme-cyberpunk .bg-orange-500,
+.theme-cyberpunk .bg-orange-600 {
+  background-color: hsl(320 100% 60%) !important;
+}

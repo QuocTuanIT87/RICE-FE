@@ -30,8 +30,6 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
-  MessageCircle,
-  MessageSquare,
   Settings,
   Trophy,
   User,
@@ -41,12 +39,44 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
+// Custom Facebook (FaceBeek) SVG Icon component to avoid Lucide deprecation warning
+const Facebook = ({ size = 24, ...props }: React.ComponentProps<"svg"> & { size?: number | string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+  </svg>
+);
+
+// Custom Messenger SVG Icon component
+const Messenger = ({ size = 24, ...props }: React.ComponentProps<"svg"> & { size?: number | string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 16 16"
+    fill="currentColor"
+    {...props}
+  >
+    <path d="M0 7.76C0 3.301 3.493 0 8 0s8 3.301 8 7.76-3.493 7.76-8 7.76c-.81 0-1.586-.107-2.316-.307a.64.64 0 0 0-.427.03l-1.588.702a.64.64 0 0 1-.898-.566l-.044-1.423a.64.64 0 0 0-.215-.456C.956 12.108 0 10.092 0 7.76m5.546-1.459-2.35 3.728c-.225.358.214.761.551.506l2.525-1.916a.48.48 0 0 1 .578-.002l1.869 1.402a1.2 1.2 0 0 0 1.735-.32l2.35-3.728c.226-.358-.214-.761-.551-.506L9.728 7.381a.48.48 0 0 1-.578.002L7.281 5.98a1.2 1.2 0 0 0-1.735.32z" />
+  </svg>
+);
+
 const customerNavItems = [
   { path: "/", label: "Trang chủ", icon: Home },
   { path: "/order", label: "Đặt cơm", icon: UtensilsCrossed },
   { path: "/wallet", label: "Ví tiền", icon: Coins },
   { path: "/vip", label: "Hội Viên VIP", icon: Crown },
-  { path: "/forum", label: "Diễn đàn", icon: MessageSquare },
+  { path: "/forum", label: "FaceBeek", icon: Facebook },
   { path: "/leaderboard", label: "Bảng xếp hạng", icon: Trophy },
 ];
 
@@ -387,11 +417,11 @@ export default function MainLayout() {
                   className="relative w-9 h-9 flex items-center justify-center rounded-xl transition-all border border-transparent hover:bg-gray-50 hover:border-gray-100"
                   title="Nhắn tin"
                 >
-                  <MessageCircle
+                  <Messenger
                     size={18}
                     className={cn(
-                      "text-gray-500",
-                      totalUnreadChats > 0 && "text-orange-500 animate-pulse",
+                      "text-[#0084FF]",
+                      totalUnreadChats > 0 && "animate-pulse",
                     )}
                   />
                   {totalUnreadChats > 0 && (
@@ -781,7 +811,7 @@ export default function MainLayout() {
               {[
                 ...navItems,
                 ...(!isAdmin
-                  ? [{ path: "/chat", label: "Nhắn tin", icon: MessageCircle }]
+                  ? [{ path: "/chat", label: "Nhắn tin", icon: Messenger }]
                   : []),
               ].map((item) => {
                 const Icon = item.icon;
