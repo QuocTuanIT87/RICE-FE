@@ -1124,7 +1124,7 @@ export default function ProfilePage() {
                           id: "default",
                           name: "Mặc định",
                           desc: "Màu cam truyền thống",
-                          color: "bg-orange-500",
+                          color: "bg-[#f97316]",
                           cardBg:
                             "bg-orange-50/10 border-orange-100 hover:border-orange-200 text-orange-950",
                           textTitle: "text-orange-950",
@@ -1150,7 +1150,7 @@ export default function ProfilePage() {
                           name: "Đêm Huyền Bí",
                           desc: "Giao diện tối huyền bí",
                           color:
-                            "bg-gradient-to-r from-violet-550 to-indigo-600",
+                            "bg-gradient-to-r from-violet-500 to-indigo-600",
                           cardBg:
                             "bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-100",
                           textTitle: "text-slate-100",
@@ -1162,11 +1162,11 @@ export default function ProfilePage() {
                           id: "sakura",
                           name: "Hoa Anh Đào",
                           desc: "Sắc hồng ngọt ngào",
-                          color: "bg-gradient-to-r from-pink-400 to-rose-450",
+                          color: "bg-gradient-to-r from-pink-400 to-rose-500",
                           cardBg:
                             "bg-pink-50/10 border-pink-100 hover:border-pink-200 text-pink-950",
                           textTitle: "text-pink-950",
-                          textDesc: "text-pink-650/70",
+                          textDesc: "text-pink-600/70",
                           activeClass:
                             "border-pink-500 bg-pink-50/30 ring-2 ring-pink-500/20",
                         },
@@ -1175,7 +1175,7 @@ export default function ProfilePage() {
                           name: "Ngọc Bích",
                           desc: "Sắc xanh ngọc lục bảo",
                           color:
-                            "bg-gradient-to-r from-emerald-450 to-green-500",
+                            "bg-gradient-to-r from-emerald-500 to-green-600",
                           cardBg:
                             "bg-emerald-50/10 border-emerald-100 hover:border-emerald-200 text-emerald-950",
                           textTitle: "text-emerald-950",
@@ -1225,7 +1225,7 @@ export default function ProfilePage() {
                           name: "Kẹo Ngọt",
                           desc: "Tím hồng ngọt ngào",
                           color:
-                            "bg-gradient-to-r from-purple-400 via-pink-400 to-sky-450",
+                            "bg-gradient-to-r from-purple-400 via-pink-400 to-sky-500",
                           cardBg:
                             "bg-purple-50/10 border-purple-100 hover:border-purple-200 text-purple-950",
                           textTitle: "text-purple-950",
@@ -1238,13 +1238,13 @@ export default function ProfilePage() {
                           name: "Cyberpunk",
                           desc: "Neon đêm tương lai",
                           color:
-                            "bg-gradient-to-r from-pink-500 via-purple-650 to-cyan-500",
+                            "bg-gradient-to-r from-pink-500 via-purple-600 to-cyan-500",
                           cardBg:
                             "bg-zinc-900 border-zinc-800 hover:border-zinc-700 text-pink-400",
                           textTitle: "text-pink-400",
                           textDesc: "text-cyan-400/80",
                           activeClass:
-                            "border-pink-500 ring-2 ring-pink-550/30",
+                            "border-pink-500 ring-2 ring-pink-500/30",
                         },
                       ].map((themeOpt) => {
                         const isSelected = vipTheme === themeOpt.id;
@@ -1272,7 +1272,7 @@ export default function ProfilePage() {
                                   className={cn(
                                     "w-4 h-4 rounded-full flex items-center justify-center text-[10px] text-white font-bold shadow-sm",
                                     themeOpt.id === "default"
-                                      ? "bg-orange-500"
+                                      ? "bg-[#f97316]"
                                       : themeOpt.color,
                                   )}
                                 >
@@ -1587,7 +1587,7 @@ export default function ProfilePage() {
                             {isUploadingMascot ? (
                               <Loader2 className="animate-spin text-amber-500 w-5 h-5" />
                             ) : (
-                              <Upload className="text-gray-450 w-5 h-5" />
+                              <Upload className="text-gray-400 w-5 h-5" />
                             )}
                             <span className="text-[10px] font-black text-gray-500 uppercase tracking-tight">
                               {isUploadingMascot
@@ -2139,7 +2139,7 @@ export default function ProfilePage() {
                                 }
                                 disabled={declineFriendMutation.isPending}
                                 variant="ghost"
-                                className="h-7 px-2.5 rounded-lg text-[10px] font-bold text-red-500 hover:bg-red-50 hover:text-red-650 border border-red-100 bg-white"
+                                className="h-7 px-2.5 rounded-lg text-[10px] font-bold text-red-500 hover:bg-red-50 hover:text-red-600 border border-red-100 bg-white"
                               >
                                 Từ chối
                               </Button>
@@ -2199,7 +2199,7 @@ export default function ProfilePage() {
                               }
                               disabled={declineFriendMutation.isPending}
                               variant="ghost"
-                              className="h-7 px-2.5 rounded-lg text-[10px] font-bold text-gray-500 hover:bg-gray-100 hover:text-gray-650 border border-gray-200 bg-white"
+                              className="h-7 px-2.5 rounded-lg text-[10px] font-bold text-gray-500 hover:bg-gray-100 hover:text-gray-600 border border-gray-200 bg-white"
                             >
                               Thu hồi
                             </Button>
@@ -2270,7 +2270,7 @@ export default function ProfilePage() {
                             }}
                             disabled={unfriendMutation.isPending}
                             variant="ghost"
-                            className="h-7 px-2.5 rounded-lg text-[10px] font-bold text-red-500 hover:bg-red-50 hover:text-red-650 border border-red-50 bg-white"
+                            className="h-7 px-2.5 rounded-lg text-[10px] font-bold text-red-500 hover:bg-red-50 hover:text-red-600 border border-red-50 bg-white"
                           >
                             Hủy kết bạn
                           </Button>
@@ -2374,7 +2374,7 @@ export default function ProfilePage() {
                               onClick={() => unfollowMutation.mutate(f._id)}
                               disabled={unfollowMutation.isPending}
                               variant="ghost"
-                              className="h-7 px-2.5 rounded-lg text-[10px] font-bold text-gray-500 hover:bg-red-50 hover:text-red-650 border border-gray-200 hover:border-red-100 bg-white"
+                              className="h-7 px-2.5 rounded-lg text-[10px] font-bold text-gray-500 hover:bg-red-50 hover:text-red-600 border border-gray-200 hover:border-red-100 bg-white"
                             >
                               Hủy theo dõi
                             </Button>

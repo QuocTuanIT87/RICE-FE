@@ -140,6 +140,10 @@ export default function MyWalletPage() {
     queryFn: () => authApi.getMe(),
   });
 
+  const freshUser = profileData?.data?.data;
+  const isVip = freshUser?.hasMembership || false;
+  const vipTheme = freshUser?.vipCosmetics?.vipTheme || "default";
+
   const {
     data: requestsData,
     isLoading: requestsLoading,
@@ -311,7 +315,7 @@ export default function MyWalletPage() {
       : "";
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className={cn("max-w-4xl mx-auto space-y-8 transition-all duration-300", isVip && vipTheme !== "default" && `theme-${vipTheme}`)}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -334,8 +338,8 @@ export default function MyWalletPage() {
       {/* Wallet Balance Overview Cards */}
       <div className="grid md:grid-cols-2 gap-6">
         {/* Cash Balance Card */}
-        <Card className="border border-orange-100 bg-gradient-to-br from-white to-orange-50/20 shadow-sm overflow-hidden relative group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-110 duration-500" />
+        <Card className="border border-orange-100 bg-gradient-to-br from-white to-orange-50 shadow-sm overflow-hidden relative group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-110 duration-500" />
           <CardContent className="p-6">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
@@ -355,7 +359,7 @@ export default function MyWalletPage() {
                   </button>
                 </div>
               </div>
-              <div className="w-12 h-12 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500">
+              <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600">
                 <Wallet size={24} />
               </div>
             </div>
@@ -371,21 +375,21 @@ export default function MyWalletPage() {
         </Card>
 
         {/* VIP Rank Card */}
-        <Card className="border border-amber-100 bg-gradient-to-br from-white to-amber-50/20 shadow-sm overflow-hidden relative group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-110 duration-500" />
+        <Card className="border border-orange-100 bg-gradient-to-br from-white to-orange-50 shadow-sm overflow-hidden relative group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-110 duration-500" />
           <CardContent className="p-6">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
                   Trạng thái hội viên VIP
                 </p>
-                <h2 className="text-xl font-black text-amber-600 uppercase tracking-wide italic">
+                <h2 className="text-xl font-black text-orange-600 uppercase tracking-wide italic">
                   {user?.hasMembership
                     ? user.membershipName
                     : "Thành viên thường"}
                 </h2>
               </div>
-              <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500">
+              <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600">
                 <Crown size={24} />
               </div>
             </div>
@@ -404,7 +408,7 @@ export default function MyWalletPage() {
               </span>
               <Link
                 to="/vip"
-                className="text-amber-500 hover:text-amber-600 font-black flex items-center gap-0.5"
+                className="text-orange-500 hover:text-orange-600 font-black flex items-center gap-0.5"
               >
                 {user?.hasMembership ? "Quản lý VIP →" : "Đăng ký ngay →"}
               </Link>
@@ -425,13 +429,13 @@ export default function MyWalletPage() {
         <TabsList className="grid w-full grid-cols-3 bg-gray-100/80 p-1 rounded-2xl h-11 mb-2">
           <TabsTrigger
             value="deposit"
-            className="rounded-xl font-bold text-xs md:text-sm py-2 data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm"
+            className="rounded-xl font-bold text-xs md:text-sm py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
           >
             NẠP TIỀN
           </TabsTrigger>
           <TabsTrigger
             value="pending"
-            className="rounded-xl font-bold text-xs md:text-sm py-2 data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm relative"
+            className="rounded-xl font-bold text-xs md:text-sm py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm relative"
           >
             YÊU CẦU ĐANG CHỜ
             {pendingRequests.length > 0 && (
@@ -442,7 +446,7 @@ export default function MyWalletPage() {
           </TabsTrigger>
           <TabsTrigger
             value="history"
-            className="rounded-xl font-bold text-xs md:text-sm py-2 data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm"
+            className="rounded-xl font-bold text-xs md:text-sm py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
           >
             LỊCH SỬ NẠP TIỀN
           </TabsTrigger>
@@ -812,16 +816,16 @@ export default function MyWalletPage() {
         </TabsContent>
 
         <TabsContent value="pending" className="mt-0">
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 overflow-hidden">
-            <div className="px-6 py-4 border-b border-amber-200 flex items-center gap-2">
-              <Clock size={18} className="text-amber-600" />
-              <h2 className="font-bold text-amber-900 text-sm md:text-base">
+          <div className="rounded-2xl border border-orange-200 bg-orange-50 overflow-hidden">
+            <div className="px-6 py-4 border-b border-orange-200 flex items-center gap-2">
+              <Clock size={18} className="text-orange-600" />
+              <h2 className="font-bold text-orange-950 text-sm md:text-base">
                 Yêu cầu nạp tiền đang chờ xác nhận ({pendingRequests.length})
               </h2>
             </div>
             {pendingRequests.length === 0 ? (
               <div className="text-center py-16 bg-white p-6">
-                <div className="w-16 h-16 mx-auto bg-amber-50 rounded-2xl flex items-center justify-center mb-4 text-amber-500">
+                <div className="w-16 h-16 mx-auto bg-orange-50 rounded-2xl flex items-center justify-center mb-4 text-orange-500">
                   <Clock size={28} />
                 </div>
                 <p className="text-gray-500 text-sm font-bold">
@@ -838,10 +842,10 @@ export default function MyWalletPage() {
                   {paginatedPendingRequests.map((req) => (
                     <div
                       key={req._id}
-                      className="flex items-center justify-between p-4 bg-white rounded-xl border border-amber-100 shadow-sm"
+                      className="flex items-center justify-between p-4 bg-white rounded-xl border border-orange-100 shadow-sm"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600">
+                        <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600">
                           <Clock size={18} />
                         </div>
                         <div>
@@ -880,8 +884,8 @@ export default function MyWalletPage() {
                 </div>
 
                 {totalPendingPages > 1 && (
-                  <div className="flex items-center justify-between px-6 py-3 border-t border-amber-200/50 bg-amber-50/50">
-                    <span className="text-[11px] text-amber-800 font-medium">
+                  <div className="flex items-center justify-between px-6 py-3 border-t border-orange-200/50 bg-orange-50/50">
+                    <span className="text-[11px] text-orange-850 font-medium">
                       Hiển thị {pendingStartIndex + 1} -{" "}
                       {Math.min(
                         pendingStartIndex + ITEMS_PER_PAGE,
@@ -897,7 +901,7 @@ export default function MyWalletPage() {
                           setPendingPage((prev) => Math.max(prev - 1, 1))
                         }
                         disabled={pendingPage === 1}
-                        className="h-7 px-2.5 rounded-lg border-amber-200 text-amber-800 hover:bg-amber-100 hover:text-amber-900 disabled:opacity-50 text-[11px] font-bold"
+                        className="h-7 px-2.5 rounded-lg border-orange-200 text-orange-800 hover:bg-orange-100 hover:text-orange-900 disabled:opacity-50 text-[11px] font-bold"
                       >
                         Trước
                       </Button>
@@ -913,8 +917,8 @@ export default function MyWalletPage() {
                           className={cn(
                             "h-7 w-7 p-0 rounded-lg text-[11px] font-bold",
                             pendingPage === page
-                              ? "bg-amber-600 text-white border-none hover:bg-amber-700 shadow-sm"
-                              : "border-amber-200 text-amber-800 hover:bg-amber-100 hover:text-amber-900",
+                              ? "bg-orange-600 text-white border-none hover:bg-orange-700 shadow-sm"
+                              : "border-orange-200 text-orange-850 hover:bg-orange-100 hover:text-orange-900",
                           )}
                         >
                           {page}

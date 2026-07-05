@@ -47,6 +47,8 @@ export default function VipMembershipPage() {
     queryFn: () => authApi.getMe(),
   });
   const freshUser = profileData?.data.data || user;
+  const isVip = freshUser?.hasMembership || false;
+  const vipTheme = freshUser?.vipCosmetics?.vipTheme || "default";
 
   // Fetch user requests to filter for VIP requests
   const {
@@ -219,7 +221,7 @@ export default function VipMembershipPage() {
     : "";
 
   return (
-    <div className="max-w-6xl mx-auto pb-20 px-4 sm:px-6">
+    <div className={cn("max-w-6xl mx-auto pb-20 px-4 sm:px-6 transition-all duration-300", isVip && vipTheme !== "default" && `theme-${vipTheme}`)}>
       {/* Header Back Button */}
       <div className="mb-4">
         <Link to="/" className="inline-flex items-center gap-1.5 text-sm font-bold text-gray-500 hover:text-orange-500 transition-colors">
@@ -233,7 +235,10 @@ export default function VipMembershipPage() {
         <div>
           <h1 className="text-2xl md:text-4xl font-black text-gray-950 mb-2 tracking-tight">
             Gói Hội Viên{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600">
+            <span
+              className="text-transparent bg-clip-text bg-gradient-to-r"
+              style={{ backgroundImage: 'linear-gradient(to right, hsl(var(--primary, 24.6 95% 53.1%)), hsl(var(--primary, 24.6 95% 53.1%) / 0.8))' }}
+            >
               VIP Độc Quyền
             </span>
           </h1>
@@ -246,7 +251,7 @@ export default function VipMembershipPage() {
           size="icon"
           onClick={handleRefetchAll}
           disabled={isRefetching}
-          className="h-10 w-10 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 shrink-0"
+          className="h-10 w-10 rounded-xl bg-orange-50 text-orange-600 hover:bg-orange-100 hover:text-orange-700 shrink-0"
         >
           <RefreshCw size={16} className={isRefetching ? "animate-spin" : ""} />
         </Button>
@@ -258,11 +263,11 @@ export default function VipMembershipPage() {
           <p className="text-sm text-gray-400 font-semibold">Đang tải thông tin gói VIP...</p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className={cn("space-y-8 transition-all duration-300", isVip && vipTheme !== "default" && `theme-${vipTheme}`)}>
           {/* Current VIP status card */}
-          <Card className="border-2 border-amber-200 bg-gradient-to-r from-amber-500/10 to-yellow-500/5 shadow-md rounded-3xl overflow-hidden p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <Card className="border-2 border-orange-200 bg-white shadow-md rounded-3xl overflow-hidden p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-5">
-              <div className="w-16 h-16 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-600 animate-pulse shrink-0">
+              <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 animate-pulse shrink-0">
                 <Crown size={36} />
               </div>
               <div className="space-y-1">
@@ -287,7 +292,7 @@ export default function VipMembershipPage() {
               </Button>
               {freshUser?.hasMembership && (
                 <Link to="/profile" className="w-full sm:w-auto">
-                  <Button className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-200/50 whitespace-nowrap h-12 px-6 border-none">
+                  <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-black rounded-xl shadow-lg shadow-orange-200/50 whitespace-nowrap h-12 px-6 border-none">
                     Cá nhân hóa giao diện →
                   </Button>
                 </Link>
@@ -300,13 +305,13 @@ export default function VipMembershipPage() {
             <TabsList className="grid w-full grid-cols-3 bg-gray-100/80 p-1 rounded-2xl h-11 mb-2">
               <TabsTrigger
                 value="packages"
-                className="rounded-xl font-bold text-xs md:text-sm py-2 data-[state=active]:bg-white data-[state=active]:text-amber-600 data-[state=active]:shadow-sm"
+                className="rounded-xl font-bold text-xs md:text-sm py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
               >
                 DANH SÁCH GÓI KHẢ DỤNG
               </TabsTrigger>
               <TabsTrigger
                 value="pending"
-                className="rounded-xl font-bold text-xs md:text-sm py-2 data-[state=active]:bg-white data-[state=active]:text-amber-600 data-[state=active]:shadow-sm relative"
+                className="rounded-xl font-bold text-xs md:text-sm py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm relative"
               >
                 ĐANG CHỜ DUYỆT
                 {pendingRequests.length > 0 && (
@@ -317,7 +322,7 @@ export default function VipMembershipPage() {
               </TabsTrigger>
               <TabsTrigger
                 value="history"
-                className="rounded-xl font-bold text-xs md:text-sm py-2 data-[state=active]:bg-white data-[state=active]:text-amber-600 data-[state=active]:shadow-sm"
+                className="rounded-xl font-bold text-xs md:text-sm py-2 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
               >
                 LỊCH SỬ MUA
               </TabsTrigger>
@@ -457,16 +462,16 @@ export default function VipMembershipPage() {
             </TabsContent>
 
             <TabsContent value="pending" className="mt-0">
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 overflow-hidden">
-                <div className="px-6 py-4 border-b border-amber-200 flex items-center gap-2">
-                  <Clock size={18} className="text-amber-600" />
-                  <h2 className="font-bold text-amber-900 text-sm md:text-base">
+              <div className="rounded-2xl border border-orange-200 bg-orange-50 overflow-hidden">
+                <div className="px-6 py-4 border-b border-orange-200 flex items-center gap-2">
+                  <Clock size={18} className="text-orange-600" />
+                  <h2 className="font-bold text-orange-950 text-sm md:text-base">
                     Yêu cầu mua gói VIP đang chờ xác nhận ({pendingRequests.length})
                   </h2>
                 </div>
                 {pendingRequests.length === 0 ? (
                   <div className="text-center py-16 bg-white p-6">
-                    <div className="w-16 h-16 mx-auto bg-amber-50 rounded-2xl flex items-center justify-center mb-4 text-amber-500">
+                    <div className="w-16 h-16 mx-auto bg-orange-50 rounded-2xl flex items-center justify-center mb-4 text-orange-500">
                       <Clock size={28} />
                     </div>
                     <p className="text-gray-500 text-sm font-bold">
@@ -482,10 +487,10 @@ export default function VipMembershipPage() {
                       {paginatedPendingRequests.map((req) => (
                         <div
                           key={req._id}
-                          className="flex items-center justify-between p-4 bg-white rounded-xl border border-amber-100 shadow-sm"
+                          className="flex items-center justify-between p-4 bg-white rounded-xl border border-orange-100 shadow-sm"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600">
+                            <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600">
                               <Crown size={18} />
                             </div>
                             <div>
@@ -512,8 +517,8 @@ export default function VipMembershipPage() {
                     </div>
 
                     {totalPendingPages > 1 && (
-                      <div className="flex items-center justify-between px-6 py-3 border-t border-amber-200 bg-amber-50/50">
-                        <span className="text-[11px] text-amber-800 font-medium">
+                      <div className="flex items-center justify-between px-6 py-3 border-t border-orange-200 bg-orange-50/50">
+                        <span className="text-[11px] text-orange-850 font-medium">
                           Hiển thị {pendingStartIndex + 1} -{" "}
                           {Math.min(
                             pendingStartIndex + ITEMS_PER_PAGE,
@@ -529,7 +534,7 @@ export default function VipMembershipPage() {
                               setPendingPage((prev) => Math.max(prev - 1, 1))
                             }
                             disabled={pendingPage === 1}
-                            className="h-7 px-2.5 rounded-lg border-amber-200 text-amber-800 hover:bg-amber-100 hover:text-amber-900 disabled:opacity-50 text-[11px] font-bold"
+                            className="h-7 px-2.5 rounded-lg border-orange-200 text-orange-850 hover:bg-orange-100 hover:text-orange-900 disabled:opacity-50 text-[11px] font-bold"
                           >
                             Trước
                           </Button>
@@ -545,8 +550,8 @@ export default function VipMembershipPage() {
                               className={cn(
                                 "h-7 w-7 p-0 rounded-lg text-[11px] font-bold",
                                 pendingPage === page
-                                  ? "bg-amber-600 text-white border-none hover:bg-amber-700 shadow-sm"
-                                  : "border-amber-200 text-amber-800 hover:bg-amber-100 hover:text-amber-900",
+                                  ? "bg-orange-600 text-white border-none hover:bg-orange-700 shadow-sm"
+                                  : "border-orange-200 text-orange-850 hover:bg-orange-100 hover:text-orange-900",
                               )}
                             >
                               {page}

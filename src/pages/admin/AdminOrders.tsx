@@ -47,6 +47,42 @@ export default function AdminOrders() {
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
+  const [activeTab, setActiveTab] = useState<"orders" | "settlement">("orders");
+  const [selectedMenuIds, setSelectedMenuIds] = useState<string[]>([]);
+
+  const { data: unsettledData, isLoading: isUnsettledLoading, refetch: refetchUnsettled } = useQuery({
+    queryKey: ["unsettledSummary"],
+    queryFn: () => ordersApi.getUnsettledSummary(),
+    enabled: activeTab === "settlement",
+  });
+
+  const unsettledSummary = unsettledData?.data.data?.summary || [];
+  const restaurantBank = unsettledData?.data.data?.restaurantBank || {
+    restaurantBankId: "MB",
+    restaurantBankAccountNo: "",
+    restaurantBankAccountName: "",
+  };
+
+  const settleOrdersMutation = useMutation({
+    mutationFn: (orderIds: string[]) => ordersApi.settleOrders(orderIds),
+    onSuccess: () => {
+      toast({
+        title: "Tất toán thành công!",
+        description: "Đã đánh dấu các đơn hàng là đã tất toán với quán cơm.",
+        variant: "success",
+      });
+      setSelectedMenuIds([]);
+      queryClient.invalidateQueries({ queryKey: ["unsettledSummary"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Lỗi tất toán công nợ",
+        description: error?.response?.data?.message || "Đã xảy ra lỗi không xác định.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCopyText = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(fieldName);
@@ -149,49 +185,126 @@ export default function AdminOrders() {
     [orders, summary],
   );
 
+  const selectedSettlementDetails = useMemo(() => {
+    let totalOrdersCount = 0;
+    let totalMealsCount = 0;
+    let totalAmount = 0;
+    const orderIds: string[] = [];
+    const itemsDetail: { [name: string]: number } = {};
+
+    selectedMenuIds.forEach((menuId) => {
+      const group = unsettledSummary.find((g) => g.menuId === menuId);
+      if (group) {
+        totalOrdersCount += group.totalOrdersCount;
+        totalMealsCount += group.totalMealsCount || 0;
+        totalAmount += group.totalAmount;
+        orderIds.push(...group.orderIds);
+
+        Object.values(group.itemsDetail).forEach((item) => {
+          if (!itemsDetail[item.name]) {
+            itemsDetail[item.name] = 0;
+          }
+          itemsDetail[item.name] += item.quantity;
+        });
+      }
+    });
+
+    return {
+      totalOrdersCount,
+      totalMealsCount,
+      totalAmount,
+      orderIds,
+      itemsDetail,
+    };
+  }, [selectedMenuIds, unsettledSummary]);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 animate-in fade-in duration-500">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100 pb-5">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-orange-600 rounded-xl shadow-lg shadow-orange-100 text-white">
               <ClipboardList size={24} />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight uppercase">
-              Đơn đặt cơm
+              {activeTab === "orders" ? "Đơn đặt cơm" : "Đối soát công nợ"}
             </h1>
-            {menu && (
+            {activeTab === "orders" && menu && (
               <Badge className="bg-orange-50 text-orange-600 border-orange-100 font-black text-[10px] px-2 h-5 rounded uppercase">
                 {formatDate(selectedDate)}
               </Badge>
             )}
           </div>
           <p className="text-gray-500 font-medium text-sm">
-            Theo dõi và xác nhận các suất ăn thượng đế đã đặt.
+            {activeTab === "orders"
+              ? "Theo dõi và xác nhận các suất ăn thượng đế đã đặt."
+              : "Tổng hợp và thanh toán công nợ tích lũy cho chủ quán cơm."}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="h-10 w-10 rounded-lg bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-200"
-          >
-            <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
-          </Button>
-          <div className="relative group">
-            <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-orange-500 transition-colors" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="h-10 pl-11 pr-4 border border-gray-100 rounded-lg text-sm font-bold focus:ring-1 focus:ring-orange-500 bg-white"
-            />
-          </div>
+          {activeTab === "orders" ? (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => refetch()}
+                disabled={isFetching}
+                className="h-10 w-10 rounded-lg bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-200"
+              >
+                <RefreshCw size={16} className={isFetching ? "animate-spin" : ""} />
+              </Button>
+              <div className="relative group">
+                <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-orange-500 transition-colors" />
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="h-10 pl-11 pr-4 border border-gray-100 rounded-lg text-sm font-bold focus:ring-1 focus:ring-orange-500 bg-white"
+                />
+              </div>
+            </>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => refetchUnsettled()}
+              disabled={isUnsettledLoading}
+              className="h-10 w-10 rounded-lg bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-200"
+            >
+              <RefreshCw size={16} className={isUnsettledLoading ? "animate-spin" : ""} />
+            </Button>
+          )}
         </div>
+      </div>
+
+      {/* Tab Switcher */}
+      <div className="flex gap-1.5 bg-gray-50 p-1.5 rounded-2xl w-max border border-gray-100 shadow-sm animate-in fade-in">
+        <button
+          onClick={() => setActiveTab("orders")}
+          className={cn(
+            "px-6 py-2.5 rounded-xl text-xs font-black uppercase transition-all flex items-center gap-2 tracking-wider",
+            activeTab === "orders"
+              ? "bg-white text-orange-600 shadow-sm border border-orange-100/50"
+              : "text-gray-400 hover:text-gray-600",
+          )}
+        >
+          <ClipboardList size={14} />
+          Theo dõi đơn hàng
+        </button>
+        <button
+          onClick={() => setActiveTab("settlement")}
+          className={cn(
+            "px-6 py-2.5 rounded-xl text-xs font-black uppercase transition-all flex items-center gap-2 tracking-wider",
+            activeTab === "settlement"
+              ? "bg-white text-orange-600 shadow-sm border border-orange-100/50"
+              : "text-gray-400 hover:text-gray-600",
+          )}
+        >
+          <Hash size={14} />
+          Công nợ quán cơm
+        </button>
       </div>
 
       {/* Menu Switcher */}
@@ -221,25 +334,26 @@ export default function AdminOrders() {
         </div>
       )}
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
-        </div>
-      ) : !menu ? (
-        <div className="py-32 text-center bg-gray-50/30 border border-dashed rounded-2xl border-gray-200">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Calendar className="text-gray-300" size={32} />
+      {activeTab === "orders" ? (
+        isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="w-8 h-8 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 uppercase">
-            Trống lịch đặt cơm
-          </h2>
-          <p className="text-gray-400 font-medium mt-1">
-            Không có thực đơn nào được thiết lập cho ngày{" "}
-            {formatDate(selectedDate)}
-          </p>
-        </div>
-      ) : (
-        <>
+        ) : !menu ? (
+          <div className="py-32 text-center bg-gray-50/30 border border-dashed rounded-2xl border-gray-200">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Calendar className="text-gray-300" size={32} />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 uppercase">
+              Trống lịch đặt cơm
+            </h2>
+            <p className="text-gray-400 font-medium mt-1">
+              Không có thực đơn nào được thiết lập cho ngày{" "}
+              {formatDate(selectedDate)}
+            </p>
+          </div>
+        ) : (
+          <>
           {/* Stats & Actions */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
             <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -689,6 +803,258 @@ export default function AdminOrders() {
             </DialogContent>
           </Dialog>
         </>
+      ) ) : (
+        // Settlement Tab Content
+        <div className="animate-in fade-in duration-300">
+          {isUnsettledLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="w-8 h-8 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+            </div>
+          ) : unsettledSummary.length === 0 ? (
+            <div className="py-32 text-center bg-gray-50/30 border border-dashed rounded-2xl border-gray-200">
+              <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 size={32} />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 uppercase">
+                Đã tất toán toàn bộ!
+              </h2>
+              <p className="text-gray-400 font-medium mt-1">
+                Không có công nợ nào chưa tất toán với quán cơm. Đạo hữu thật tuyệt vời!
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              {/* Left Column - List of unsettled days */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="flex justify-between items-center pl-1">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    Các ngày chưa thanh toán ({unsettledSummary.length})
+                  </span>
+                  {selectedMenuIds.length > 0 && (
+                    <button
+                      onClick={() => setSelectedMenuIds([])}
+                      className="text-xs font-bold text-orange-600 hover:text-orange-700"
+                    >
+                      Bỏ chọn tất cả
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                  {unsettledSummary.map((item) => {
+                    const isSelected = selectedMenuIds.includes(item.menuId);
+                    return (
+                      <div
+                        key={item.menuId}
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedMenuIds(selectedMenuIds.filter((id) => id !== item.menuId));
+                          } else {
+                            setSelectedMenuIds([...selectedMenuIds, item.menuId]);
+                          }
+                        }}
+                        className={cn(
+                          "p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-orange-200 cursor-pointer transition-all flex items-start gap-4 select-none",
+                          isSelected && "border-orange-500 bg-orange-50/10 shadow-md",
+                        )}
+                      >
+                        <div className="pt-0.5">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            readOnly
+                            className="h-4.5 w-4.5 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="text-sm font-black text-gray-800">
+                              {formatDate(item.menuDate.split("T")[0])}
+                            </span>
+                            <span className="text-sm font-black text-orange-600">
+                              {formatVND(item.totalAmount)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-400 font-medium">
+                            <span className="flex items-center gap-1">
+                              <Users size={12} />
+                              {item.totalOrdersCount} đơn ({item.totalMealsCount || item.totalOrdersCount} suất)
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Utensils size={12} />
+                              {Object.keys(item.itemsDetail).length} loại món
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Right Column - Summary & Action */}
+              <div className="lg:col-span-7 space-y-6">
+                {selectedMenuIds.length === 0 ? (
+                  <div className="bg-white p-8 rounded-2xl border border-dashed border-gray-200 text-center space-y-3">
+                    <div className="w-12 h-12 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mx-auto">
+                      <AlertCircle size={24} />
+                    </div>
+                    <h3 className="font-bold text-gray-800 uppercase text-sm">
+                      Chọn ngày để chốt công nợ
+                    </h3>
+                    <p className="text-xs text-gray-400 font-medium max-w-xs mx-auto leading-relaxed">
+                      Vui lòng tích chọn một hoặc nhiều ngày chưa thanh toán ở cột bên trái để bắt đầu lập bảng đối soát.
+                    </p>
+                  </div>
+                ) : (
+                  <Card className="border-gray-100 shadow-xl overflow-hidden rounded-3xl">
+                    <div className="p-6 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-t-3xl">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-[10px] font-bold text-orange-100 uppercase tracking-widest">
+                            Tất toán công nợ
+                          </p>
+                          <h2 className="text-2xl font-black mt-1">
+                            {formatVND(selectedSettlementDetails.totalAmount)}
+                          </h2>
+                        </div>
+                        <Badge className="bg-white/20 text-white border-none font-bold text-[10px] px-2.5 py-1 rounded-full uppercase">
+                          {selectedMenuIds.length} ngày đã chọn
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-4 mt-4 text-xs font-bold text-orange-100">
+                        <span>
+                          Tổng: {selectedSettlementDetails.totalOrdersCount} đơn ({selectedSettlementDetails.totalMealsCount} suất cơm)
+                        </span>
+                      </div>
+                    </div>
+
+                    <CardContent className="p-6 space-y-6">
+                      {/* Dish breakdown list */}
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider pl-0.5">
+                          Chi tiết các món đã đặt
+                        </label>
+                        <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 space-y-2.5">
+                          {Object.entries(selectedSettlementDetails.itemsDetail).map(([name, qty]) => (
+                            <div key={name} className="flex justify-between items-center text-xs">
+                              <span className="font-bold text-gray-700">{name}</span>
+                              <span className="font-black text-orange-600 bg-orange-50 px-2.5 py-1 rounded-lg">
+                                ×{qty}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Bank account details and VietQR */}
+                      <div className="space-y-4">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider pl-0.5">
+                          Thanh toán chuyển khoản VietQR
+                        </label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                          {/* VietQR Image */}
+                          <div className="flex justify-center">
+                            <div className="bg-white p-3 border border-gray-100 shadow-md rounded-2xl">
+                              <img
+                                src={`https://img.vietqr.io/image/${restaurantBank.restaurantBankId}-${restaurantBank.restaurantBankAccountNo}-compact2.png?amount=${selectedSettlementDetails.totalAmount}&addInfo=${encodeURIComponent(
+                                  `TAT TOAN COM DOT ${selectedMenuIds.length} NGAY`,
+                                )}&accountName=${encodeURIComponent(restaurantBank.restaurantBankAccountName)}`}
+                                alt="VietQR"
+                                className="w-48 h-48 object-contain"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Bank details info */}
+                          <div className="space-y-3 text-xs">
+                            <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 relative group">
+                              <p className="text-[9px] font-bold text-gray-400 uppercase">Ngân hàng</p>
+                              <p className="font-black text-gray-800 mt-0.5">{restaurantBank.restaurantBankId}</p>
+                              <button
+                                onClick={() => handleCopyText(restaurantBank.restaurantBankId, "bankId")}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-200 rounded-lg text-gray-400 hover:text-gray-600 transition-all"
+                              >
+                                {copiedField === "bankId" ? (
+                                  <Check size={12} className="text-emerald-500" />
+                                ) : (
+                                  <Copy size={12} />
+                                )}
+                              </button>
+                            </div>
+                            <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 relative group">
+                              <p className="text-[9px] font-bold text-gray-400 uppercase">Số tài khoản</p>
+                              <p className="font-black text-gray-800 mt-0.5">{restaurantBank.restaurantBankAccountNo}</p>
+                              <button
+                                onClick={() => handleCopyText(restaurantBank.restaurantBankAccountNo, "accountNo")}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-200 rounded-lg text-gray-400 hover:text-gray-600 transition-all"
+                              >
+                                {copiedField === "accountNo" ? (
+                                  <Check size={12} className="text-emerald-500" />
+                                ) : (
+                                  <Copy size={12} />
+                                )}
+                              </button>
+                            </div>
+                            <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 relative group">
+                              <p className="text-[9px] font-bold text-gray-400 uppercase">Chủ tài khoản</p>
+                              <p className="font-black text-gray-800 mt-0.5">{restaurantBank.restaurantBankAccountName}</p>
+                              <button
+                                onClick={() => handleCopyText(restaurantBank.restaurantBankAccountName, "accountName")}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-200 rounded-lg text-gray-400 hover:text-gray-600 transition-all"
+                              >
+                                {copiedField === "accountName" ? (
+                                  <Check size={12} className="text-emerald-500" />
+                                ) : (
+                                  <Copy size={12} />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions footer inside card */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            const dateRangeText = selectedMenuIds
+                              .map((id) => {
+                                const group = unsettledSummary.find((g) => g.menuId === id);
+                                return group ? formatDate(group.menuDate.split("T")[0]) : "";
+                              })
+                              .join(", ");
+                            const dishLines = Object.entries(selectedSettlementDetails.itemsDetail)
+                              .map(([name, qty]) => `- ${name.toLowerCase()}: ${qty} suất`)
+                              .join("\n");
+                            const msg = `Tổng hợp ${selectedMenuIds.length} ngày: ${dateRangeText}:\n\n${dishLines}\n\n* Tổng suất cơm: ${selectedSettlementDetails.totalMealsCount} suất\n* Tổng tiền thanh toán: ${formatVND(selectedSettlementDetails.totalAmount)}\n\nEm đã chuyển khoản thanh toán. Chị kiểm tra giúp em nhaaa. Em cảm ơn ạ`;
+                            handleCopyText(msg, "zaloMessage");
+                          }}
+                          className="h-11 rounded-xl font-bold border-orange-200 hover:bg-orange-50 hover:text-orange-600 text-orange-600 transition-all text-xs"
+                        >
+                          {copiedField === "zaloMessage" ? (
+                            <Check size={14} className="mr-1.5 text-emerald-500" />
+                          ) : (
+                            <Copy size={14} className="mr-1.5" />
+                          )}
+                          Sao chép tin nhắn Zalo
+                        </Button>
+                        <Button
+                          onClick={() => settleOrdersMutation.mutate(selectedSettlementDetails.orderIds)}
+                          disabled={settleOrdersMutation.isPending}
+                          className="h-11 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-black shadow-lg shadow-orange-100 text-xs transition-all uppercase"
+                        >
+                          {settleOrdersMutation.isPending ? "Đang xử lý..." : "Xác nhận đã thanh toán"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

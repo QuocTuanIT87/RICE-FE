@@ -292,6 +292,29 @@ export const ordersApi = {
         summary: Array<{ name: string; count: number }>;
       }>
     >(`/orders/copy-text/${menuId}`),
+
+  getUnsettledSummary: () =>
+    api.get<
+      ApiResponse<{
+        summary: Array<{
+          menuId: string;
+          menuDate: string;
+          totalOrdersCount: number;
+          totalMealsCount: number;
+          totalAmount: number;
+          orderIds: string[];
+          itemsDetail: { [menuItemId: string]: { name: string; quantity: number } };
+        }>;
+        restaurantBank: {
+          restaurantBankId: string;
+          restaurantBankAccountNo: string;
+          restaurantBankAccountName: string;
+        };
+      }>
+    >("/orders/admin/unsettled-summary"),
+
+  settleOrders: (orderIds: string[]) =>
+    api.post<ApiResponse>("/orders/admin/settle", { orderIds }),
 };
 
 // =============================================

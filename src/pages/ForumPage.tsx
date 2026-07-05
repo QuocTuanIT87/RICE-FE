@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { forumApi, usersApi, socialApi } from "@/services/api";
+import { forumApi, usersApi, socialApi, authApi } from "@/services/api";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,11 +93,118 @@ const REACTION_TYPES = [
   },
 ];
 
+const getPromoCardTheme = (theme: string) => {
+  switch (theme) {
+    case "gold":
+      return {
+        cardBg: "bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-amber-500/5 border-amber-200/60",
+        iconBg: "bg-amber-500/20 text-amber-600",
+        titleText: "text-amber-900",
+        descText: "text-amber-800/90",
+        sparkleColor: "text-amber-500",
+        buttonClass: "bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-amber-200/50"
+      };
+    case "emerald":
+      return {
+        cardBg: "bg-gradient-to-br from-emerald-500/10 via-green-500/5 to-emerald-500/5 border-emerald-200/60",
+        iconBg: "bg-emerald-500/20 text-emerald-600",
+        titleText: "text-emerald-900",
+        descText: "text-emerald-800/90",
+        sparkleColor: "text-emerald-500",
+        buttonClass: "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-200/50"
+      };
+    case "dark":
+      return {
+        cardBg: "bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-indigo-500/5 border-indigo-900",
+        iconBg: "bg-indigo-500/20 text-indigo-400",
+        titleText: "text-slate-100",
+        descText: "text-slate-300",
+        sparkleColor: "text-indigo-400",
+        buttonClass: "bg-indigo-500 hover:bg-indigo-600 text-white shadow-indigo-950/50"
+      };
+    case "sakura":
+      return {
+        cardBg: "bg-gradient-to-br from-pink-500/10 via-rose-500/5 to-pink-500/5 border-pink-200/60",
+        iconBg: "bg-pink-500/20 text-pink-600",
+        titleText: "text-pink-900",
+        descText: "text-pink-850",
+        sparkleColor: "text-pink-500",
+        buttonClass: "bg-pink-500 hover:bg-pink-600 text-white shadow-pink-200/50"
+      };
+    case "ocean":
+      return {
+        cardBg: "bg-gradient-to-br from-sky-500/10 via-blue-500/5 to-sky-500/5 border-sky-200/60",
+        iconBg: "bg-sky-500/20 text-sky-600",
+        titleText: "text-sky-900",
+        descText: "text-sky-850",
+        sparkleColor: "text-sky-500",
+        buttonClass: "bg-sky-500 hover:bg-sky-600 text-white shadow-sky-200/50"
+      };
+    case "lava":
+      return {
+        cardBg: "bg-gradient-to-br from-red-500/10 via-rose-500/5 to-red-500/5 border-red-200/60",
+        iconBg: "bg-red-500/20 text-red-600",
+        titleText: "text-red-900",
+        descText: "text-red-850",
+        sparkleColor: "text-red-500",
+        buttonClass: "bg-red-500 hover:bg-red-600 text-white shadow-red-200/50"
+      };
+    case "sunset":
+      return {
+        cardBg: "bg-gradient-to-br from-orange-500/10 via-pink-500/5 to-rose-500/5 border-rose-200/60",
+        iconBg: "bg-orange-500/20 text-rose-600",
+        titleText: "text-rose-900",
+        descText: "text-rose-850",
+        sparkleColor: "text-rose-500",
+        buttonClass: "bg-gradient-to-r from-orange-400 to-rose-500 hover:opacity-90 text-white shadow-rose-200/50"
+      };
+    case "cotton-candy":
+      return {
+        cardBg: "bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-sky-500/5 border-purple-200/60",
+        iconBg: "bg-purple-500/20 text-purple-600",
+        titleText: "text-purple-900",
+        descText: "text-purple-850",
+        sparkleColor: "text-purple-500",
+        buttonClass: "bg-gradient-to-r from-purple-400 to-sky-500 hover:opacity-90 text-white shadow-purple-200/50"
+      };
+    case "cyberpunk":
+      return {
+        cardBg: "bg-gradient-to-br from-pink-500/10 via-purple-500/5 to-cyan-500/5 border-pink-500/30",
+        iconBg: "bg-pink-500/20 text-pink-400",
+        titleText: "text-pink-400",
+        descText: "text-cyan-400/80",
+        sparkleColor: "text-cyan-400",
+        buttonClass: "bg-gradient-to-r from-pink-500 via-purple-600 to-cyan-500 hover:opacity-90 text-white shadow-pink-500/30"
+      };
+    case "default":
+    default:
+      return {
+        cardBg: "bg-gradient-to-br from-orange-500/10 via-yellow-500/5 to-orange-500/5 border-orange-200/60",
+        iconBg: "bg-orange-500/20 text-orange-600",
+        titleText: "text-orange-900",
+        descText: "text-orange-850",
+        sparkleColor: "text-orange-500",
+        buttonClass: "bg-orange-500 hover:bg-orange-600 text-white shadow-orange-200/50"
+      };
+  }
+};
+
 export default function ForumPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAppSelector((state) => state.auth);
   const { socket } = useSocket();
+
+  const { data: profileData } = useQuery({
+    queryKey: ["userProfile"],
+    queryFn: () => authApi.getMe(),
+  });
+
+  const currentUser = profileData?.data?.data;
+  const isVip = currentUser?.hasMembership || false;
+  const vipTheme = currentUser?.vipCosmetics?.vipTheme || "default";
+
+  const cardTheme = getPromoCardTheme(isVip ? vipTheme : "default");
   const getProfileLink = (authorId?: string) => {
     const targetId = authorId || user?.id || user?._id;
     return targetId ? `/user/${targetId}` : "/profile";
@@ -500,7 +607,7 @@ export default function ForumPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className={cn("max-w-6xl mx-auto space-y-6 transition-all duration-300", isVip && vipTheme !== "default" && `theme-${vipTheme}`)}>
       {/* Forum Header */}
       <Dialog
         open={isCreateOpen}
@@ -511,7 +618,7 @@ export default function ForumPage() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[500px] rounded-2xl bg-white">
+        <DialogContent className="sm:max-w-3xl rounded-2xl bg-white">
           <form onSubmit={handleCreatePost}>
             <DialogHeader>
               <DialogTitle className="text-xl font-extrabold text-gray-900">
@@ -566,8 +673,8 @@ export default function ForumPage() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="Hãy viết gì đó vui vẻ hoặc review món cơm hôm nay..."
-                  rows={5}
-                  className="w-full text-sm rounded-xl border border-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 resize-none"
+                  rows={12}
+                  className="w-full text-sm rounded-xl border border-gray-200 p-3 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 resize-y min-h-[240px]"
                 />
               </div>
               <div className="grid gap-2">
@@ -1125,47 +1232,47 @@ export default function ForumPage() {
           </Card>
 
           {/* VIP Spotlights Promotion Card */}
-          <Card className="border border-amber-200 bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-amber-500/5 shadow-sm rounded-2xl overflow-hidden">
+          <Card className={cn("border shadow-sm rounded-2xl overflow-hidden", cardTheme.cardBg)}>
             <div className="p-5 space-y-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-amber-500/20 rounded-xl flex items-center justify-center text-amber-600 shrink-0">
+                <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0", cardTheme.iconBg)}>
                   <Crown size={16} className="animate-bounce" />
                 </div>
-                <h4 className="text-xs font-black text-amber-900 uppercase tracking-wide">
+                <h4 className={cn("text-xs font-black uppercase tracking-wide", cardTheme.titleText)}>
                   Đặc quyền vinh danh VIP
                 </h4>
               </div>
-              <p className="text-[11px] text-amber-900/80 leading-relaxed font-medium">
+              <p className={cn("text-[11px] leading-relaxed font-medium", cardTheme.descText)}>
                 Sở hữu thẻ hội viên VIP để bài viết của đạo hữu luôn nổi bật với
                 khung viền lấp lánh và tên gradient độc quyền trên diễn đàn!
               </p>
 
-              <ul className="space-y-1.5 text-[10px] text-amber-800 font-bold">
+              <ul className="space-y-1.5 text-[10px] font-bold">
                 <li className="flex items-center gap-1.5">
                   <Sparkles
                     size={12}
-                    className="text-amber-500 animate-pulse"
+                    className={cn("animate-pulse", cardTheme.sparkleColor)}
                   />
-                  <span>Khung Avatar VIP đặc chế</span>
+                  <span className={cardTheme.descText}>Khung Avatar VIP đặc chế</span>
                 </li>
                 <li className="flex items-center gap-1.5">
                   <Sparkles
                     size={12}
-                    className="text-amber-500 animate-pulse"
+                    className={cn("animate-pulse", cardTheme.sparkleColor)}
                   />
-                  <span>Tên gradient Hoàng Kim lấp lánh</span>
+                  <span className={cardTheme.descText}>Tên gradient Hoàng Kim lấp lánh</span>
                 </li>
                 <li className="flex items-center gap-1.5">
                   <Sparkles
                     size={12}
-                    className="text-amber-500 animate-pulse"
+                    className={cn("animate-pulse", cardTheme.sparkleColor)}
                   />
-                  <span>Giảm ngay 2.000đ mỗi phần cơm</span>
+                  <span className={cardTheme.descText}>Giảm ngay 2.000đ mỗi phần cơm</span>
                 </li>
               </ul>
 
               <Link to="/vip" className="block pt-2">
-                <Button className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black rounded-xl h-9 border-none shadow-sm shadow-amber-200">
+                <Button className={cn("w-full text-xs font-black rounded-xl h-9 border-none shadow-sm", cardTheme.buttonClass)}>
                   Khám phá Gói VIP →
                 </Button>
               </Link>

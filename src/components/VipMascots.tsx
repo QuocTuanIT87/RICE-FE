@@ -122,27 +122,29 @@ export const getMascotFloatConfig = (vipMascot: string) => {
       return {
         leftSrc: "/ronaldo_left.png",
         leftAlt: "Cristiano Ronaldo Portugal Left",
-        leftTitle: "Bấm để cùng anh Bảy SIUUUUUUU! 🇵🇹",
+        leftTitle: "Bấm để cùng anh Bảy ăn mừng SIUUU! 🐐",
         leftClick: playSiuuu,
         leftHeightClass: "h-[340px] 2xl:h-[460px]",
         rightSrc: "/ronaldo_right.png",
         rightAlt: "Cristiano Ronaldo Portugal Right",
-        rightTitle: "Bấm để cùng anh Bảy ăn mừng World Cup! 🏆",
+        rightTitle: "Bấm để cùng anh Bảy nâng cúp thế giới! 🏆",
         rightClick: playWorldCup,
-        rightHeightClass: "h-[340px] 2xl:h-[510px]",
+        rightHeightClass: "h-[340px] 2xl:h-[480px]",
       };
   }
 };
 
-// Mascot Advice Card configuration helper
+// Mascot Card configuration helper (speech bubble style)
+// We use theme-adaptive classes (bg-white, border-gray-100/border-orange-500, text-orange-600)
+// which will be overridden dynamically by the .theme-[themeName] class on the container.
 export const getMascotCardConfig = (vipMascot: string) => {
   if (vipMascot && (vipMascot.startsWith("http://") || vipMascot.startsWith("https://"))) {
     return {
       title: "Lời khuyên từ Thần tượng tự chọn 👑",
       message: `"Đồng đạo hãy luôn ăn uống lành mạnh để có nhiều năng lượng tu tiên đắc đạo nhé!"`,
-      containerClass: "bg-orange-50 border-orange-100 dark:bg-orange-950/20 dark:border-orange-900/30",
-      titleClass: "text-orange-850 dark:text-orange-400 font-extrabold",
-      textClass: "text-orange-600 dark:text-orange-350",
+      containerClass: "bg-white border-orange-200 dark:bg-zinc-900 dark:border-zinc-800",
+      titleClass: "text-orange-600 dark:text-orange-400 font-extrabold",
+      textClass: "text-orange-600 opacity-80 dark:text-orange-300",
       avatar: vipMascot,
       clickAction: () => {
         swalAlert({
@@ -160,9 +162,9 @@ export const getMascotCardConfig = (vipMascot: string) => {
       return {
         title: "Lời Khuyên của anh Mười 🇦🇷",
         message: `"Hãy ăn uống đầy đủ dinh dưỡng để kiến tạo những bước chạy thần sầu nhé đạo hữu! Ankara Messi!"`,
-        containerClass: "bg-sky-50 border-sky-100 dark:bg-sky-950/20 dark:border-sky-900/30",
-        titleClass: "text-sky-800 dark:text-sky-400",
-        textClass: "text-sky-600 dark:text-sky-300",
+        containerClass: "bg-white border-orange-200 dark:bg-zinc-900 dark:border-zinc-800",
+        titleClass: "text-orange-600 dark:text-orange-400 font-extrabold",
+        textClass: "text-orange-600 opacity-80 dark:text-orange-300",
         avatar: "/messi_left.png",
         clickAction: playMessiLeft,
       };
@@ -170,9 +172,9 @@ export const getMascotCardConfig = (vipMascot: string) => {
       return {
         title: "Lời Khuyên của anh Neymar 🇧🇷",
         message: `"Lên nhạc là nhảy, lên đơn là ăn! Hãy nạp đủ năng lượng để cùng quẩy Samba nhé đạo hữu! Shaka!"`,
-        containerClass: "bg-amber-50 border-yellow-200 dark:bg-amber-950/20 dark:border-yellow-900/30",
-        titleClass: "text-amber-800 dark:text-amber-400",
-        textClass: "text-amber-600 dark:text-amber-300",
+        containerClass: "bg-white border-orange-200 dark:bg-zinc-900 dark:border-zinc-800",
+        titleClass: "text-orange-600 dark:text-orange-400 font-extrabold",
+        textClass: "text-orange-600 opacity-80 dark:text-orange-300",
         avatar: "/neymar_left.png",
         clickAction: playNeymarLeft,
       };
@@ -181,9 +183,9 @@ export const getMascotCardConfig = (vipMascot: string) => {
       return {
         title: "Lời Khuyên của anh Bảy 🇵🇹",
         message: `"Có thực mới vực được đạo". Ăn đúng giờ để tu vi tinh tiến nhé đạo hữu!`,
-        containerClass: "bg-emerald-50 border-emerald-100 dark:bg-emerald-950/20 dark:border-emerald-900/30",
-        titleClass: "text-emerald-800 dark:text-emerald-400",
-        textClass: "text-emerald-600 dark:text-emerald-300",
+        containerClass: "bg-white border-orange-200 dark:bg-zinc-900 dark:border-zinc-800",
+        titleClass: "text-orange-600 dark:text-orange-400 font-extrabold",
+        textClass: "text-orange-600 opacity-80 dark:text-orange-300",
         avatar: "/ronaldo_left.png",
         clickAction: playSiuuu,
       };
@@ -250,12 +252,15 @@ export function VipMascotInline({ className }: { className?: string }) {
 
   const vipMascot = user.vipCosmetics?.vipMascot || "ronaldo";
   const mascotConfig = getMascotCardConfig(vipMascot);
+  const isVip = user.hasMembership || false;
+  const vipTheme = user.vipCosmetics?.vipTheme || "default";
 
   return (
     <div
       onClick={mascotConfig.clickAction}
       className={cn(
         "p-4 rounded-3xl border shadow-md flex items-center gap-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg active:scale-98 cursor-pointer select-none overflow-hidden",
+        isVip && vipTheme !== "default" && `theme-${vipTheme}`,
         mascotConfig.containerClass,
         className
       )}

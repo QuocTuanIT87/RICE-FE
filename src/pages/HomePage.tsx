@@ -350,14 +350,18 @@ export default function HomePage() {
       <section
         className={cn(
           "py-20 transition-all duration-300",
-          vipTheme === "gold" &&
-            "bg-gradient-to-r from-amber-500 to-yellow-600",
-          vipTheme === "sakura" && "bg-gradient-to-r from-pink-500 to-rose-500",
-          vipTheme === "dark" &&
-            "bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 border-t border-b border-slate-800",
-          (vipTheme === "default" || !vipTheme) &&
-            "bg-gradient-to-r from-orange-500 to-red-500",
+          vipTheme === "dark"
+            ? "bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 border-t border-b border-slate-800"
+            : "bg-gradient-to-r text-white",
         )}
+        style={
+          vipTheme !== "dark"
+            ? {
+                backgroundImage:
+                  "linear-gradient(to right, hsl(var(--primary, 24.6 95% 53.1%)), hsl(var(--primary, 24.6 95% 53.1%) / 0.85))",
+              }
+            : undefined
+        }
       >
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h2 className="text-2xl md:text-3xl font-black text-white mb-3">
@@ -366,10 +370,7 @@ export default function HomePage() {
           <p
             className={cn(
               "text-base mb-8 max-w-lg mx-auto",
-              vipTheme === "gold" && "text-amber-100",
-              vipTheme === "sakura" && "text-pink-100",
-              vipTheme === "dark" && "text-slate-400",
-              (vipTheme === "default" || !vipTheme) && "text-orange-100",
+              vipTheme === "dark" ? "text-slate-400" : "text-orange-100",
             )}
           >
             Tham gia cùng hàng trăm khách hàng đã tin tưởng sử dụng.
@@ -379,12 +380,9 @@ export default function HomePage() {
               <Button
                 className={cn(
                   "h-12 px-7 text-sm font-bold bg-white rounded-full shadow-lg gap-2 transition-all duration-300 border-none",
-                  vipTheme === "gold" && "text-amber-600 hover:bg-amber-50",
-                  vipTheme === "sakura" && "text-pink-600 hover:bg-pink-50",
-                  vipTheme === "dark" &&
-                    "text-cyan-400 bg-slate-800 hover:bg-slate-700",
-                  (vipTheme === "default" || !vipTheme) &&
-                    "text-orange-600 hover:bg-orange-50",
+                  vipTheme === "dark"
+                    ? "text-cyan-400 bg-slate-800 hover:bg-slate-700"
+                    : "text-orange-600 hover:bg-orange-50",
                 )}
               >
                 <Star size={18} />
@@ -396,12 +394,9 @@ export default function HomePage() {
                 variant="outline"
                 className={cn(
                   "h-12 px-7 text-sm font-bold bg-white rounded-full shadow-lg gap-2 transition-all duration-300 border-none",
-                  vipTheme === "gold" && "text-amber-600 hover:bg-amber-50",
-                  vipTheme === "sakura" && "text-pink-600 hover:bg-pink-50",
-                  vipTheme === "dark" &&
-                    "text-cyan-400 bg-slate-800 hover:bg-slate-700",
-                  (vipTheme === "default" || !vipTheme) &&
-                    "text-orange-600 hover:bg-orange-50",
+                  vipTheme === "dark"
+                    ? "text-cyan-400 bg-slate-800 hover:bg-slate-700"
+                    : "text-orange-600 hover:bg-orange-50",
                 )}
               >
                 Nạp tiền vào ví

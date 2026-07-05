@@ -844,9 +844,8 @@ export default function MainLayout() {
         )}
       </header>
 
-      {/* Marquee Ticker for Customers */}
       {!isAdmin && (topVip.length > 0 || topOrders.length > 0) && (
-        <div className="bg-orange-50/70 overflow-hidden py-3 border-b border-orange-100/50 backdrop-blur-sm shadow-sm flex items-center">
+        <div className="bg-orange-50 bg-opacity-70 overflow-hidden py-3 border-b border-orange-100 border-opacity-50 backdrop-blur-sm shadow-sm flex items-center">
           {/* We render the content twice side-by-side to create a seamless infinite loop */}
           {[1, 2].map((setIndex) => (
             <div
@@ -872,14 +871,14 @@ export default function MainLayout() {
               {topVip.slice(0, 3).map((u: any, idx: number) => (
                 <span key={`vip-${setIndex}-${idx}`} className="mx-8">
                   👑{" "}
-                  <span className="font-bold text-amber-600">
+                  <span className="font-bold text-orange-600">
                     Top {idx + 1} Phú Hào:
                   </span>{" "}
                   <span className="font-bold text-gray-900">
-                    Đạo hữu <span className="text-amber-500">{u.name}</span>
+                    Đạo hữu <span className="text-orange-500">{u.name}</span>
                   </span>{" "}
                   đạt cấp{" "}
-                  <strong className="text-amber-600">
+                  <strong className="text-orange-600">
                     {u.vipLevelName || "Thành viên thường"}
                   </strong>
                 </span>

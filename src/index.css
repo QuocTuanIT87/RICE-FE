@@ -633,3 +633,27 @@
 .theme-cyberpunk .bg-orange-600 {
   background-color: hsl(320 100% 60%) !important;
 }
+
+/* Global utility classes override for VIP themes */
+[class^="theme-"] .bg-orange-50,
+[class*=" theme-"] .bg-orange-50 {
+  background-color: hsl(var(--primary) / 0.08) !important;
+}
+[class^="theme-"] .bg-orange-100,
+[class*=" theme-"] .bg-orange-100 {
+  background-color: hsl(var(--primary) / 0.18) !important;
+}
+[class^="theme-"] .hover\:bg-orange-50\/50:hover,
+[class*=" theme-"] .hover\:bg-orange-50\/50:hover,
+[class^="theme-"] .hover\:bg-orange-50:hover,
+[class*=" theme-"] .hover\:bg-orange-50:hover {
+  background-color: hsl(var(--primary) / 0.08) !important;
+}
+[class^="theme-"] .border-orange-100,
+[class*=" theme-"] .border-orange-100 {
+  border-color: hsl(var(--primary) / 0.2) !important;
+}
+[class^="theme-"] .border-orange-200,
+[class*=" theme-"] .border-orange-200 {
+  border-color: hsl(var(--primary) / 0.3) !important;
+}
