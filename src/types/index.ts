@@ -143,6 +143,9 @@ export interface SystemConfig {
   bankId: string;
   bankAccountNo: string;
   bankAccountName: string;
+  restaurantBankId?: string;
+  restaurantBankAccountNo?: string;
+  restaurantBankAccountName?: string;
 }
 
 // Menu types

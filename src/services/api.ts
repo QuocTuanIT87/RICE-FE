@@ -267,6 +267,9 @@ export const ordersApi = {
         menu: DailyMenu;
         orders: PaginatedData<Order>;
         summary: Array<{ name: string; count: number }>;
+        totalNormalMeals?: number;
+        totalNoRiceMeals?: number;
+        totalAmount?: number;
       }>
     >(`/orders/by-date/${date}`, { params: { page, limit, menuId } }),
 

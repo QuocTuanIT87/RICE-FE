@@ -61,6 +61,9 @@ const AdminSystem: React.FC = () => {
     bankId: "MB",
     bankAccountNo: "0999999999",
     bankAccountName: "NGUYEN VAN A",
+    restaurantBankId: "MB",
+    restaurantBankAccountNo: "0888888888",
+    restaurantBankAccountName: "CHU QUAN COM",
   });
 
   const { data: configData, isLoading } = useQuery({
@@ -387,6 +390,64 @@ const AdminSystem: React.FC = () => {
                     value={formData.bankAccountName || ""}
                     onChange={handleChange}
                     placeholder="Ví dụ: NGUYEN VAN A"
+                    className="h-12 rounded-xl bg-gray-50 border-gray-100 focus:bg-white transition-all font-bold uppercase"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-xl shadow-gray-100 rounded-[2rem] overflow-hidden">
+            <CardHeader className="bg-gray-50/50 border-b border-gray-100 p-8">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-orange-500">
+                  <Wallet className="w-6 h-6" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-black">
+                    Cấu hình chuyển khoản chủ quán cơm
+                  </CardTitle>
+                  <CardDescription>
+                    Tài khoản ngân hàng của chủ quán (nhà bếp) để thanh toán hàng ngày
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8 space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-black uppercase tracking-widest text-gray-400">
+                    Mã ngân hàng chủ quán (ví dụ: MB, VCB, TCB,...)
+                  </Label>
+                  <Input
+                    name="restaurantBankId"
+                    value={formData.restaurantBankId || ""}
+                    onChange={handleChange}
+                    placeholder="Ví dụ: TCB"
+                    className="h-12 rounded-xl bg-gray-50 border-gray-100 focus:bg-white transition-all font-bold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-black uppercase tracking-widest text-gray-400">
+                    Số tài khoản ngân hàng chủ quán
+                  </Label>
+                  <Input
+                    name="restaurantBankAccountNo"
+                    value={formData.restaurantBankAccountNo || ""}
+                    onChange={handleChange}
+                    placeholder="Ví dụ: 0888888888"
+                    className="h-12 rounded-xl bg-gray-50 border-gray-100 focus:bg-white transition-all font-bold"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-black uppercase tracking-widest text-gray-400">
+                    Tên chủ tài khoản chủ quán
+                  </Label>
+                  <Input
+                    name="restaurantBankAccountName"
+                    value={formData.restaurantBankAccountName || ""}
+                    onChange={handleChange}
+                    placeholder="Ví dụ: CHU QUAN COM"
                     className="h-12 rounded-xl bg-gray-50 border-gray-100 focus:bg-white transition-all font-bold uppercase"
                   />
                 </div>

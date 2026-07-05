@@ -3,7 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useSocket } from "@/contexts/SocketContext";
 import { toast } from "@/hooks/useToast";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatDate, formatVND } from "@/lib/utils";
+import { useAppSelector } from "@/store/hooks";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { ordersApi } from "@/services/api";
 import type { MenuItem, User } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -34,6 +43,16 @@ export default function AdminOrders() {
   const [page, setPage] = useState(1);
   const [activeMenuId, setActiveMenuId] = useState<string | undefined>();
   const { socket } = useSocket();
+  const { config: systemConfig } = useAppSelector((state) => state.system);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleCopyText = (text: string, fieldName: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(fieldName);
+    setTimeout(() => setCopiedField(null), 2000);
+    toast({ title: "Đã sao chép!" });
+  };
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["adminOrders", selectedDate, page, activeMenuId],
@@ -46,6 +65,29 @@ export default function AdminOrders() {
   const ordersResponse = data?.data.data?.orders;
   const orders = ordersResponse?.docs || [];
   const summary = data?.data.data?.summary || [];
+  const totalNormalMeals = data?.data.data?.totalNormalMeals || 0;
+  const totalNoRiceMeals = data?.data.data?.totalNoRiceMeals || 0;
+  const totalAmount = data?.data.data?.totalAmount || 0;
+
+  const restaurantBankId = systemConfig?.restaurantBankId || "MB";
+  const restaurantBankAccountNo =
+    systemConfig?.restaurantBankAccountNo || "0888888888";
+  const restaurantBankAccountName =
+    systemConfig?.restaurantBankAccountName || "CHU QUAN COM";
+
+  const transferContent = menu
+    ? `QUOC TUAN TRA TIEN COM NGAY ${selectedDate}`
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/Đ/g, "D")
+        .toUpperCase()
+    : "";
+
+  const qrCodeUrl =
+    totalAmount > 0
+      ? `https://img.vietqr.io/image/${restaurantBankId}-${restaurantBankAccountNo}-compact.png?amount=${totalAmount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(restaurantBankAccountName)}`
+      : "";
 
   // Reset về trang 1 khi đổi ngày
   useEffect(() => {
@@ -85,6 +127,7 @@ export default function AdminOrders() {
         variant: "success",
       });
       queryClient.invalidateQueries({ queryKey: ["adminOrders"] });
+      setIsQrModalOpen(true);
     },
   });
 
@@ -263,6 +306,15 @@ export default function AdminOrders() {
                 <Copy className="w-4 h-4" />
                 Copy danh sách
               </Button>
+              {menu.isLocked && totalAmount > 0 && (
+                <Button
+                  onClick={() => setIsQrModalOpen(true)}
+                  className="h-12 bg-orange-600 hover:bg-orange-700 text-white rounded-xl gap-2 font-black transition-all shadow-lg shadow-orange-100 uppercase text-xs animate-in fade-in duration-300"
+                >
+                  <span>💸</span>
+                  Thanh toán chủ quán
+                </Button>
+              )}
             </div>
           </div>
 
@@ -441,12 +493,201 @@ export default function AdminOrders() {
                     Lưu ý nghiệp vụ
                   </h4>
                   <p className="text-[11px] text-orange-700/70 leading-relaxed font-bold italic">
-                    Hãy ấn nút "Chốt & Khóa thực đơn" để đóng lịch đặt cơm hôm nay trước khi thực hiện "Copy danh sách" gửi cho nhà bếp.
+                    Hãy ấn nút "Chốt & Khóa thực đơn" để đóng lịch đặt cơm hôm
+                    nay trước khi thực hiện "Copy danh sách" gửi cho nhà bếp.
                   </p>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* MODAL QR THANH TOÁN CHỦ QUÁN */}
+          <Dialog open={isQrModalOpen} onOpenChange={setIsQrModalOpen}>
+            <DialogContent className="sm:max-w-3xl p-0 overflow-hidden rounded-3xl border-none bg-white shadow-2xl">
+              <DialogHeader className="p-6 pb-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+                <DialogTitle className="text-lg font-black uppercase tracking-wide flex items-center gap-2 text-white">
+                  <span>💸</span>
+                  Thanh toán cho chủ quán cơm
+                </DialogTitle>
+                <DialogDescription className="text-xs text-orange-100 font-medium">
+                  Quét mã QR VietQR bên dưới để thanh toán nhanh tiền cơm hôm
+                  nay.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-6">
+                {/* Left Column: QR Image (5 cols) */}
+                <div className="md:col-span-5 flex flex-col justify-center">
+                  {qrCodeUrl ? (
+                    <div className="flex flex-col items-center justify-center bg-gray-50 p-4 rounded-2xl border border-gray-100 h-full">
+                      <img
+                        src={qrCodeUrl}
+                        alt="VietQR code thanh toan chu quan"
+                        className="w-full max-w-[240px] aspect-square object-contain shadow-md rounded-xl bg-white border border-gray-100/50"
+                      />
+                      {/* <p className="text-[9px] text-gray-400 font-bold mt-2 uppercase tracking-wider">
+                        Powered by VietQR.io
+                      </p> */}
+                    </div>
+                  ) : (
+                    <div className="text-center p-8 bg-red-50 text-red-600 rounded-2xl border border-red-100 flex items-center justify-center h-full">
+                      ⚠️ Chưa thể tạo mã QR. Vui lòng kiểm tra lại cấu hình tài
+                      khoản chủ quán cơm.
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Column: Breakdown & Bank details (7 cols) */}
+                <div className="md:col-span-7 space-y-4">
+                  {/* Order breakdown */}
+                  <div className="space-y-2 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-0.5">
+                      Chi tiết hóa đơn ({selectedDate})
+                    </h4>
+                    <div className="space-y-1 text-xs font-bold text-gray-600">
+                      <div className="flex justify-between">
+                        <span>Suất có cơm (Normal):</span>
+                        <span className="text-gray-900">
+                          {totalNormalMeals} phần
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Suất không cơm (No-rice):</span>
+                        <span className="text-gray-900">
+                          {totalNoRiceMeals} phần
+                        </span>
+                      </div>
+                      <div className="h-px bg-gray-200/50 my-1.5" />
+                      <div className="flex justify-between text-sm font-black text-orange-600">
+                        <span>Tổng thanh toán:</span>
+                        <span>{formatVND(totalAmount)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Restaurant bank info with copy buttons */}
+                  <div className="space-y-2">
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-0.5">
+                      Tài khoản nhận tiền & Nội dung
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl text-xs font-bold group">
+                        <div className="min-w-0">
+                          <span className="text-[9px] text-gray-400 block uppercase font-black">
+                            Ngân hàng
+                          </span>
+                          <span className="text-gray-800 uppercase block truncate">
+                            {restaurantBankId}
+                          </span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            handleCopyText(restaurantBankId, "bankId")
+                          }
+                          className="h-8 w-8 text-gray-400 hover:text-orange-500 rounded-lg shrink-0 ml-1"
+                        >
+                          {copiedField === "bankId" ? (
+                            <Check size={14} className="text-emerald-500" />
+                          ) : (
+                            <Copy size={14} />
+                          )}
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl text-xs font-bold group">
+                        <div className="min-w-0">
+                          <span className="text-[9px] text-gray-400 block uppercase font-black">
+                            Chủ tài khoản
+                          </span>
+                          <span className="text-gray-800 uppercase block truncate">
+                            {restaurantBankAccountName}
+                          </span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            handleCopyText(
+                              restaurantBankAccountName,
+                              "accountName",
+                            )
+                          }
+                          className="h-8 w-8 text-gray-400 hover:text-orange-500 rounded-lg shrink-0 ml-1"
+                        >
+                          {copiedField === "accountName" ? (
+                            <Check size={14} className="text-emerald-500" />
+                          ) : (
+                            <Copy size={14} />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl text-xs font-bold group">
+                      <div>
+                        <span className="text-[9px] text-gray-400 block uppercase font-black">
+                          Số tài khoản
+                        </span>
+                        <span className="text-gray-800">
+                          {restaurantBankAccountNo}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          handleCopyText(restaurantBankAccountNo, "accountNo")
+                        }
+                        className="h-8 w-8 text-gray-400 hover:text-orange-500 rounded-lg shrink-0"
+                      >
+                        {copiedField === "accountNo" ? (
+                          <Check size={14} className="text-emerald-500" />
+                        ) : (
+                          <Copy size={14} />
+                        )}
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl text-xs font-bold group">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[9px] text-gray-400 block uppercase font-black">
+                          Nội dung chuyển khoản
+                        </span>
+                        <span className="text-gray-800 select-all block truncate font-mono text-[11px]">
+                          {transferContent}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          handleCopyText(transferContent, "transferContent")
+                        }
+                        className="h-8 w-8 text-gray-400 hover:text-orange-500 rounded-lg shrink-0 ml-1"
+                      >
+                        {copiedField === "transferContent" ? (
+                          <Check size={14} className="text-emerald-500" />
+                        ) : (
+                          <Copy size={14} />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter className="p-6 bg-gray-50 border-t border-gray-100">
+                <Button
+                  onClick={() => setIsQrModalOpen(false)}
+                  className="w-full h-11 bg-orange-600 hover:bg-orange-700 text-white rounded-2xl font-black shadow-xl shadow-orange-100"
+                >
+                  ĐÃ HOÀN THÀNH CHUYỂN KHOẢN
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>
