@@ -92,6 +92,17 @@ export interface ForumComment {
   updatedAt: string;
 }
 
+export interface ForumStory {
+  _id: string;
+  userId: User;
+  imageUrl: string;
+  caption?: string;
+  musicTitle?: string;
+  musicUrl?: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
 // Auth types
 export interface AuthState {
   user: User | null;

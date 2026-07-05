@@ -1,6 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { forumApi, usersApi, socialApi, authApi } from "@/services/api";
+import {
+  forumApi,
+  usersApi,
+  socialApi,
+  authApi,
+  forumStoriesApi,
+  chatApi,
+} from "@/services/api";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,6 +46,12 @@ import {
   Image as ImageIcon,
   X,
   User,
+  Trash,
+  ChevronLeft,
+  ChevronRight,
+  Music,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -97,94 +110,112 @@ const getPromoCardTheme = (theme: string) => {
   switch (theme) {
     case "gold":
       return {
-        cardBg: "bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-amber-500/5 border-amber-200/60",
+        cardBg:
+          "bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-amber-500/5 border-amber-200/60",
         iconBg: "bg-amber-500/20 text-amber-600",
         titleText: "text-amber-900",
         descText: "text-amber-800/90",
         sparkleColor: "text-amber-500",
-        buttonClass: "bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-amber-200/50"
+        buttonClass:
+          "bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-amber-200/50",
       };
     case "emerald":
       return {
-        cardBg: "bg-gradient-to-br from-emerald-500/10 via-green-500/5 to-emerald-500/5 border-emerald-200/60",
+        cardBg:
+          "bg-gradient-to-br from-emerald-500/10 via-green-500/5 to-emerald-500/5 border-emerald-200/60",
         iconBg: "bg-emerald-500/20 text-emerald-600",
         titleText: "text-emerald-900",
         descText: "text-emerald-800/90",
         sparkleColor: "text-emerald-500",
-        buttonClass: "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-200/50"
+        buttonClass:
+          "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-200/50",
       };
     case "dark":
       return {
-        cardBg: "bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-indigo-500/5 border-indigo-900",
+        cardBg:
+          "bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-indigo-500/5 border-indigo-900",
         iconBg: "bg-indigo-500/20 text-indigo-400",
         titleText: "text-slate-100",
         descText: "text-slate-300",
         sparkleColor: "text-indigo-400",
-        buttonClass: "bg-indigo-500 hover:bg-indigo-600 text-white shadow-indigo-950/50"
+        buttonClass:
+          "bg-indigo-500 hover:bg-indigo-600 text-white shadow-indigo-950/50",
       };
     case "sakura":
       return {
-        cardBg: "bg-gradient-to-br from-pink-500/10 via-rose-500/5 to-pink-500/5 border-pink-200/60",
+        cardBg:
+          "bg-gradient-to-br from-pink-500/10 via-rose-500/5 to-pink-500/5 border-pink-200/60",
         iconBg: "bg-pink-500/20 text-pink-600",
         titleText: "text-pink-900",
         descText: "text-pink-850",
         sparkleColor: "text-pink-500",
-        buttonClass: "bg-pink-500 hover:bg-pink-600 text-white shadow-pink-200/50"
+        buttonClass:
+          "bg-pink-500 hover:bg-pink-600 text-white shadow-pink-200/50",
       };
     case "ocean":
       return {
-        cardBg: "bg-gradient-to-br from-sky-500/10 via-blue-500/5 to-sky-500/5 border-sky-200/60",
+        cardBg:
+          "bg-gradient-to-br from-sky-500/10 via-blue-500/5 to-sky-500/5 border-sky-200/60",
         iconBg: "bg-sky-500/20 text-sky-600",
         titleText: "text-sky-900",
         descText: "text-sky-850",
         sparkleColor: "text-sky-500",
-        buttonClass: "bg-sky-500 hover:bg-sky-600 text-white shadow-sky-200/50"
+        buttonClass: "bg-sky-500 hover:bg-sky-600 text-white shadow-sky-200/50",
       };
     case "lava":
       return {
-        cardBg: "bg-gradient-to-br from-red-500/10 via-rose-500/5 to-red-500/5 border-red-200/60",
+        cardBg:
+          "bg-gradient-to-br from-red-500/10 via-rose-500/5 to-red-500/5 border-red-200/60",
         iconBg: "bg-red-500/20 text-red-600",
         titleText: "text-red-900",
         descText: "text-red-850",
         sparkleColor: "text-red-500",
-        buttonClass: "bg-red-500 hover:bg-red-600 text-white shadow-red-200/50"
+        buttonClass: "bg-red-500 hover:bg-red-600 text-white shadow-red-200/50",
       };
     case "sunset":
       return {
-        cardBg: "bg-gradient-to-br from-orange-500/10 via-pink-500/5 to-rose-500/5 border-rose-200/60",
+        cardBg:
+          "bg-gradient-to-br from-orange-500/10 via-pink-500/5 to-rose-500/5 border-rose-200/60",
         iconBg: "bg-orange-500/20 text-rose-600",
         titleText: "text-rose-900",
         descText: "text-rose-850",
         sparkleColor: "text-rose-500",
-        buttonClass: "bg-gradient-to-r from-orange-400 to-rose-500 hover:opacity-90 text-white shadow-rose-200/50"
+        buttonClass:
+          "bg-gradient-to-r from-orange-400 to-rose-500 hover:opacity-90 text-white shadow-rose-200/50",
       };
     case "cotton-candy":
       return {
-        cardBg: "bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-sky-500/5 border-purple-200/60",
+        cardBg:
+          "bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-sky-500/5 border-purple-200/60",
         iconBg: "bg-purple-500/20 text-purple-600",
         titleText: "text-purple-900",
         descText: "text-purple-850",
         sparkleColor: "text-purple-500",
-        buttonClass: "bg-gradient-to-r from-purple-400 to-sky-500 hover:opacity-90 text-white shadow-purple-200/50"
+        buttonClass:
+          "bg-gradient-to-r from-purple-400 to-sky-500 hover:opacity-90 text-white shadow-purple-200/50",
       };
     case "cyberpunk":
       return {
-        cardBg: "bg-gradient-to-br from-pink-500/10 via-purple-500/5 to-cyan-500/5 border-pink-500/30",
+        cardBg:
+          "bg-gradient-to-br from-pink-500/10 via-purple-500/5 to-cyan-500/5 border-pink-500/30",
         iconBg: "bg-pink-500/20 text-pink-400",
         titleText: "text-pink-400",
         descText: "text-cyan-400/80",
         sparkleColor: "text-cyan-400",
-        buttonClass: "bg-gradient-to-r from-pink-500 via-purple-600 to-cyan-500 hover:opacity-90 text-white shadow-pink-500/30"
+        buttonClass:
+          "bg-gradient-to-r from-pink-500 via-purple-600 to-cyan-500 hover:opacity-90 text-white shadow-pink-500/30",
       };
     case "default":
     default:
       return {
-        cardBg: "bg-gradient-to-br from-orange-500/10 via-yellow-500/5 to-orange-500/5 border-orange-200/60",
+        cardBg:
+          "bg-gradient-to-br from-orange-500/10 via-yellow-500/5 to-orange-500/5 border-orange-200/60",
         iconBg: "bg-orange-500/20 text-orange-600",
         titleText: "text-orange-900",
         descText: "text-orange-850",
         sparkleColor: "text-orange-500",
-        buttonClass: "bg-orange-500 hover:bg-orange-600 text-white shadow-orange-200/50"
+        buttonClass:
+          "bg-orange-500 hover:bg-orange-600 text-white shadow-orange-200/50",
       };
   }
 };
@@ -262,6 +293,487 @@ export default function ForumPage() {
     };
   }, [imagePreview]);
 
+  // List of available static tracks for stories (20 tracks total)
+  const AVAILABLE_MUSICS = [
+    {
+      id: "none",
+      title: "Không chọn nhạc nền",
+      url: "",
+    },
+    {
+      id: "lofi-chill",
+      title: "Lofi Foodie Chill 🎋",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    },
+    {
+      id: "samba",
+      title: "Samba de Janeiro 🇧🇷",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    },
+    {
+      id: "messi-victory",
+      title: "Ankara Victory 🏆",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+    },
+    {
+      id: "siuuu-energetic",
+      title: "SIUUU Energetic ⚡",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+    },
+    {
+      id: "summer-vibes",
+      title: "Summer Chill Vibes ☀️",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+    },
+    {
+      id: "cafe-paris",
+      title: "Cafe Paris Lounge ☕",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+    },
+    {
+      id: "acoustic-sun",
+      title: "Acoustic Sunshine 🌻",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+    },
+    {
+      id: "cyberpunk-neon",
+      title: "Cyberpunk Neon 👾",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+    },
+    {
+      id: "synthwave",
+      title: "Synthwave Ride 🏎️",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
+    },
+    {
+      id: "hiphop-beats",
+      title: "Hip Hop Street Beats 🎧",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
+    },
+    {
+      id: "tropical",
+      title: "Tropical House Party 🌴",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3",
+    },
+    {
+      id: "ukulele",
+      title: "Happy Ukulele 🏖️",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3",
+    },
+    {
+      id: "jazz-piano",
+      title: "Jazz Piano Night 🎹",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3",
+    },
+    {
+      id: "cinematic",
+      title: "Epic Cinematic Orchestral ⚔️",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3",
+    },
+    {
+      id: "ocean",
+      title: "Relaxing Ocean Waves 🌊",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3",
+    },
+    {
+      id: "rock-rev",
+      title: "Rock Revolution 🎸",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3",
+    },
+    {
+      id: "rain-sg",
+      title: "Mưa Sài Gòn Lặng Lẽ 🌧️",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    },
+    {
+      id: "valley",
+      title: "Thung Lũng Hoa Đào 🌸",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+    },
+    {
+      id: "cross-country",
+      title: "Phượt Xuyên Việt 🏍️",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+    },
+    {
+      id: "chicken-rice",
+      title: "Siuuu Cơm Gà Nướng 🍗",
+      url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
+    },
+  ];
+
+  // Story states
+  const [isCreateStoryOpen, setIsCreateStoryOpen] = useState(false);
+  const [activeGroupIndex, setActiveGroupIndex] = useState<number | null>(null);
+  const [activeStoryIndex, setActiveStoryIndex] = useState<number>(0);
+  const [storyCaption, setStoryCaption] = useState("");
+  const [storyImageFile, setStoryImageFile] = useState<File | null>(null);
+  const [storyImagePreview, setStoryImagePreview] = useState<string | null>(
+    null,
+  );
+  const [storyProgress, setStoryProgress] = useState(0);
+
+  // Music States & Refs
+  const [selectedMusicId, setSelectedMusicId] = useState<string>("none");
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const viewerAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Story Reply States & Mutation
+  const [replyText, setReplyText] = useState("");
+  const sendReplyMutation = useMutation({
+    mutationFn: (formData: FormData) => chatApi.sendMessage(formData),
+    onSuccess: () => {
+      toast({
+        title: "Đã gửi phản hồi",
+        description: "Phản hồi đã gửi thẳng vào tin nhắn riêng (inbox) của người đăng tin!",
+      });
+      setReplyText("");
+    },
+    onError: (err: any) => {
+      toast({
+        variant: "destructive",
+        title: "Lỗi gửi phản hồi",
+        description: err.response?.data?.error?.message || "Không thể gửi phản hồi, vui lòng thử lại.",
+      });
+    },
+  });
+
+  const handleSendReply = () => {
+    if (!replyText.trim() || activeGroupIndex === null) return;
+    const currentGroup = storyGroups[activeGroupIndex];
+    if (!currentGroup) return;
+    const currentStory = currentGroup.stories[activeStoryIndex];
+    if (!currentStory) return;
+
+    const receiverId = currentStory.userId?._id;
+    if (!receiverId) return;
+
+    if (receiverId === currentUser?._id) {
+      toast({
+        variant: "destructive",
+        title: "Không thể tự phản hồi",
+        description: "Đạo hữu không thể tự gửi phản hồi story cho chính mình nhé!",
+      });
+      return;
+    }
+
+    const replyData = {
+      isStoryReply: true,
+      storyId: currentStory._id,
+      imageUrl: currentStory.imageUrl,
+      caption: currentStory.caption || "",
+      text: replyText.trim(),
+      groupUserId: currentStory.userId?._id
+    };
+
+    const formData = new FormData();
+    formData.append("receiverId", receiverId);
+    formData.append("content", JSON.stringify(replyData));
+
+    sendReplyMutation.mutate(formData);
+  };
+
+  const { data: storiesResponse } = useQuery({
+    queryKey: ["forumStories"],
+    queryFn: () => forumStoriesApi.getStories(),
+  });
+  const stories: any[] = storiesResponse?.data?.data || [];
+
+  // Nhóm stories theo user để hiển thị 1 avatar đại diện cho mỗi user trên thanh Story Bar
+  const storyGroups = stories.reduce((groups: any[], story) => {
+    const userId = story.userId?._id;
+    if (!userId) return groups;
+    let group = groups.find((g) => g.userId === userId);
+    if (!group) {
+      group = {
+        userId,
+        user: story.userId,
+        stories: [],
+      };
+      groups.push(group);
+    }
+    group.stories.push(story);
+    return groups;
+  }, []);
+
+  const createStoryMutation = useMutation({
+    mutationFn: (formData: FormData) => forumStoriesApi.createStory(formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["forumStories"] });
+      setIsCreateStoryOpen(false);
+      setStoryCaption("");
+      setStoryImageFile(null);
+      if (storyImagePreview) URL.revokeObjectURL(storyImagePreview);
+      setStoryImagePreview(null);
+      setSelectedMusicId("none");
+
+      // Dừng âm thanh preview khi đóng form
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+        previewAudioRef.current = null;
+      }
+
+      swalToast({
+        title: "Tin của bạn đã được đăng lên thành công!",
+        icon: "success",
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        variant: "destructive",
+        title: "Lỗi đăng tin",
+        description:
+          err.response?.data?.error?.message ||
+          "Không thể đăng tin, vui lòng thử lại.",
+      });
+    },
+  });
+
+  const deleteStoryMutation = useMutation({
+    mutationFn: (id: string) => forumStoriesApi.deleteStory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["forumStories"] });
+      setActiveGroupIndex(null);
+      setActiveStoryIndex(0);
+      swalToast({
+        title: "Đã gỡ tin thành công!",
+        icon: "success",
+      });
+    },
+  });
+
+  useEffect(() => {
+    return () => {
+      if (storyImagePreview) {
+        URL.revokeObjectURL(storyImagePreview);
+      }
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+      }
+      if (viewerAudioRef.current) {
+        viewerAudioRef.current.pause();
+      }
+    };
+  }, [storyImagePreview]);
+
+  // Tự động mở Story Viewer nếu có query parameters từ Chat chuyển qua
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const storyId = params.get("storyId");
+    const groupUserId = params.get("groupUserId");
+    if (storyId && groupUserId && storyGroups.length > 0) {
+      const gIdx = storyGroups.findIndex((g: any) => g.userId === groupUserId);
+      if (gIdx !== -1) {
+        const sIdx = storyGroups[gIdx].stories.findIndex(
+          (s: any) => s._id === storyId,
+        );
+        if (sIdx !== -1) {
+          setActiveGroupIndex(gIdx);
+          setActiveStoryIndex(sIdx);
+
+          // Clear parameters from address bar to avoid reopening on refresh
+          const newUrl =
+            window.location.protocol +
+            "//" +
+            window.location.host +
+            window.location.pathname;
+          window.history.replaceState({ path: newUrl }, "", newUrl);
+        }
+      }
+    }
+  }, [storiesResponse, storyGroups]);
+
+  // Xử lý chọn nhạc thử trong dialog tạo story
+  const handleSelectMusic = (musicId: string) => {
+    setSelectedMusicId(musicId);
+
+    // Dừng âm thanh preview cũ
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current = null;
+    }
+
+    const music = AVAILABLE_MUSICS.find((m) => m.id === musicId);
+    if (music && music.url) {
+      const audio = new Audio(music.url);
+      audio.volume = 0.4;
+      audio.play().catch((e) => console.log("Không thể phát nhạc thử:", e));
+      previewAudioRef.current = audio;
+    }
+  };
+
+  // Quản lý phát nhạc trong Story Viewer Modal
+  useEffect(() => {
+    if (activeGroupIndex === null) {
+      // Dừng phát nhạc khi đóng modal xem story
+      if (viewerAudioRef.current) {
+        viewerAudioRef.current.pause();
+        viewerAudioRef.current = null;
+      }
+      return;
+    }
+
+    const currentGroup = storyGroups[activeGroupIndex];
+    if (!currentGroup) return;
+    const currentStory = currentGroup.stories[activeStoryIndex];
+    if (!currentStory) return;
+
+    // Dừng track cũ
+    if (viewerAudioRef.current) {
+      viewerAudioRef.current.pause();
+      viewerAudioRef.current = null;
+    }
+
+    // Phát track mới nếu có nhạc nền
+    if (currentStory.musicUrl) {
+      const audio = new Audio(currentStory.musicUrl);
+      audio.loop = true;
+      audio.volume = isMuted ? 0 : 0.4;
+      audio.play().catch((e) => console.log("Không thể tự động phát nhạc:", e));
+      viewerAudioRef.current = audio;
+    }
+  }, [activeGroupIndex, activeStoryIndex, stories.length]);
+
+  // Đồng bộ bật/tắt tiếng
+  useEffect(() => {
+    if (viewerAudioRef.current) {
+      viewerAudioRef.current.volume = isMuted ? 0 : 0.4;
+    }
+  }, [isMuted]);
+
+  useEffect(() => {
+    if (activeGroupIndex === null) return;
+    setStoryProgress(0);
+    const duration = 10000; // 10s
+    const intervalTime = 100; // 100ms
+    const step = (intervalTime / duration) * 100;
+
+    const timer = setInterval(() => {
+      setStoryProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(timer);
+          handleNextStory();
+          return 100;
+        }
+        return prev + step;
+      });
+    }, intervalTime);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, [activeGroupIndex, activeStoryIndex, stories.length]);
+
+  const handleNextStory = () => {
+    if (activeGroupIndex === null) return;
+    const currentGroup = storyGroups[activeGroupIndex];
+    if (!currentGroup) return;
+
+    if (activeStoryIndex < currentGroup.stories.length - 1) {
+      setActiveStoryIndex(activeStoryIndex + 1);
+    } else {
+      // Chuyển sang user tiếp theo
+      if (activeGroupIndex < storyGroups.length - 1) {
+        setActiveGroupIndex(activeGroupIndex + 1);
+        setActiveStoryIndex(0);
+      } else {
+        setActiveGroupIndex(null);
+      }
+    }
+  };
+
+  const handlePrevStory = () => {
+    if (activeGroupIndex === null) return;
+    if (activeStoryIndex > 0) {
+      setActiveStoryIndex(activeStoryIndex - 1);
+    } else {
+      // Quay lại user trước đó và xem story cuối cùng của user đó
+      if (activeGroupIndex > 0) {
+        const prevGroup = storyGroups[activeGroupIndex - 1];
+        setActiveGroupIndex(activeGroupIndex - 1);
+        setActiveStoryIndex(prevGroup.stories.length - 1);
+      }
+    }
+  };
+
+  const handleStoryImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({
+        variant: "destructive",
+        title: "Định dạng không hợp lệ",
+        description: "Vui lòng chọn một tệp hình ảnh.",
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "Tệp quá lớn",
+        description: "Dung lượng ảnh tối đa là 5MB.",
+      });
+      return;
+    }
+
+    setStoryImageFile(file);
+    if (storyImagePreview) URL.revokeObjectURL(storyImagePreview);
+    setStoryImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleCreateStory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!storyImageFile) {
+      toast({
+        variant: "destructive",
+        title: "Thiếu ảnh",
+        description: "Vui lòng chọn hình ảnh để đăng story.",
+      });
+      return;
+    }
+    const formData = new FormData();
+    formData.append("image", storyImageFile);
+    formData.append("caption", storyCaption);
+
+    const currentMusic = AVAILABLE_MUSICS.find((m) => m.id === selectedMusicId);
+    if (currentMusic && currentMusic.id !== "none") {
+      formData.append("musicTitle", currentMusic.title);
+      formData.append("musicUrl", currentMusic.url);
+    }
+
+    createStoryMutation.mutate(formData);
+  };
+
+  const getVipGlowBorderClass = (themeName: string) => {
+    switch (themeName) {
+      case "gold":
+        return "ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_8px_rgba(245,158,11,0.6)]";
+      case "sakura":
+        return "ring-2 ring-pink-400 ring-offset-2 ring-offset-white shadow-[0_0_8px_rgba(244,114,182,0.6)]";
+      case "emerald":
+        return "ring-2 ring-emerald-500 ring-offset-2 ring-offset-white shadow-[0_0_8px_rgba(16,185,129,0.6)]";
+      case "lava":
+        return "ring-2 ring-red-500 ring-offset-2 ring-offset-white shadow-[0_0_8px_rgba(239,68,68,0.6)]";
+      case "cyberpunk":
+        return "ring-2 ring-purple-500 ring-offset-2 ring-offset-white shadow-[0_0_8px_rgba(168,85,247,0.6)]";
+      case "ice":
+        return "ring-2 ring-sky-400 ring-offset-2 ring-offset-white shadow-[0_0_8px_rgba(56,189,248,0.6)]";
+      case "ocean":
+        return "ring-2 ring-blue-500 ring-offset-2 ring-offset-white shadow-[0_0_8px_rgba(59,130,246,0.6)]";
+      case "violet":
+        return "ring-2 ring-violet-500 ring-offset-2 ring-offset-white shadow-[0_0_8px_rgba(139,92,246,0.6)]";
+      case "rose":
+        return "ring-2 ring-rose-500 ring-offset-2 ring-offset-white shadow-[0_0_8px_rgba(244,63,94,0.6)]";
+      case "sunset":
+        return "ring-2 ring-orange-500 ring-offset-2 ring-offset-white shadow-[0_0_8px_rgba(249,115,22,0.6)]";
+      default:
+        return "ring-2 ring-orange-500 ring-offset-2 ring-offset-white";
+    }
+  };
+
   useEffect(() => {
     if (!socket) return;
 
@@ -298,14 +810,26 @@ export default function ForumPage() {
       }
     };
 
+    const handleStoryCreated = () => {
+      queryClient.invalidateQueries({ queryKey: ["forumStories"] });
+    };
+
+    const handleStoryDeleted = () => {
+      queryClient.invalidateQueries({ queryKey: ["forumStories"] });
+    };
+
     socket.on("forum_post_created", handlePostCreated);
     socket.on("forum_comment_created", handleCommentCreated);
     socket.on("forum_reaction_updated", handleReactionUpdated);
+    socket.on("forum_story_created", handleStoryCreated);
+    socket.on("forum_story_deleted", handleStoryDeleted);
 
     return () => {
       socket.off("forum_post_created", handlePostCreated);
       socket.off("forum_comment_created", handleCommentCreated);
       socket.off("forum_reaction_updated", handleReactionUpdated);
+      socket.off("forum_story_created", handleStoryCreated);
+      socket.off("forum_story_deleted", handleStoryDeleted);
     };
   }, [socket, selectedDetailPostId, queryClient]);
 
@@ -607,7 +1131,12 @@ export default function ForumPage() {
   };
 
   return (
-    <div className={cn("max-w-6xl mx-auto space-y-6 transition-all duration-300", isVip && vipTheme !== "default" && `theme-${vipTheme}`)}>
+    <div
+      className={cn(
+        "max-w-6xl mx-auto space-y-6 transition-all duration-300",
+        isVip && vipTheme !== "default" && `theme-${vipTheme}`,
+      )}
+    >
       {/* Forum Header */}
       <Dialog
         open={isCreateOpen}
@@ -733,6 +1262,551 @@ export default function ForumPage() {
                 className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl"
               >
                 Đăng bài
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ===================== STORY BAR ===================== */}
+      <div className="bg-white border border-gray-200/60 rounded-2xl p-4 shadow-sm space-y-3">
+        <h3 className="text-sm font-black text-gray-800 flex items-center gap-1.5 px-1">
+          <Sparkles size={16} className="text-orange-500" />
+          Tin 24h
+        </h3>
+        <div className="flex gap-4 overflow-x-auto scrollbar-none py-1 select-none">
+          {/* Create Story Button Card */}
+          <div
+            onClick={() => setIsCreateStoryOpen(true)}
+            className="flex-shrink-0 w-24 h-36 rounded-2xl border border-dashed border-gray-200 bg-slate-50 hover:bg-slate-100 transition-all flex flex-col items-center justify-center cursor-pointer group"
+          >
+            <div
+              className={cn(
+                "w-10 h-10 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center transition-all group-hover:scale-110",
+                isVip && vipTheme !== "default" && "bg-primary/10 text-primary",
+              )}
+            >
+              <span className="text-xl font-bold">+</span>
+            </div>
+            <span className="text-[11px] font-extrabold text-gray-600 mt-2">
+              Tạo tin
+            </span>
+          </div>
+
+          {/* Stories List Grouped by User */}
+          {storyGroups.map((group: any, index: number) => {
+            const storyUser = group.user;
+            const latestStory = group.stories[0]; // Story mới nhất
+            const isOwner = storyUser?._id === currentUser?._id;
+            const userTheme = storyUser?.vipCosmetics?.vipTheme || "default";
+
+            return (
+              <div
+                key={group.userId}
+                onClick={() => {
+                  setActiveGroupIndex(index);
+                  setActiveStoryIndex(0);
+                }}
+                className="flex-shrink-0 w-24 h-36 rounded-2xl overflow-hidden relative cursor-pointer shadow-sm hover:shadow-md hover:scale-[1.02] transition-all group bg-gray-100"
+              >
+                {/* Background Image of the first story */}
+                <img
+                  src={latestStory.imageUrl}
+                  alt={storyUser?.name || "Story"}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+                {/* Black Overlay Gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                {/* Avatar Icon with Vip Glow Border */}
+                <div className="absolute top-2 left-2 z-10">
+                  <div
+                    className={cn(
+                      "w-8 h-8 rounded-full overflow-hidden border border-white",
+                      storyUser?.hasMembership &&
+                        getVipGlowBorderClass(userTheme),
+                    )}
+                  >
+                    <img
+                      src={storyUser?.avatar || "/default-avatar.png"}
+                      alt={storyUser?.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+
+                {/* Caption (optional) */}
+                {latestStory.caption && (
+                  <p className="absolute inset-x-2 bottom-6 text-[10px] text-white font-medium line-clamp-2 text-center drop-shadow-sm leading-tight">
+                    {latestStory.caption}
+                  </p>
+                )}
+
+                {/* User Name */}
+                <span className="absolute inset-x-2 bottom-1.5 text-[9px] text-white font-extrabold truncate drop-shadow-sm text-center">
+                  {isOwner ? "Tin của bạn" : storyUser?.name}
+                </span>
+              </div>
+            );
+          })}
+
+          {storyGroups.length === 0 && (
+            <div className="flex items-center justify-center flex-1 h-36 text-gray-400 text-xs font-bold">
+              Chưa có tin nào. Hãy là người đầu tiên đăng tin hôm nay!
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ===================== STORY VIEWER MODAL ===================== */}
+      {activeGroupIndex !== null &&
+        storyGroups[activeGroupIndex] &&
+        (() => {
+          const currentGroup = storyGroups[activeGroupIndex];
+          const currentStory = currentGroup.stories[activeStoryIndex];
+          if (!currentStory) return null;
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 select-none animate-in fade-in duration-200">
+              <div className="relative w-full max-w-md h-[90vh] md:h-[80vh] flex flex-col justify-between overflow-hidden md:rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl">
+                {/* Top Area: Progress Bar and Header */}
+                <div className="p-4 bg-gradient-to-b from-black/80 to-transparent z-10 space-y-3">
+                  {/* Progress Bar Container for the current user's stories ONLY */}
+                  <div className="flex gap-1.5 h-[3px] w-full">
+                    {currentGroup.stories.map((_: any, idx: number) => {
+                      let width = "0%";
+                      if (idx < activeStoryIndex) width = "100%";
+                      else if (idx === activeStoryIndex)
+                        width = `${storyProgress}%`;
+
+                      return (
+                        <div
+                          key={idx}
+                          className="flex-1 bg-slate-700/50 h-full overflow-hidden rounded-full"
+                        >
+                          <div
+                            className="bg-white h-full transition-all duration-100 ease-linear"
+                            style={{ width }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Story Header */}
+                  <div className="flex items-center justify-between text-white">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          "w-10 h-10 rounded-full overflow-hidden border border-white",
+                          currentStory.userId?.hasMembership &&
+                            getVipGlowBorderClass(
+                              currentStory.userId?.vipCosmetics?.vipTheme ||
+                                "default",
+                            ),
+                        )}
+                      >
+                        <img
+                          src={
+                            currentStory.userId?.avatar || "/default-avatar.png"
+                          }
+                          alt={currentStory.userId?.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold truncate max-w-[180px]">
+                          {currentStory.userId?.name}
+                        </h4>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[10px] text-gray-300 font-medium">
+                            {formatDistanceToNow(
+                              new Date(currentStory.createdAt),
+                              {
+                                addSuffix: true,
+                                locale: vi,
+                              },
+                            )}
+                          </span>
+                          {currentStory.musicTitle && (
+                            <div className="flex items-center gap-1 text-[10px] text-orange-400 font-bold mt-0.5 animate-pulse">
+                              <Music
+                                size={10}
+                                className="animate-bounce text-orange-500"
+                              />
+                              <span className="truncate max-w-[150px]">
+                                {currentStory.musicTitle}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Header Buttons: Mute, Delete (if owner) and Close */}
+                    <div className="flex items-center gap-2">
+                      {currentStory.musicUrl && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsMuted(!isMuted);
+                          }}
+                          className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all"
+                          title={isMuted ? "Bật âm thanh" : "Tắt âm thanh"}
+                        >
+                          {isMuted ? (
+                            <VolumeX size={16} />
+                          ) : (
+                            <Volume2 size={16} />
+                          )}
+                        </button>
+                      )}
+                      {currentStory.userId?._id === currentUser?._id && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (
+                              window.confirm(
+                                "Bạn có chắc chắn muốn gỡ tin này?",
+                              )
+                            ) {
+                              deleteStoryMutation.mutate(currentStory._id);
+                            }
+                          }}
+                          className="p-2 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded-full transition-all"
+                          title="Gỡ tin"
+                        >
+                          <Trash size={16} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setActiveGroupIndex(null)}
+                        className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Middle Area: Story Image */}
+                <div className="absolute inset-0 z-0 flex items-center justify-center bg-slate-950">
+                  <img
+                    src={currentStory.imageUrl}
+                    alt="Story content"
+                    className="w-full h-full object-contain"
+                  />
+                  {/* Overlay caption */}
+                  {currentStory.caption && (
+                    <div className="absolute bottom-20 inset-x-6 z-10 text-center bg-black/60 backdrop-blur-sm p-4 rounded-2xl border border-white/10 shadow-lg text-white text-sm font-bold drop-shadow leading-relaxed animate-in slide-in-from-bottom duration-300">
+                      {currentStory.caption}
+                    </div>
+                  )}
+                </div>
+
+                {/* Navigation Click Zones */}
+                <div className="absolute inset-x-0 top-20 bottom-20 z-10 flex">
+                  {/* Left Zone: Prev */}
+                  <div
+                    onClick={handlePrevStory}
+                    className="w-1/3 h-full cursor-w-resize"
+                  />
+                  {/* Right Zone: Next */}
+                  <div
+                    onClick={handleNextStory}
+                    className="w-2/3 h-full cursor-e-resize"
+                  />
+                </div>
+
+                {/* Navigation Buttons (Left/Right Chevrons) */}
+                {(activeStoryIndex > 0 || activeGroupIndex > 0) && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePrevStory();
+                    }}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition-all border border-white/10"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                )}
+
+                {(activeStoryIndex < currentGroup.stories.length - 1 ||
+                  activeGroupIndex < storyGroups.length - 1) && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleNextStory();
+                    }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition-all border border-white/10"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                )}
+
+                {/* Bottom Area: Quick Reply Box */}
+                {currentStory.userId?._id !== currentUser?._id && (
+                  <div className="p-4 bg-gradient-to-t from-black/80 to-transparent z-10 flex gap-2 items-center">
+                    <Input
+                      placeholder={`Phản hồi ${currentStory.userId?.name}...`}
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      className="bg-white/10 border-white/20 text-white placeholder-gray-400 focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-white rounded-full h-10 px-4 text-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleSendReply();
+                        }
+                      }}
+                      disabled={sendReplyMutation.isPending}
+                    />
+                    <Button
+                      size="icon"
+                      onClick={handleSendReply}
+                      disabled={sendReplyMutation.isPending || !replyText.trim()}
+                      className="rounded-full bg-white text-black hover:bg-white/90 flex-shrink-0"
+                    >
+                      {sendReplyMutation.isPending ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <Send size={14} />
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+      {/* ===================== CREATE STORY DIALOG ===================== */}
+      <Dialog
+        open={isCreateStoryOpen}
+        onOpenChange={(open) => {
+          setIsCreateStoryOpen(open);
+          if (!open) {
+            setStoryCaption("");
+            setStoryImageFile(null);
+            if (storyImagePreview) URL.revokeObjectURL(storyImagePreview);
+            setStoryImagePreview(null);
+            setSelectedMusicId("none");
+            if (previewAudioRef.current) {
+              previewAudioRef.current.pause();
+              previewAudioRef.current = null;
+            }
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-4xl rounded-3xl bg-white border border-gray-100 text-gray-800 shadow-2xl p-8">
+          <form onSubmit={handleCreateStory}>
+            <DialogHeader className="space-y-2">
+              <DialogTitle className="text-2xl font-black text-gray-900 flex items-center gap-2">
+                <Sparkles size={24} className="text-orange-500 animate-pulse" />
+                Tạo Tin (Story) Mới
+              </DialogTitle>
+              <DialogDescription className="text-gray-500 text-xs">
+                Đăng những bức ảnh khoảnh khắc đẹp ngày hôm nay. Tin sẽ tự động
+                gỡ bỏ sau 24h.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-8 py-6">
+              {/* Cột trái: Live Preview Card (chỉ hiện trên Desktop) */}
+              <div className="md:col-span-2 flex flex-col items-center justify-center border-r border-gray-100 pr-8 md:flex">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">
+                  Xem trước giao diện
+                </span>
+                {storyImagePreview ? (
+                  <div className="relative rounded-2xl overflow-hidden border border-gray-200 bg-slate-50 aspect-[9/16] w-full max-w-[260px] max-h-[460px] shadow-lg group">
+                    <img
+                      src={storyImagePreview}
+                      alt="Preview"
+                      className="w-full h-full object-cover animate-in fade-in duration-300"
+                    />
+                    {/* Live Preview Text overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent flex flex-col justify-end p-4 pointer-events-none">
+                      {storyCaption ? (
+                        <p className="text-[11px] text-white font-black text-center drop-shadow-md leading-tight line-clamp-4 bg-black/45 backdrop-blur-[2px] p-2.5 rounded-xl border border-white/5 animate-in slide-in-from-bottom duration-250">
+                          {storyCaption}
+                        </p>
+                      ) : (
+                        <span className="text-[9px] text-slate-300 font-medium text-center italic">
+                          Chưa nhập caption...
+                        </span>
+                      )}
+                      {selectedMusicId !== "none" && (
+                        <div className="flex items-center justify-center gap-1 text-[8px] text-orange-400 font-bold mt-2 animate-pulse bg-black/40 py-1 px-1.5 rounded-full border border-white/5">
+                          <Music size={8} className="animate-bounce" />
+                          <span className="truncate max-w-[120px]">
+                            {
+                              AVAILABLE_MUSICS.find(
+                                (m) => m.id === selectedMusicId,
+                              )?.title
+                            }
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border-2 border-dashed border-gray-250 bg-slate-50 aspect-[9/16] w-full max-w-[260px] max-h-[460px] flex flex-col items-center justify-center p-4 text-center text-gray-400">
+                    <ImageIcon size={32} className="text-gray-300 mb-2" />
+                    <span className="text-[11px] font-bold text-gray-400 leading-tight">
+                      Chưa chọn ảnh
+                    </span>
+                    <span className="text-[9px] text-gray-400 mt-1 leading-normal">
+                      Chọn ảnh ở cột bên phải để xem trước
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Cột phải: Controls (Chọn ảnh, Caption, Nhạc) */}
+              <div className="md:col-span-3 space-y-7">
+                {/* 1. Image selector */}
+                <div className="grid gap-2.5">
+                  <Label className="font-bold text-gray-600 text-xs uppercase tracking-wider">
+                    1. Hình ảnh của tin
+                  </Label>
+                  {storyImagePreview ? (
+                    <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-gray-150 shadow-sm">
+                      <div className="w-14 h-20 rounded-xl overflow-hidden border border-gray-200 flex-shrink-0 bg-slate-200">
+                        <img
+                          src={storyImagePreview}
+                          alt="Thumb"
+                          className="w-full h-full object-cover animate-in zoom-in-95 duration-200"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-black text-gray-700 truncate">
+                          {storyImageFile?.name}
+                        </p>
+                        <p className="text-[10px] text-gray-405 mt-1">
+                          Dung lượng:{" "}
+                          {(
+                            (storyImageFile?.size || 0) /
+                            (1024 * 1024)
+                          ).toFixed(2)}{" "}
+                          MB
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStoryImageFile(null);
+                          if (storyImagePreview)
+                            URL.revokeObjectURL(storyImagePreview);
+                          setStoryImagePreview(null);
+                        }}
+                        className="bg-red-50 hover:bg-red-100 text-red-600 rounded-xl px-3 py-2 text-[10px] font-black transition-all shadow-sm active:scale-95"
+                      >
+                        Đổi ảnh khác
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 bg-slate-50/50 rounded-2xl p-9 cursor-pointer hover:border-orange-500/50 hover:bg-orange-500/5 transition-all duration-300 select-none group text-center">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center mb-2.5 group-hover:scale-110 group-hover:bg-orange-500/10 group-hover:text-orange-500 transition-all duration-300">
+                        <ImageIcon size={20} />
+                      </div>
+                      <span className="text-xs text-gray-750 font-black group-hover:text-orange-500 transition-colors">
+                        Chọn hình ảnh tải lên
+                      </span>
+                      <span className="text-[10px] text-gray-400 mt-1">
+                        Hỗ trợ JPEG, PNG, WEBP (Tối đa 5MB)
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleStoryImageChange}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {/* 2. Caption */}
+                <div className="grid gap-2.5">
+                  <div className="flex justify-between items-center">
+                    <Label
+                      htmlFor="story-caption"
+                      className="font-bold text-gray-600 text-xs uppercase tracking-wider"
+                    >
+                      2. Dòng cảm xúc đè lên ảnh
+                    </Label>
+                    <span className="text-[10px] text-gray-400 font-bold">
+                      {storyCaption.length}/100
+                    </span>
+                  </div>
+                  <Input
+                    id="story-caption"
+                    value={storyCaption}
+                    onChange={(e) => setStoryCaption(e.target.value)}
+                    placeholder="Nhập cảm xúc đè lên ảnh (Tối đa 100 ký tự)..."
+                    className="rounded-xl bg-gray-50 border-gray-200 text-gray-805 placeholder-gray-400 focus-visible:ring-orange-500/20 focus-visible:border-orange-500/70 h-11 text-xs px-4"
+                    maxLength={100}
+                  />
+                </div>
+
+                {/* 3. Music Selector */}
+                <div className="grid gap-2.5">
+                  <Label className="font-bold text-gray-600 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <Music size={13} className="text-orange-500" />
+                    3. Nhạc nền câu chuyện (Phát thử khi chọn)
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2.5 max-h-[170px] overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-300">
+                    {AVAILABLE_MUSICS.map((music) => (
+                      <button
+                        key={music.id}
+                        type="button"
+                        onClick={() => handleSelectMusic(music.id)}
+                        className={cn(
+                          "p-2.5 rounded-xl border text-left text-[10px] font-black transition-all flex items-center justify-between group h-10 shadow-sm",
+                          selectedMusicId === music.id
+                            ? "border-orange-500 bg-orange-50/50 text-orange-600 shadow-sm"
+                            : "border-gray-200 bg-slate-50/50 hover:bg-slate-50 text-gray-700 hover:border-gray-300",
+                        )}
+                      >
+                        <span className="truncate max-w-[110px]">
+                          {music.title}
+                        </span>
+                        {selectedMusicId === music.id &&
+                          music.id !== "none" && (
+                            <div className="w-2 h-2 rounded-full bg-orange-500 animate-ping" />
+                          )}
+                      </button>
+                    ))}
+                  </div>
+                  {selectedMusicId !== "none" && (
+                    <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-1 italic font-medium">
+                      <Sparkles
+                        size={10}
+                        className="text-orange-500 animate-spin"
+                      />
+                      Đang phát nhạc thử, âm thanh tự tắt khi đóng hoặc đăng
+                      tin.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0 border-t border-gray-100 pt-4 mt-2">
+              <Button
+                type="button"
+                onClick={() => setIsCreateStoryOpen(false)}
+                className="rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 font-extrabold border-none transition-all h-10 px-5 text-xs"
+              >
+                Hủy bỏ
+              </Button>
+              <Button
+                type="submit"
+                disabled={createStoryMutation.isPending}
+                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold rounded-xl gap-1.5 shadow-[0_4px_12px_rgba(245,158,11,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all h-10 px-6 text-xs"
+              >
+                {createStoryMutation.isPending && (
+                  <Loader2 size={14} className="animate-spin" />
+                )}
+                Đăng tin ngay
               </Button>
             </DialogFooter>
           </form>
@@ -1232,17 +2306,37 @@ export default function ForumPage() {
           </Card>
 
           {/* VIP Spotlights Promotion Card */}
-          <Card className={cn("border shadow-sm rounded-2xl overflow-hidden", cardTheme.cardBg)}>
+          <Card
+            className={cn(
+              "border shadow-sm rounded-2xl overflow-hidden",
+              cardTheme.cardBg,
+            )}
+          >
             <div className="p-5 space-y-4">
               <div className="flex items-center gap-2">
-                <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center shrink-0", cardTheme.iconBg)}>
+                <div
+                  className={cn(
+                    "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
+                    cardTheme.iconBg,
+                  )}
+                >
                   <Crown size={16} className="animate-bounce" />
                 </div>
-                <h4 className={cn("text-xs font-black uppercase tracking-wide", cardTheme.titleText)}>
+                <h4
+                  className={cn(
+                    "text-xs font-black uppercase tracking-wide",
+                    cardTheme.titleText,
+                  )}
+                >
                   Đặc quyền vinh danh VIP
                 </h4>
               </div>
-              <p className={cn("text-[11px] leading-relaxed font-medium", cardTheme.descText)}>
+              <p
+                className={cn(
+                  "text-[11px] leading-relaxed font-medium",
+                  cardTheme.descText,
+                )}
+              >
                 Sở hữu thẻ hội viên VIP để bài viết của đạo hữu luôn nổi bật với
                 khung viền lấp lánh và tên gradient độc quyền trên diễn đàn!
               </p>
@@ -1253,26 +2347,37 @@ export default function ForumPage() {
                     size={12}
                     className={cn("animate-pulse", cardTheme.sparkleColor)}
                   />
-                  <span className={cardTheme.descText}>Khung Avatar VIP đặc chế</span>
+                  <span className={cardTheme.descText}>
+                    Khung Avatar VIP đặc chế
+                  </span>
                 </li>
                 <li className="flex items-center gap-1.5">
                   <Sparkles
                     size={12}
                     className={cn("animate-pulse", cardTheme.sparkleColor)}
                   />
-                  <span className={cardTheme.descText}>Tên gradient Hoàng Kim lấp lánh</span>
+                  <span className={cardTheme.descText}>
+                    Tên gradient Hoàng Kim lấp lánh
+                  </span>
                 </li>
                 <li className="flex items-center gap-1.5">
                   <Sparkles
                     size={12}
                     className={cn("animate-pulse", cardTheme.sparkleColor)}
                   />
-                  <span className={cardTheme.descText}>Giảm ngay 2.000đ mỗi phần cơm</span>
+                  <span className={cardTheme.descText}>
+                    Giảm ngay 2.000đ mỗi phần cơm
+                  </span>
                 </li>
               </ul>
 
               <Link to="/vip" className="block pt-2">
-                <Button className={cn("w-full text-xs font-black rounded-xl h-9 border-none shadow-sm", cardTheme.buttonClass)}>
+                <Button
+                  className={cn(
+                    "w-full text-xs font-black rounded-xl h-9 border-none shadow-sm",
+                    cardTheme.buttonClass,
+                  )}
+                >
                   Khám phá Gói VIP →
                 </Button>
               </Link>
@@ -1589,7 +2694,9 @@ export default function ForumPage() {
                                         </UserHoverCardWrapper>
                                         {parent.userId?.hasMembership && (
                                           <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[8px] px-1 py-0 rounded flex items-center gap-0.5 scale-90 leading-none">
-                                            👑 {parent.userId?.membershipName || "VIP"}
+                                            👑{" "}
+                                            {parent.userId?.membershipName ||
+                                              "VIP"}
                                           </Badge>
                                         )}
                                       </div>
@@ -1783,7 +2890,9 @@ export default function ForumPage() {
                                                 {reply.userId
                                                   ?.hasMembership && (
                                                   <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none font-bold text-[8px] px-1 py-0 rounded flex items-center gap-0.5 scale-90 leading-none">
-                                                    👑 {reply.userId?.membershipName || "VIP"}
+                                                    👑{" "}
+                                                    {reply.userId
+                                                      ?.membershipName || "VIP"}
                                                   </Badge>
                                                 )}
                                               </div>

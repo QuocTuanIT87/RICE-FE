@@ -18,6 +18,7 @@ import type {
   ForumPost,
   ForumComment,
   ForumReaction,
+  ForumStory,
   Notification,
   Message,
   Conversation,
@@ -379,6 +380,17 @@ export const forumApi = {
     api.post<ApiResponse<{ reactions: ForumReaction[]; likesCount: number }>>(`/forum/posts/${postId}/react`, { type }),
   reactComment: (commentId: string, type: string) =>
     api.post<ApiResponse<{ reactions: ForumReaction[] }>>(`/forum/comments/${commentId}/react`, { type }),
+};
+
+export const forumStoriesApi = {
+  getStories: () => api.get<ApiResponse<ForumStory[]>>("/forum/stories"),
+  createStory: (data: FormData) =>
+    api.post<ApiResponse<ForumStory>>("/forum/stories", data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
+  deleteStory: (id: string) => api.delete<ApiResponse<any>>(`/forum/stories/${id}`),
 };
 
 // =============================================

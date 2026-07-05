@@ -65,6 +65,27 @@ const playTingSound = () => {
   }
 };
 
+const parseStoryReply = (content: string) => {
+  if (!content) return null;
+  if (content.startsWith('{"isStoryReply":true')) {
+    try {
+      return JSON.parse(content);
+    } catch (e) {
+      return null;
+    }
+  }
+  return null;
+};
+
+const getMessageTextContent = (content: string) => {
+  if (!content) return "";
+  const parsed = parseStoryReply(content);
+  if (parsed) {
+    return `[Phản hồi Tin]: "${parsed.text}"`;
+  }
+  return content;
+};
+
 export default function ChatPage() {
   const { user } = useAppSelector((state) => state.auth);
   const myId = user?.id || user?._id || "";
@@ -499,9 +520,9 @@ export default function ChatPage() {
           toast({
             title: "Tin nhắn mới 💬",
             description: msg.content
-              ? msg.content.length > 30
-                ? msg.content.substring(0, 30) + "..."
-                : msg.content
+              ? getMessageTextContent(msg.content).length > 30
+                ? getMessageTextContent(msg.content).substring(0, 30) + "..."
+                : getMessageTextContent(msg.content)
               : "Đã gửi một hình ảnh",
             duration: 4000,
           });
@@ -865,7 +886,7 @@ export default function ChatPage() {
                     ? "Tin nhắn đã bị thu hồi"
                     : conv.lastMessage?.imageUrl
                       ? `${isMyLastMsg ? "Bạn: " : ""}Đã gửi một ảnh`
-                      : `${isMyLastMsg ? "Bạn: " : ""}${conv.lastMessage?.content}`;
+                      : `${isMyLastMsg ? "Bạn: " : ""}${getMessageTextContent(conv.lastMessage?.content)}`;
 
                 return (
                   <button
@@ -1202,10 +1223,44 @@ export default function ChatPage() {
                       {/* Khối tin nhắn */}
                       <div
                         className={cn(
-                          "max-w-[70%] flex flex-col",
+                          "max-w-[70%] flex flex-col gap-1.5",
                           isMine ? "items-end" : "items-start",
                         )}
                       >
+                        {/* Khung Story Preview đứng độc lập ở trên bong bóng chat */}
+                        {!isRecalled && parseStoryReply(msg.content) && (
+                          (() => {
+                            const storyReply = parseStoryReply(msg.content);
+                            if (!storyReply) return null;
+                            return (
+                              <Link
+                                to={`/forum?storyId=${storyReply.storyId}&groupUserId=${storyReply.groupUserId || storyReply.userId}`}
+                                className="flex flex-col rounded-2xl overflow-hidden border border-gray-200 bg-slate-50 hover:bg-slate-100 transition-all w-28 shadow-sm group/story text-left"
+                                title="Bấm để xem story trên diễn đàn"
+                              >
+                                <div className="relative aspect-[9/16] w-full max-h-[145px] overflow-hidden bg-slate-950 flex items-center justify-center">
+                                  <img
+                                    src={storyReply.imageUrl}
+                                    alt="Story"
+                                    className="w-full h-full object-cover transition-transform group-hover/story:scale-105 duration-300"
+                                  />
+                                  {storyReply.caption && (
+                                    <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent p-1.5 text-center">
+                                      <p className="text-[8px] text-white font-extrabold line-clamp-1 leading-none">
+                                        {storyReply.caption}
+                                      </p>
+                                    </div>
+                                  )}
+                                  <div className="absolute top-1.5 left-1.5 bg-black/60 text-[6px] text-white/95 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-0.5 backdrop-blur-[1px] border border-white/5 shadow-sm">
+                                    <Sparkles size={5} className="text-orange-400 animate-pulse" />
+                                    Story
+                                  </div>
+                                </div>
+                              </Link>
+                            );
+                          })()
+                        )}
+
                         <div className="flex items-center gap-1.5 relative">
                           {/* Menu thao tác nhanh cho tin nhắn của mình (Thu hồi) */}
                           {isMine && !isRecalled && (
@@ -1280,31 +1335,37 @@ export default function ChatPage() {
                                 <Trash2 size={12} className="opacity-60" />
                                 {msg.content}
                               </span>
-                            ) : (
-                              <>
-                                {/* Ảnh đính kèm (nếu có) */}
-                                {msg.imageUrl && (
-                                  <div className="mb-1.5 max-w-sm rounded-xl overflow-hidden shadow-sm">
-                                    <img
-                                      src={msg.imageUrl}
-                                      alt="Ảnh đính kèm"
-                                      className="w-full max-h-60 object-cover cursor-pointer hover:opacity-95 transition-opacity"
-                                      onClick={() =>
-                                        window.open(msg.imageUrl, "_blank")
-                                      }
-                                    />
-                                  </div>
-                                )}
-                                <span>{msg.content}</span>
-                              </>
-                            )}
+                            ) : (() => {
+                              const storyReply = parseStoryReply(msg.content);
+                              if (storyReply) {
+                                return <span>{storyReply.text}</span>;
+                              }
+                              return (
+                                <>
+                                  {/* Ảnh đính kèm (nếu có) */}
+                                  {msg.imageUrl && (
+                                    <div className="mb-1.5 max-w-sm rounded-xl overflow-hidden shadow-sm">
+                                      <img
+                                        src={msg.imageUrl}
+                                        alt="Ảnh đính kèm"
+                                        className="w-full max-h-60 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                                        onClick={() =>
+                                          window.open(msg.imageUrl, "_blank")
+                                        }
+                                      />
+                                    </div>
+                                  )}
+                                  <span>{msg.content}</span>
+                                </>
+                              );
+                            })()}
 
                             {/* Hiển thị danh sách cảm xúc (Reactions) ở góc dưới bong bóng chat */}
                             {!isRecalled &&
                               Object.keys(reactionsCount).length > 0 && (
                                 <div
                                   className={cn(
-                                    "absolute -bottom-2 bg-white/90 backdrop-blur-sm border border-gray-100 rounded-full px-1.5 py-0.5 flex items-center gap-0.5 shadow-sm text-[10px] font-bold z-10 text-gray-700",
+                                    "absolute -bottom-2 bg-white/90 backdrop-blur-sm border border-gray-150 rounded-full px-1.5 py-0.5 flex items-center gap-0.5 shadow-sm text-[10px] font-bold z-10 text-gray-700",
                                     isMine ? "right-2" : "left-2",
                                   )}
                                 >
