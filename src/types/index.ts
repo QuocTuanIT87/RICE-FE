@@ -99,6 +99,7 @@ export interface ForumStory {
   caption?: string;
   musicTitle?: string;
   musicUrl?: string;
+  views?: User[];
   createdAt: string;
   expiresAt: string;
 }

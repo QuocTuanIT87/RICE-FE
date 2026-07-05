@@ -52,6 +52,7 @@ import {
   Music,
   Volume2,
   VolumeX,
+  Eye,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -217,6 +218,27 @@ const getPromoCardTheme = (theme: string) => {
         buttonClass:
           "bg-orange-500 hover:bg-orange-600 text-white shadow-orange-200/50",
       };
+  }
+};
+
+const getVipNameColorClass = (theme: string) => {
+  switch (theme) {
+    case "gold":
+      return "bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 bg-clip-text text-transparent font-black";
+    case "emerald":
+      return "bg-gradient-to-r from-emerald-500 to-green-600 bg-clip-text text-transparent font-black";
+    case "sakura":
+      return "bg-gradient-to-r from-pink-500 to-rose-600 bg-clip-text text-transparent font-black";
+    case "lava":
+      return "bg-gradient-to-r from-red-500 to-orange-600 bg-clip-text text-transparent font-black";
+    case "cyberpunk":
+      return "bg-gradient-to-r from-pink-500 via-purple-600 to-cyan-500 bg-clip-text text-transparent font-black";
+    case "sunset":
+      return "bg-gradient-to-r from-orange-400 to-rose-500 bg-clip-text text-transparent font-black";
+    case "cotton-candy":
+      return "bg-gradient-to-r from-purple-400 to-sky-550 bg-clip-text text-transparent font-black";
+    default:
+      return "bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent font-black";
   }
 };
 
@@ -412,6 +434,8 @@ export default function ForumPage() {
     null,
   );
   const [storyProgress, setStoryProgress] = useState(0);
+  const [isStoryPaused, setIsStoryPaused] = useState(false);
+  const [isViewersOpen, setIsViewersOpen] = useState(false);
 
   // Music States & Refs
   const [selectedMusicId, setSelectedMusicId] = useState<string>("none");
@@ -635,6 +659,40 @@ export default function ForumPage() {
     }
   }, [activeGroupIndex, activeStoryIndex, stories.length]);
 
+  // Reset progress bar when story changes
+  useEffect(() => {
+    setStoryProgress(0);
+  }, [activeGroupIndex, activeStoryIndex]);
+
+  // Log view story automatically
+  useEffect(() => {
+    if (activeGroupIndex === null) {
+      setIsStoryPaused(false);
+      setIsViewersOpen(false);
+      return;
+    }
+    const currentGroup = storyGroups[activeGroupIndex];
+    if (!currentGroup) return;
+    const currentStory = currentGroup.stories[activeStoryIndex];
+    if (!currentStory) return;
+
+    const isMyStory = currentStory.userId?._id === currentUser?._id;
+    if (!isMyStory && currentUser) {
+      const myId = currentUser.id || currentUser._id;
+      const alreadyViewed = currentStory.views?.some(
+        (v: any) => (v._id || v) === myId,
+      );
+      if (!alreadyViewed) {
+        forumStoriesApi
+          .viewStory(currentStory._id)
+          .then(() => {
+            queryClient.invalidateQueries({ queryKey: ["forumStories"] });
+          })
+          .catch((e) => console.log("Lỗi ghi nhận lượt xem story:", e));
+      }
+    }
+  }, [activeGroupIndex, activeStoryIndex, stories.length, currentUser]);
+
   // Đồng bộ bật/tắt tiếng
   useEffect(() => {
     if (viewerAudioRef.current) {
@@ -644,12 +702,12 @@ export default function ForumPage() {
 
   useEffect(() => {
     if (activeGroupIndex === null) return;
-    setStoryProgress(0);
     const duration = 10000; // 10s
     const intervalTime = 100; // 100ms
     const step = (intervalTime / duration) * 100;
 
     const timer = setInterval(() => {
+      if (isStoryPaused) return;
       setStoryProgress((prev) => {
         if (prev >= 100) {
           clearInterval(timer);
@@ -663,7 +721,7 @@ export default function ForumPage() {
     return () => {
       clearInterval(timer);
     };
-  }, [activeGroupIndex, activeStoryIndex, stories.length]);
+  }, [activeGroupIndex, activeStoryIndex, stories.length, isStoryPaused]);
 
   const handleNextStory = () => {
     if (activeGroupIndex === null) return;
@@ -818,11 +876,16 @@ export default function ForumPage() {
       queryClient.invalidateQueries({ queryKey: ["forumStories"] });
     };
 
+    const handleStoryViewed = () => {
+      queryClient.invalidateQueries({ queryKey: ["forumStories"] });
+    };
+
     socket.on("forum_post_created", handlePostCreated);
     socket.on("forum_comment_created", handleCommentCreated);
     socket.on("forum_reaction_updated", handleReactionUpdated);
     socket.on("forum_story_created", handleStoryCreated);
     socket.on("forum_story_deleted", handleStoryDeleted);
+    socket.on("forum_story_viewed", handleStoryViewed);
 
     return () => {
       socket.off("forum_post_created", handlePostCreated);
@@ -830,6 +893,7 @@ export default function ForumPage() {
       socket.off("forum_reaction_updated", handleReactionUpdated);
       socket.off("forum_story_created", handleStoryCreated);
       socket.off("forum_story_deleted", handleStoryDeleted);
+      socket.off("forum_story_viewed", handleStoryViewed);
     };
   }, [socket, selectedDetailPostId, queryClient]);
 
@@ -1546,7 +1610,11 @@ export default function ForumPage() {
                 )}
 
                 {/* Bottom Area: Quick Reply Box */}
-                {currentStory.userId?._id !== currentUser?._id && (
+                {(() => {
+                  const myId = currentUser?._id || currentUser?.id;
+                  const storyOwnerId = currentStory.userId?._id || (currentStory.userId as any)?.id;
+                  const isMyStory = myId && storyOwnerId && myId === storyOwnerId;
+                  return !isMyStory ? (
                   <div className="p-4 bg-gradient-to-t from-black/80 to-transparent z-10 flex gap-2 items-center">
                     <Input
                       placeholder={`Phản hồi ${currentStory.userId?.name}...`}
@@ -1573,11 +1641,105 @@ export default function ForumPage() {
                       )}
                     </Button>
                   </div>
-                )}
+                  ) : null;
+                })()}
+
+                {/* Chủ Story: Xem danh sách người xem */}
+                {(() => {
+                  const myId = currentUser?._id || currentUser?.id;
+                  const storyOwnerId = currentStory.userId?._id || (currentStory.userId as any)?.id;
+                  const isMyStory = myId && storyOwnerId && myId === storyOwnerId;
+                  return isMyStory ? (
+                  <div className="p-4 bg-gradient-to-t from-black/80 to-transparent z-10 flex flex-col items-center justify-center pb-6">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsStoryPaused(true);
+                        setIsViewersOpen(true);
+                      }}
+                      className="bg-white/10 hover:bg-white/20 active:scale-95 text-white border border-white/10 rounded-full px-5 py-2 flex items-center justify-center gap-1.5 transition-all text-xs font-black shadow-lg backdrop-blur-sm"
+                    >
+                      <Eye size={13} className="text-orange-400" />
+                      <span>{currentStory.views?.length || 0} người xem</span>
+                    </button>
+                  </div>
+                  ) : null;
+                })()}
               </div>
             </div>
           );
         })()}
+
+      {/* ===================== DETAILED VIEWERS DIALOG ===================== */}
+      <Dialog
+        open={isViewersOpen}
+        onOpenChange={(open) => {
+          setIsViewersOpen(open);
+          if (!open) setIsStoryPaused(false);
+        }}
+      >
+        <DialogContent className="sm:max-w-[320px] p-0 rounded-2xl overflow-hidden border border-gray-100 shadow-xl bg-white">
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <Eye size={15} className="text-gray-400" />
+              <span className="text-sm font-bold text-gray-800">Người đã xem</span>
+            </div>
+            <span className="text-xs font-bold text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">
+              {activeGroupIndex !== null
+                ? storyGroups[activeGroupIndex]?.stories[activeStoryIndex]?.views?.length ?? 0
+                : 0}
+            </span>
+          </div>
+
+          {/* List */}
+          <div className="max-h-[280px] overflow-y-auto py-2">
+            {activeGroupIndex !== null &&
+            storyGroups[activeGroupIndex]?.stories[activeStoryIndex]?.views?.length ? (
+              storyGroups[activeGroupIndex].stories[activeStoryIndex].views!.map((viewer: any) => (
+                <div
+                  key={viewer._id || viewer.id}
+                  className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors"
+                >
+                  <VipAvatar
+                    avatarUrl={viewer.avatar}
+                    name={viewer.name}
+                    hasMembership={viewer.hasMembership}
+                    vipAvatarFrame={viewer.vipCosmetics?.vipAvatarFrame}
+                    size="sm"
+                  />
+                  <span
+                    className={cn(
+                      "text-sm font-semibold truncate",
+                      viewer.hasMembership
+                        ? getVipNameColorClass(viewer.vipCosmetics?.vipTheme || "default")
+                        : "text-gray-800",
+                    )}
+                  >
+                    {viewer.name}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-gray-400">
+                <Eye size={28} className="mx-auto mb-2 opacity-30" />
+                <p className="text-sm font-medium">Chưa có ai xem tin này</p>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="px-4 pb-4 pt-2 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={() => { setIsViewersOpen(false); setIsStoryPaused(false); }}
+              className="w-full h-9 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold transition-colors active:scale-[0.98]"
+            >
+              Đóng
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ===================== CREATE STORY DIALOG ===================== */}
       <Dialog

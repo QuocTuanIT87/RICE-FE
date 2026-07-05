@@ -391,6 +391,7 @@ export const forumStoriesApi = {
       },
     }),
   deleteStory: (id: string) => api.delete<ApiResponse<any>>(`/forum/stories/${id}`),
+  viewStory: (id: string) => api.post<ApiResponse<any>>(`/forum/stories/${id}/view`),
 };
 
 // =============================================
