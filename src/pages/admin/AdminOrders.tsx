@@ -918,7 +918,7 @@ export default function AdminOrders() {
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-start gap-2">
                             <span className="text-sm font-black text-gray-800">
-                              {formatDate(item.menuDate.split("T")[0])}
+                              {formatDate(item.menuDate)}
                             </span>
                             <span className="text-sm font-black text-orange-600">
                               {formatVND(item.totalAmount)}
@@ -1071,7 +1071,7 @@ export default function AdminOrders() {
                             const dateRangeText = selectedMenuIds
                               .map((id) => {
                                 const group = unsettledSummary.find((g) => g.menuId === id);
-                                return group ? formatDate(group.menuDate.split("T")[0]) : "";
+                                return group ? formatDate(group.menuDate) : "";
                               })
                               .join(", ");
                             const dishLines = Object.entries(selectedSettlementDetails.itemsDetail)
