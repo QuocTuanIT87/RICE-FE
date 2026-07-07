@@ -83,11 +83,38 @@ export default function AdminOrders() {
     },
   });
 
-  const handleCopyText = (text: string, fieldName: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(fieldName);
-    setTimeout(() => setCopiedField(null), 2000);
-    toast({ title: "Đã sao chép!" });
+  // Helper copy mạnh mẽ: thử Clipboard API, fallback về execCommand
+  const copyToClipboard = async (text: string): Promise<boolean> => {
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        // fall through to execCommand
+      }
+    }
+    // Fallback: tạo textarea tạm, select, execCommand
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(textarea);
+    return ok;
+  };
+
+  const handleCopyText = async (text: string, fieldName: string) => {
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      setCopiedField(fieldName);
+      setTimeout(() => setCopiedField(null), 2000);
+      toast({ title: "Đã sao chép!" });
+    } else {
+      toast({ title: "Sao chép thất bại", description: "Trình duyệt không cho phép truy cập clipboard.", variant: "destructive" });
+    }
   };
 
   const { data, isLoading, refetch, isFetching } = useQuery({
@@ -169,9 +196,25 @@ export default function AdminOrders() {
 
   const copyMutation = useMutation({
     mutationFn: (menuId: string) => ordersApi.getCopyText(menuId),
-    onSuccess: (res) => {
-      navigator.clipboard.writeText(res.data.data?.copyText || "");
-      toast({ title: "Đã copy danh sách đặt cơm!", variant: "success" });
+    onSuccess: async (res) => {
+      const text = res.data.data?.copyText || "";
+      if (!text) {
+        toast({ title: "Danh sách trống", description: "Không có đơn nào để copy.", variant: "destructive" });
+        return;
+      }
+      const ok = await copyToClipboard(text);
+      if (ok) {
+        toast({ title: "✅ Đã copy danh sách đặt cơm!", variant: "success" });
+      } else {
+        toast({ title: "Copy thất bại", description: "Không thể truy cập clipboard. Thử lại hoặc copy thủ công.", variant: "destructive" });
+      }
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Lỗi khi lấy danh sách",
+        description: err?.response?.data?.error?.message || "Không thể tải danh sách đặt cơm. Vui lòng thử lại.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -413,11 +456,17 @@ export default function AdminOrders() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => copyMutation.mutate(menu._id)}
+                onClick={() => {
+                  if (!menu?._id) {
+                    toast({ title: "Chưa có thực đơn", description: "Không tìm thấy thực đơn để copy.", variant: "destructive" });
+                    return;
+                  }
+                  copyMutation.mutate(menu._id);
+                }}
                 disabled={copyMutation.isPending}
                 className="h-12 border-gray-200 rounded-xl gap-2 font-black text-gray-500 hover:text-orange-600 hover:bg-orange-50 transition-all uppercase text-xs"
               >
-                <Copy className="w-4 h-4" />
+                {copyMutation.isPending ? <span className="animate-spin">⏳</span> : <Copy className="w-4 h-4" />}
                 Copy danh sách
               </Button>
               {menu.isLocked && totalAmount > 0 && (
