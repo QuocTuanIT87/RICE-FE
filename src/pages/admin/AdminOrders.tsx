@@ -231,6 +231,8 @@ export default function AdminOrders() {
   const selectedSettlementDetails = useMemo(() => {
     let totalOrdersCount = 0;
     let totalMealsCount = 0;
+    let totalNormalMeals = 0;
+    let totalNoRiceMeals = 0;
     let totalAmount = 0;
     const orderIds: string[] = [];
     const itemsDetail: { [name: string]: number } = {};
@@ -240,6 +242,8 @@ export default function AdminOrders() {
       if (group) {
         totalOrdersCount += group.totalOrdersCount;
         totalMealsCount += group.totalMealsCount || 0;
+        totalNormalMeals += (group as any).totalNormalMeals || 0;
+        totalNoRiceMeals += (group as any).totalNoRiceMeals || 0;
         totalAmount += group.totalAmount;
         orderIds.push(...group.orderIds);
 
@@ -255,6 +259,8 @@ export default function AdminOrders() {
     return {
       totalOrdersCount,
       totalMealsCount,
+      totalNormalMeals,
+      totalNoRiceMeals,
       totalAmount,
       orderIds,
       itemsDetail,
@@ -1071,13 +1077,20 @@ export default function AdminOrders() {
                             const dateRangeText = selectedMenuIds
                               .map((id) => {
                                 const group = unsettledSummary.find((g) => g.menuId === id);
-                                return group ? formatDate(group.menuDate) : "";
+                                return group
+                                  ? new Date(group.menuDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })
+                                  : "";
                               })
                               .join(", ");
                             const dishLines = Object.entries(selectedSettlementDetails.itemsDetail)
                               .map(([name, qty]) => `- ${name.toLowerCase()}: ${qty} suất`)
                               .join("\n");
-                            const msg = `Tổng hợp ${selectedMenuIds.length} ngày: ${dateRangeText}:\n\n${dishLines}\n\n* Tổng suất cơm: ${selectedSettlementDetails.totalMealsCount} suất\n* Tổng tiền thanh toán: ${formatVND(selectedSettlementDetails.totalAmount)}\n\nEm đã chuyển khoản thanh toán. Chị kiểm tra giúp em nhaaa. Em cảm ơn ạ`;
+                            const { totalNormalMeals, totalNoRiceMeals, totalMealsCount, totalAmount } = selectedSettlementDetails;
+                            const riceBreakdown = [
+                              totalNormalMeals > 0 ? `  + Có cơm: ${totalNormalMeals} suất` : "",
+                              totalNoRiceMeals > 0 ? `  + Không cơm: ${totalNoRiceMeals} suất` : "",
+                            ].filter(Boolean).join("\n");
+                            const msg = `Tổng hợp ${selectedMenuIds.length} ngày: ${dateRangeText}:\n\n${dishLines}\n\n* Tổng suất: ${totalMealsCount} suất\n${riceBreakdown}\n* Tổng tiền thanh toán: ${formatVND(totalAmount)}\n\nEm đã chuyển khoản thanh toán. Chị kiểm tra giúp em nhaaa. Em cảm ơn ạ`;
                             handleCopyText(msg, "zaloMessage");
                           }}
                           className="h-11 rounded-xl font-bold border-orange-200 hover:bg-orange-50 hover:text-orange-600 text-orange-600 transition-all text-xs"
